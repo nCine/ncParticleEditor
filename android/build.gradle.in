@@ -1,0 +1,75 @@
+buildscript {
+	repositories {
+		jcenter()
+	}
+	dependencies {
+		classpath 'com.android.tools.build:gradle:2.3.+'
+	}
+}
+
+apply plugin: 'com.android.application'
+
+android {
+	buildToolsVersion "@GRADLE_BUILDTOOLS_VERSION@"
+	compileSdkVersion @GRADLE_COMPILESDK_VERSION@
+
+	defaultConfig {
+		minSdkVersion @GRADLE_MINSDK_VERSION@
+		targetSdkVersion @GRADLE_TARGETSDK_VERSION@
+		versionCode @GRADLE_VERSIONCODE@
+		versionName "@GRADLE_VERSION@"
+	}
+
+	buildTypes {
+		release {
+			minifyEnabled true
+			shrinkResources true
+		}
+
+		debug {
+			applicationIdSuffix ".debug"
+		}
+	}
+
+	splits {
+		abi {
+			enable true
+			reset()
+			include '@GRADLE_NDK_ARCHITECTURES@'
+			universalApk false
+		}
+	}
+
+	final def cmakeBuildDir = new File(project.buildDir, "@PACKAGE_LOWER_NAME@")
+	final def architectures = ['@GRADLE_NDK_ARCHITECTURES@']
+
+	def cmakeBuildTasks = []
+	for (arch in architectures) {
+		final def archDir = new File(cmakeBuildDir, arch)
+
+		tasks.create(name:'cmakeConfigure_' + arch, type: Exec) {
+			commandLine cmakeCommand, '-H' + file('src/main/cpp').absolutePath, '-B' + archDir, '@GRADLE_PASSTHROUGH_ARGS@', '@GRADLE_CMAKE_ARGS@', '-DCMAKE_ANDROID_NDK=' + ndkDir, '-DCMAKE_ANDROID_ARCH_ABI=' + arch
+
+			if (arch == "armeabi-v7a")
+				commandLine += ['@GRADLE_ARM_ARGS@']
+		}
+
+		tasks.create(name:'cmakeBuild_' + arch, type: Exec, dependsOn: 'cmakeConfigure_' + arch) {
+			commandLine cmakeCommand, '--build', archDir
+		}
+		cmakeBuildTasks.add('cmakeBuild_' + arch)
+	}
+
+	sourceSets.main {
+		jniLibs.srcDirs = [@GRADLE_JNILIBS_DIRS@, cmakeBuildDir]
+		jni.srcDirs = [] // disable automatic ndk-build call
+	}
+
+	tasks.withType(JavaCompile) {
+		compileTask -> compileTask.dependsOn cmakeBuildTasks
+	}
+
+	clean {
+		delete cmakeBuildDir
+	}
+}
