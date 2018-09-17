@@ -88,19 +88,35 @@ class LuaLoader :
 
 	struct Config
 	{
-		int width = 0;
-		int height = 0;
+		int width = 1280;
+		int height = 720;
 		bool fullscreen = false;
-		unsigned long vboSize = 0;
-		unsigned long iboSize = 0;
-		bool batching = false;
-		bool culling = false;
+		unsigned long vboSize = 256 * 1024;
+		unsigned long iboSize = 32 * 1024;
+		bool batching = true;
+		bool culling = true;
+		unsigned int saveFileMaxSize = 16 * 1024;
+		nc::Colorf background = nc::Colorf::Black;
+
+		int maxNumParticles = 256;
+		float systemPositionRange = 200.0f;
+		float minParticleScale = 0.0f;
+		float maxParticleScale = 2.0f;
+		float minParticleAngle = -360.0f;
+		float maxParticleAngle = 360.0f;
+		float positionRange = 5.0f;
+		float velocityRange = 5.0f;
+		float maxRandomLife = 5.0f;
+		float randomPositionRange = 100.0f;
+		float randomVelocityRange = 200.0f;
+		float maxDelay = 5.0f;
 	};
 
 	LuaLoader();
 	inline bool configLoaded() const { return configLoaded_; }
 	inline const Config &config() const { return config_; }
 	inline Config &config() { return config_; }
+	void sanitizeGuiLimits();
 	bool loadConfig(const char *filename);
 	bool saveConfig(const char *filename);
 	bool load(const char *filename, State &state);

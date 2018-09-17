@@ -32,13 +32,13 @@ void indent(nctl::String &string, int amount)
 		string.append("\t");
 }
 
-const unsigned int ConfigFileVersion = 2;
+const unsigned int ConfigFileVersion = 3;
 const unsigned int ProjectFileVersion = 3;
 
 namespace Names
 {
 
-const char *projectVersion = "project_version"; // version 3
+const char *version = "project_version"; // version 3
 
 const char *normalizedAbsPosition = "normalized_absolute_position"; // version 2
 
@@ -69,18 +69,62 @@ const char *velocityY = "velocity_y";
 const char *rotation = "rotation";
 const char *emitterRotation = "emitter_rotation";
 const char *delay = "delay";
+}
 
-const char *cfgVersion = "config_version"; // version 2
-const char *cfgWidth = "width";
-const char *cfgHeight = "height";
-const char *cfgFullscreen = "fullscreen";
-const char *cfgVboSize = "vbo_size";
-const char *cfgIboSize = "ibo_size";
-const char *cfgBatching = "batching";
-const char *cfgCulling = "culling";
+namespace CfgNames
+{
+
+const char *version = "config_version"; // version 2
+const char *width = "width";
+const char *height = "height";
+const char *fullscreen = "fullscreen";
+const char *vboSize = "vbo_size";
+const char *iboSize = "ibo_size";
+const char *batching = "batching";
+const char *culling = "culling";
+const char *background = "background"; // version 3
+const char *saveFileMaxSize = "savefile_maxsize"; // version 3
+
+const char *guiLimits = "gui_limits"; // version 3
+const char *maxNumParticles = "max_num_particles"; // version 3
+const char *systemPositionRange = "system_position_range"; // version 3
+const char *minParticleScale = "min_particle_scale"; // version 3
+const char *maxParticleScale = "max_particle_scale"; // version 3
+const char *minParticleAngle = "min_particle_angle"; // version 3
+const char *maxParticleAngle = "max_particle_angle"; // version 3
+const char *positionRange = "position_range"; // version 3
+const char *velocityRange = "velocity_range"; // version 3
+const char *maxRandomLife = "max_random_life"; // version 3
+const char *randomPositionRange = "random_position_range"; // version 3
+const char *randomVelocityRange = "random_velocity_range"; // version 3
+const char *maxDelay = "max_delay"; // version 3
 
 }
 
+}
+
+void LuaLoader::sanitizeGuiLimits()
+{
+	if (config_.maxNumParticles == 0)
+		config_.maxNumParticles = 1;
+	else if (config_.maxNumParticles < 0)
+		config_.maxNumParticles *= -1;
+
+	if (config_.minParticleScale < 0)
+		config_.minParticleScale *= -1;
+	if (config_.maxParticleScale < 0)
+		config_.maxParticleScale *= -1;
+	if (config_.maxRandomLife < 0)
+		config_.maxRandomLife *= -1;
+	if (config_.maxDelay < 0)
+		config_.maxDelay *= -1;
+
+	if (config_.minParticleScale > config_.maxParticleScale)
+	{
+		float temp = config_.minParticleScale;
+		config_.minParticleScale = config_.maxParticleScale;
+		config_.maxParticleScale = temp;
+	}
 }
 
 bool LuaLoader::loadConfig(const char *filename)
@@ -88,13 +132,43 @@ bool LuaLoader::loadConfig(const char *filename)
 	lua_State *L = luaState_.state();
 	luaState_.run(filename);
 
-	nc::LuaUtils::tryRetrieveGlobal<int32_t>(L, Names::cfgWidth, config_.width);
-	nc::LuaUtils::tryRetrieveGlobal<int32_t>(L, Names::cfgHeight, config_.height);
-	nc::LuaUtils::tryRetrieveGlobal<bool>(L, Names::cfgFullscreen, config_.fullscreen);
-	nc::LuaUtils::tryRetrieveGlobal<unsigned long>(L, Names::cfgVboSize, config_.vboSize);
-	nc::LuaUtils::tryRetrieveGlobal<unsigned long>(L, Names::cfgIboSize, config_.iboSize);
-	nc::LuaUtils::tryRetrieveGlobal<bool>(L, Names::cfgBatching, config_.batching);
-	nc::LuaUtils::tryRetrieveGlobal<bool>(L, Names::cfgCulling, config_.culling);
+	unsigned int version = 1;
+	nc::LuaUtils::tryRetrieveGlobal<uint32_t>(L, CfgNames::version, version);
+
+	nc::LuaUtils::tryRetrieveGlobal<int32_t>(L, CfgNames::width, config_.width);
+	nc::LuaUtils::tryRetrieveGlobal<int32_t>(L, CfgNames::height, config_.height);
+	nc::LuaUtils::tryRetrieveGlobal<bool>(L, CfgNames::fullscreen, config_.fullscreen);
+	nc::LuaUtils::tryRetrieveGlobal<unsigned long>(L, CfgNames::vboSize, config_.vboSize);
+	nc::LuaUtils::tryRetrieveGlobal<unsigned long>(L, CfgNames::iboSize, config_.iboSize);
+	nc::LuaUtils::tryRetrieveGlobal<bool>(L, CfgNames::batching, config_.batching);
+	nc::LuaUtils::tryRetrieveGlobal<bool>(L, CfgNames::culling, config_.culling);
+
+	if (version >= 3)
+	{
+		nc::LuaUtils::tryRetrieveGlobal<uint32_t>(L, CfgNames::saveFileMaxSize, config_.saveFileMaxSize);
+		if (nc::LuaUtils::tryRetrieveGlobalTable(L, CfgNames::background))
+			config_.background = nc::LuaColorUtils::retrieveTable(L, -1);
+		nc::LuaUtils::pop(L);
+
+		if (nc::LuaUtils::tryRetrieveGlobalTable(L, CfgNames::guiLimits))
+		{
+			nc::LuaUtils::tryRetrieveField<int32_t>(L, -1, CfgNames::maxNumParticles, config_.maxNumParticles);
+			nc::LuaUtils::tryRetrieveField<float>(L, -1, CfgNames::systemPositionRange, config_.systemPositionRange);
+			nc::LuaUtils::tryRetrieveField<float>(L, -1, CfgNames::minParticleScale, config_.minParticleScale);
+			nc::LuaUtils::tryRetrieveField<float>(L, -1, CfgNames::maxParticleScale, config_.maxParticleScale);
+			nc::LuaUtils::tryRetrieveField<float>(L, -1, CfgNames::minParticleAngle, config_.minParticleAngle);
+			nc::LuaUtils::tryRetrieveField<float>(L, -1, CfgNames::maxParticleAngle, config_.maxParticleAngle);
+			nc::LuaUtils::tryRetrieveField<float>(L, -1, CfgNames::positionRange, config_.positionRange);
+			nc::LuaUtils::tryRetrieveField<float>(L, -1, CfgNames::velocityRange, config_.velocityRange);
+			nc::LuaUtils::tryRetrieveField<float>(L, -1, CfgNames::maxRandomLife, config_.maxRandomLife);
+			nc::LuaUtils::tryRetrieveField<float>(L, -1, CfgNames::randomPositionRange, config_.randomPositionRange);
+			nc::LuaUtils::tryRetrieveField<float>(L, -1, CfgNames::randomVelocityRange, config_.randomVelocityRange);
+			nc::LuaUtils::tryRetrieveField<float>(L, -1, CfgNames::maxDelay, config_.maxDelay);
+		}
+		nc::LuaUtils::pop(L);
+
+		sanitizeGuiLimits();
+	}
 
 	configLoaded_ = true;
 	return configLoaded_;
@@ -105,14 +179,38 @@ bool LuaLoader::saveConfig(const char *filename)
 	nctl::String file(4096);
 	int amount = 0;
 
-	indent(file, amount); file.formatAppend("%s = %u\n", Names::cfgVersion, ConfigFileVersion);
-	indent(file, amount); file.formatAppend("%s = %d\n", Names::cfgWidth, config_.width);
-	indent(file, amount); file.formatAppend("%s = %d\n", Names::cfgHeight, config_.height);
-	indent(file, amount); file.formatAppend("%s = %s\n", Names::cfgFullscreen, config_.fullscreen ? "true" : "false");
-	indent(file, amount); file.formatAppend("%s = %lu\n", Names::cfgVboSize, config_.vboSize);
-	indent(file, amount); file.formatAppend("%s = %lu\n", Names::cfgIboSize, config_.iboSize);
-	indent(file, amount); file.formatAppend("%s = %s\n", Names::cfgBatching, config_.batching ? "true" : "false");
-	indent(file, amount); file.formatAppend("%s = %s\n", Names::cfgCulling, config_.culling ? "true" : "false");
+	indent(file, amount); file.formatAppend("%s = %u\n", CfgNames::version, ConfigFileVersion);
+	indent(file, amount); file.formatAppend("%s = %d\n", CfgNames::width, config_.width);
+	indent(file, amount); file.formatAppend("%s = %d\n", CfgNames::height, config_.height);
+	indent(file, amount); file.formatAppend("%s = %s\n", CfgNames::fullscreen, config_.fullscreen ? "true" : "false");
+	indent(file, amount); file.formatAppend("%s = %lu\n", CfgNames::vboSize, config_.vboSize);
+	indent(file, amount); file.formatAppend("%s = %lu\n", CfgNames::iboSize, config_.iboSize);
+	indent(file, amount); file.formatAppend("%s = %s\n", CfgNames::batching, config_.batching ? "true" : "false");
+	indent(file, amount); file.formatAppend("%s = %s\n", CfgNames::culling, config_.culling ? "true" : "false");
+	indent(file, amount); file.formatAppend("%s = %u\n", CfgNames::saveFileMaxSize, config_.saveFileMaxSize);
+	indent(file, amount); file.formatAppend("%s = { r = %f, g = %f, b = %f, a = %f }\n", CfgNames::background,
+	                                        config_.background.r(), config_.background.g(), config_.background.b(), config_.background.a());
+
+	indent(file, amount); file.append("\n");
+	indent(file, amount); file.formatAppend("%s =\n", CfgNames::guiLimits);
+	indent(file, amount); file.append("{\n");
+	amount++;
+
+	indent(file, amount); file.formatAppend("%s = %d,\n", CfgNames::maxNumParticles, config_.maxNumParticles);
+	indent(file, amount); file.formatAppend("%s = %f,\n", CfgNames::systemPositionRange, config_.systemPositionRange);
+	indent(file, amount); file.formatAppend("%s = %f,\n", CfgNames::minParticleScale, config_.minParticleScale);
+	indent(file, amount); file.formatAppend("%s = %f,\n", CfgNames::maxParticleScale, config_.maxParticleScale);
+	indent(file, amount); file.formatAppend("%s = %f,\n", CfgNames::minParticleAngle, config_.minParticleAngle);
+	indent(file, amount); file.formatAppend("%s = %f,\n", CfgNames::maxParticleAngle, config_.maxParticleAngle);
+	indent(file, amount); file.formatAppend("%s = %f,\n", CfgNames::positionRange, config_.positionRange);
+	indent(file, amount); file.formatAppend("%s = %f,\n", CfgNames::velocityRange, config_.velocityRange);
+	indent(file, amount); file.formatAppend("%s = %f,\n", CfgNames::maxRandomLife, config_.maxRandomLife);
+	indent(file, amount); file.formatAppend("%s = %f,\n", CfgNames::randomPositionRange, config_.randomPositionRange);
+	indent(file, amount); file.formatAppend("%s = %f,\n", CfgNames::randomVelocityRange, config_.randomVelocityRange);
+	indent(file, amount); file.formatAppend("%s = %f\n", CfgNames::maxDelay, config_.maxDelay);
+
+	amount--;
+	indent(file, amount); file.append("}\n");
 
 	nctl::UniquePtr<nc::IFile> fileHandle = nc::IFile::createFileHandle(filename);
 	fileHandle->open(nc::IFile::OpenMode::WRITE | nc::IFile::OpenMode::BINARY);
@@ -128,7 +226,7 @@ bool LuaLoader::load(const char *filename, State &state)
 	luaState_.run(filename);
 
 	unsigned int version = 1;
-	nc::LuaUtils::tryRetrieveGlobal<uint32_t>(L, Names::projectVersion, version);
+	nc::LuaUtils::tryRetrieveGlobal<uint32_t>(L, Names::version, version);
 
 	if (nc::LuaUtils::tryRetrieveGlobalTable(L, Names::normalizedAbsPosition))
 		state.normalizedAbsPosition = nc::LuaVector2fUtils::retrieveTable(L, -1);
@@ -145,7 +243,7 @@ bool LuaLoader::load(const char *filename, State &state)
 
 		nc::LuaUtils::rawGeti(L, -1, systemIndex + 1); // Lua arrays start from index 1
 
-		if (version == 3)
+		if (version >= 3)
 			s.name = nc::LuaUtils::retrieveField<const char *>(L, -1, Names::name);
 
 		s.numParticles = nc::LuaUtils::retrieveField<int32_t>(L, -1, Names::numParticles);
@@ -288,10 +386,10 @@ bool LuaLoader::load(const char *filename, State &state)
 
 void LuaLoader::save(const char *filename, const State &state)
 {
-	nctl::String file(4096);
+	nctl::String file(config_.saveFileMaxSize);
 	int amount = 0;
 
-	indent(file, amount); file.formatAppend("%s = %u\n", Names::projectVersion, ProjectFileVersion);
+	indent(file, amount); file.formatAppend("%s = %u\n", Names::version, ProjectFileVersion);
 
 	indent(file, amount); file.formatAppend("%s = {x = %f, y = %f}\n", Names::normalizedAbsPosition, state.normalizedAbsPosition.x, state.normalizedAbsPosition.y);
 

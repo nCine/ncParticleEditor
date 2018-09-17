@@ -92,13 +92,6 @@ void MyEventHandler::onPreInit(nc::AppConfiguration &config)
 
 void MyEventHandler::onInit()
 {
-	if (loader_->configLoaded())
-	{
-		nc::Application::RenderingSettings &settings = nc::theApplication().renderingSettings();
-		settings.batchingEnabled = loader_->config().batching;
-		settings.cullingEnabled = loader_->config().culling;
-	}
-
 	parentPosition_.set(nc::theApplication().width() * 0.5f, nc::theApplication().height() * 0.5f);
 	nc::SceneNode &rootNode = nc::theApplication().rootNode();
 	dummy_ = nctl::makeUnique<nc::SceneNode>(&rootNode, parentPosition_.x, parentPosition_.y);
@@ -115,6 +108,7 @@ void MyEventHandler::onInit()
 
 void MyEventHandler::onFrameStart()
 {
+	applyConfig();
 	deleteUnusedTextures();
 	createGui();
 
@@ -374,6 +368,18 @@ void MyEventHandler::save(const char *filename)
 
 	loader_->save(filename, loaderState);
 	logString_.formatAppend("Saved project file \"%s\"\n", filename);
+}
+
+void MyEventHandler::applyConfig()
+{
+	if (loader_->configLoaded())
+	{
+		const LuaLoader::Config &cfg = loader_->config();
+		nc::Application::RenderingSettings &settings = nc::theApplication().renderingSettings();
+		settings.batchingEnabled = cfg.batching;
+		settings.cullingEnabled = cfg.culling;
+		nc::theApplication().gfxDevice().setClearColor(cfg.background);
+	}
 }
 
 void MyEventHandler::clearData()

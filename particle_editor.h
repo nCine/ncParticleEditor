@@ -159,6 +159,7 @@ class MyEventHandler :
 	void save(const char *filename);
 	void pushRecentFile(const nctl::String &filename);
 
+	void applyConfig();
 	void clearData();
 
 	unsigned int retrieveTexture(unsigned int particleSystemIndex);

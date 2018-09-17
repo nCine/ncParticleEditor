@@ -12,20 +12,6 @@
 
 namespace {
 
-const int MinNumParticles = 1;
-const int MaxNumParticles = 256;
-const float SystemPositionRange = 200.0f;
-const float MinParticleScale = 0.0f;
-const float MaxParticleScale = 2.0f;
-const float MinParticleAngle = -360.0f;
-const float MaxParticleAngle = 360.0f;
-const float MaxRndLife = 5.0f;
-const float PositionRange = 100.0f;
-const float VelocityRange = 200.0f;
-const float PositionAffectorRange = 5.0f;
-const float VelocityAffectorRange = 5.0f;
-const float MaxDelay = 5.0f;
-
 const char *amountItems[] = { "Constant", "Min/Max" };
 const char *lifeItems[] = { "Constant", "Min/Max" };
 const char *positionItems[] = { "Constant", "Min/Max", "Radius"};
@@ -328,6 +314,38 @@ void MyEventHandler::createGuiConfig()
 		ImGui::Checkbox("Culling", &cfg.culling);
 
 		ImGui::NewLine();
+		int saveFileSize = cfg.saveFileMaxSize / 1024;
+		ImGui::SliderInt("Savefile Size", &saveFileSize, 0, 128, "%d KB");
+		cfg.saveFileMaxSize = saveFileSize * 1024;
+
+		ImGui::NewLine();
+		ImGui::ColorEdit4("Background", cfg.background.data(), ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf);
+
+		ImGui::NewLine();
+		if (ImGui::TreeNode("GUI Limits"))
+		{
+			ImGui::PushItemWidth(100.0f);
+			ImGui::InputInt("Max Number of Particles", &cfg.maxNumParticles);
+			ImGui::InputFloat("System Position Range", &cfg.systemPositionRange);
+			ImGui::InputFloat("Min Particle Scale", &cfg.minParticleScale);
+			ImGui::SameLine();
+			ImGui::InputFloat("Max Particle Scale", &cfg.maxParticleScale);
+			ImGui::InputFloat("Min Particle Angle", &cfg.minParticleAngle);
+			ImGui::SameLine();
+			ImGui::InputFloat("Max Particle Angle", &cfg.maxParticleAngle);
+			ImGui::InputFloat("Position Range", &cfg.positionRange);
+			ImGui::InputFloat("Velocity Range", &cfg.velocityRange);
+			ImGui::InputFloat("Max Random Life", &cfg.maxRandomLife);
+			ImGui::InputFloat("Random Position Range", &cfg.randomPositionRange);
+			ImGui::InputFloat("Random Velocity Range", &cfg.randomVelocityRange);
+			ImGui::InputFloat("Max Delay", &cfg.maxDelay);
+			ImGui::PopItemWidth();
+
+			loader_->sanitizeGuiLimits();
+			ImGui::TreePop();
+		}
+
+		ImGui::NewLine();
 		if (ImGui::Button("Load"))
 		{
 			loader_->loadConfig(configFile_.data());
@@ -506,23 +524,24 @@ void MyEventHandler::createGuiManageSystems()
 
 void MyEventHandler::createGuiParticleSystem()
 {
+	const LuaLoader::Config &cfg = loader_->config();
 	nc::ParticleSystem *particleSystem = particleSystems_[systemIndex_].get();
 	ParticleSystemGuiState &s = sysStates_[systemIndex_];
 
 	ImGui::PushID("ParticleSystem");
 	if (ImGui::CollapsingHeader("Particle System"))
 	{
-		ImGui::SliderInt("Particles", &s.numParticles, MinNumParticles, MaxNumParticles);
+		ImGui::SliderInt("Particles", &s.numParticles, 1, cfg.maxNumParticles);
 		ImGui::SameLine();
 		if (ImGui::Button("Apply"))
 			createParticleSystem(systemIndex_);
 		ImGui::SameLine(); showHelpMarker("Applies the new number by destroying and recreating the particle system");
 
-		ImGui::SliderFloat("Rel Pos X", &s.position.x, -SystemPositionRange, SystemPositionRange);
+		ImGui::SliderFloat("Rel Pos X", &s.position.x, -cfg.systemPositionRange, cfg.systemPositionRange);
 		ImGui::SameLine();
 		if (ImGui::Button("Reset"))
 			s.position.set(0.0f, 0.0f);
-		ImGui::SliderFloat("Rel Pos Y", &s.position.y, -SystemPositionRange, SystemPositionRange);
+		ImGui::SliderFloat("Rel Pos Y", &s.position.y, -cfg.systemPositionRange, cfg.systemPositionRange);
 		particleSystem->setPosition(s.position);
 		ImGui::Checkbox("Local Space", &s.inLocalSpace);
 		particleSystem->setInLocalSpace(s.inLocalSpace);
@@ -645,6 +664,7 @@ void MyEventHandler::createGuiColorPlot(const ParticleSystemGuiState &s)
 
 void MyEventHandler::createGuiSizeAffector()
 {
+	const LuaLoader::Config &cfg = loader_->config();
 	nc::ParticleSystem *particleSystem = particleSystems_[systemIndex_].get();
 	ParticleSystemGuiState &s = sysStates_[systemIndex_];
 
@@ -655,7 +675,7 @@ void MyEventHandler::createGuiSizeAffector()
 	ImGui::PushID("SizeAffector");
 	if (ImGui::CollapsingHeader(widgetName_.data()))
 	{
-		ImGui::SliderFloat("Base Scale", &s.baseScale , MinParticleScale, MaxParticleScale);
+		ImGui::SliderFloat("Base Scale", &s.baseScale , cfg.minParticleScale, cfg.maxParticleScale);
 		s.sizeAffector->setBaseScale(s.baseScale);
 		ImGui::Separator();
 
@@ -675,7 +695,7 @@ void MyEventHandler::createGuiSizeAffector()
 					step.age = s.sizeAffector->steps()[stepId - 1].age;
 
 				widgetName_.format("Scale##%d", stepId);
-				ImGui::SliderFloat(widgetName_.data(), &step.scale , MinParticleScale, MaxParticleScale);
+				ImGui::SliderFloat(widgetName_.data(), &step.scale , cfg.minParticleScale, cfg.maxParticleScale);
 				widgetName_.format("Age##%d", stepId);
 				ImGui::SliderFloat(widgetName_.data(), &step.age, 0.0f, 1.0f);
 				ImGui::TreePop();
@@ -693,7 +713,7 @@ void MyEventHandler::createGuiSizeAffector()
 		if (ImGui::TreeNodeEx("New Step", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			widgetName_.format("Scale##%d", stepId);
-			ImGui::SliderFloat(widgetName_.data(), &s.sizeValue , MinParticleScale, MaxParticleScale);
+			ImGui::SliderFloat(widgetName_.data(), &s.sizeValue , cfg.minParticleScale, cfg.maxParticleScale);
 			widgetName_.format("Age##%d", stepId);
 			ImGui::SliderFloat(widgetName_.data(), &s.sizeAge, 0.0f, 1.0f);
 
@@ -713,6 +733,7 @@ void MyEventHandler::createGuiSizeAffector()
 
 void MyEventHandler::createGuiSizePlot(const ParticleSystemGuiState &s)
 {
+	const LuaLoader::Config &cfg = loader_->config();
 	static float values[NumPlotValues];
 
 	if (ImGui::TreeNodeEx("Plot", ImGuiTreeNodeFlags_DefaultOpen))
@@ -733,13 +754,14 @@ void MyEventHandler::createGuiSizePlot(const ParticleSystemGuiState &s)
 		for (unsigned int i = prevIndex; i < NumPlotValues; i++)
 			values[i] = prevStep->scale;
 
-		ImGui::PlotLines("Size Steps", values, NumPlotValues, 0, nullptr, MinParticleScale, MaxParticleScale, ImVec2(0.0f, 100.0f));
+		ImGui::PlotLines("Size Steps", values, NumPlotValues, 0, nullptr, cfg.minParticleScale, cfg.maxParticleScale, ImVec2(0.0f, 100.0f));
 		ImGui::TreePop();
 	}
 }
 
 void MyEventHandler::createGuiRotationAffector()
 {
+	const LuaLoader::Config &cfg = loader_->config();
 	nc::ParticleSystem *particleSystem = particleSystems_[systemIndex_].get();
 	ParticleSystemGuiState &s = sysStates_[systemIndex_];
 
@@ -766,7 +788,7 @@ void MyEventHandler::createGuiRotationAffector()
 					step.age = s.rotationAffector->steps()[stepId - 1].age;
 
 				widgetName_.format("Angle##%d", stepId);
-				ImGui::SliderFloat(widgetName_.data(), &step.angle , MinParticleAngle, MaxParticleAngle);
+				ImGui::SliderFloat(widgetName_.data(), &step.angle , cfg.minParticleAngle, cfg.maxParticleAngle);
 				widgetName_.format("Age##%d", stepId);
 				ImGui::SliderFloat(widgetName_.data(), &step.age, 0.0f, 1.0f);
 				ImGui::TreePop();
@@ -784,7 +806,7 @@ void MyEventHandler::createGuiRotationAffector()
 		if (ImGui::TreeNodeEx("New Step", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			widgetName_.format("Angle##%d", stepId);
-			ImGui::SliderFloat(widgetName_.data(), &s.rotValue , MinParticleAngle, MaxParticleAngle);
+			ImGui::SliderFloat(widgetName_.data(), &s.rotValue , cfg.minParticleAngle, cfg.maxParticleAngle);
 			widgetName_.format("Age##%d", stepId);
 			ImGui::SliderFloat(widgetName_.data(), &s.rotAge, 0.0f, 1.0f);
 
@@ -804,6 +826,7 @@ void MyEventHandler::createGuiRotationAffector()
 
 void MyEventHandler::createGuiRotationPlot(const ParticleSystemGuiState &s)
 {
+	const LuaLoader::Config &cfg = loader_->config();
 	static float values[NumPlotValues];
 
 	if (ImGui::TreeNodeEx("Plot", ImGuiTreeNodeFlags_DefaultOpen))
@@ -824,13 +847,14 @@ void MyEventHandler::createGuiRotationPlot(const ParticleSystemGuiState &s)
 		for (unsigned int i = prevIndex; i < NumPlotValues; i++)
 			values[i] = prevStep->angle;
 
-		ImGui::PlotLines("Rotation Steps", values, NumPlotValues, 0, nullptr, MinParticleAngle, MaxParticleAngle, ImVec2(0.0f, 100.0f));
+		ImGui::PlotLines("Rotation Steps", values, NumPlotValues, 0, nullptr, cfg.minParticleAngle, cfg.maxParticleAngle, ImVec2(0.0f, 100.0f));
 		ImGui::TreePop();
 	}
 }
 
 void MyEventHandler::createGuiPositionAffector()
 {
+	const LuaLoader::Config &cfg = loader_->config();
 	nc::ParticleSystem *particleSystem = particleSystems_[systemIndex_].get();
 	ParticleSystemGuiState &s = sysStates_[systemIndex_];
 
@@ -857,9 +881,9 @@ void MyEventHandler::createGuiPositionAffector()
 					step.age = s.positionAffector->steps()[stepId - 1].age;
 
 				widgetName_.format("Position X##%d", stepId);
-				ImGui::SliderFloat(widgetName_.data(), &step.position.x, -PositionAffectorRange, PositionAffectorRange);
+				ImGui::SliderFloat(widgetName_.data(), &step.position.x, -cfg.positionRange, cfg.positionRange);
 				widgetName_.format("Position Y##%d", stepId);
-				ImGui::SliderFloat(widgetName_.data(), &step.position.y, -PositionAffectorRange, PositionAffectorRange);
+				ImGui::SliderFloat(widgetName_.data(), &step.position.y, -cfg.positionRange, cfg.positionRange);
 				widgetName_.format("Age##%d", stepId);
 				ImGui::SliderFloat(widgetName_.data(), &step.age, 0.0f, 1.0f);
 				ImGui::TreePop();
@@ -877,9 +901,9 @@ void MyEventHandler::createGuiPositionAffector()
 		if (ImGui::TreeNodeEx("New Step", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			widgetName_.format("Position X##%d", stepId);
-			ImGui::SliderFloat(widgetName_.data(), &s.positionValue.x, -PositionAffectorRange, PositionAffectorRange);
+			ImGui::SliderFloat(widgetName_.data(), &s.positionValue.x, -cfg.positionRange, cfg.positionRange);
 			widgetName_.format("Position Y##%d", stepId);
-			ImGui::SliderFloat(widgetName_.data(), &s.positionValue.y, -PositionAffectorRange, PositionAffectorRange);
+			ImGui::SliderFloat(widgetName_.data(), &s.positionValue.y, -cfg.positionRange, cfg.positionRange);
 			widgetName_.format("Age##%d", stepId);
 			ImGui::SliderFloat(widgetName_.data(), &s.positionAge, 0.0f, 1.0f);
 
@@ -899,6 +923,7 @@ void MyEventHandler::createGuiPositionAffector()
 
 void MyEventHandler::createGuiPositionPlot(const ParticleSystemGuiState &s)
 {
+	const LuaLoader::Config &cfg = loader_->config();
 	static float xValues[NumPlotValues];
 	static float yValues[NumPlotValues];
 
@@ -924,14 +949,15 @@ void MyEventHandler::createGuiPositionPlot(const ParticleSystemGuiState &s)
 			yValues[i] = prevStep->position.y;
 		}
 
-		ImGui::PlotLines("X Position Steps", xValues, NumPlotValues, 0, nullptr, -PositionAffectorRange, PositionAffectorRange, ImVec2(0.0f, 50.0f));
-		ImGui::PlotLines("Y Position Steps", yValues, NumPlotValues, 0, nullptr, -PositionAffectorRange, PositionAffectorRange, ImVec2(0.0f, 50.0f));
+		ImGui::PlotLines("X Position Steps", xValues, NumPlotValues, 0, nullptr, -cfg.positionRange, cfg.positionRange, ImVec2(0.0f, 50.0f));
+		ImGui::PlotLines("Y Position Steps", yValues, NumPlotValues, 0, nullptr, -cfg.positionRange, cfg.positionRange, ImVec2(0.0f, 50.0f));
 		ImGui::TreePop();
 	}
 }
 
 void MyEventHandler::createGuiVelocityAffector()
 {
+	const LuaLoader::Config &cfg = loader_->config();
 	nc::ParticleSystem *particleSystem = particleSystems_[systemIndex_].get();
 	ParticleSystemGuiState &s = sysStates_[systemIndex_];
 
@@ -958,9 +984,9 @@ void MyEventHandler::createGuiVelocityAffector()
 					step.age = s.velocityAffector->steps()[stepId - 1].age;
 
 				widgetName_.format("Velocity X##%d", stepId);
-				ImGui::SliderFloat(widgetName_.data(), &step.velocity.x, -VelocityAffectorRange, VelocityAffectorRange);
+				ImGui::SliderFloat(widgetName_.data(), &step.velocity.x, -cfg.velocityRange, cfg.velocityRange);
 				widgetName_.format("Velocity Y##%d", stepId);
-				ImGui::SliderFloat(widgetName_.data(), &step.velocity.y, -VelocityAffectorRange, VelocityAffectorRange);
+				ImGui::SliderFloat(widgetName_.data(), &step.velocity.y, -cfg.velocityRange, cfg.velocityRange);
 				widgetName_.format("Age##%d", stepId);
 				ImGui::SliderFloat(widgetName_.data(), &step.age, 0.0f, 1.0f);
 				ImGui::TreePop();
@@ -978,9 +1004,9 @@ void MyEventHandler::createGuiVelocityAffector()
 		if (ImGui::TreeNodeEx("New Step", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			widgetName_.format("Velocity X##%d", stepId);
-			ImGui::SliderFloat(widgetName_.data(), &s.velocityValue.x, -VelocityAffectorRange, VelocityAffectorRange);
+			ImGui::SliderFloat(widgetName_.data(), &s.velocityValue.x, -cfg.velocityRange, cfg.velocityRange);
 			widgetName_.format("Velocity Y##%d", stepId);
-			ImGui::SliderFloat(widgetName_.data(), &s.velocityValue.y, -VelocityAffectorRange, VelocityAffectorRange);
+			ImGui::SliderFloat(widgetName_.data(), &s.velocityValue.y, -cfg.velocityRange, cfg.velocityRange);
 			widgetName_.format("Age##%d", stepId);
 			ImGui::SliderFloat(widgetName_.data(), &s.velocityAge, 0.0f, 1.0f);
 
@@ -1000,6 +1026,7 @@ void MyEventHandler::createGuiVelocityAffector()
 
 void MyEventHandler::createGuiVelocityPlot(const ParticleSystemGuiState &s)
 {
+	const LuaLoader::Config &cfg = loader_->config();
 	static float xValues[NumPlotValues];
 	static float yValues[NumPlotValues];
 
@@ -1025,14 +1052,15 @@ void MyEventHandler::createGuiVelocityPlot(const ParticleSystemGuiState &s)
 			yValues[i] = prevStep->velocity.y;
 		}
 
-		ImGui::PlotLines("X Velocity Steps", xValues, NumPlotValues, 0, nullptr, -VelocityAffectorRange, VelocityAffectorRange, ImVec2(0.0f, 50.0f));
-		ImGui::PlotLines("Y Velocity Steps", yValues, NumPlotValues, 0, nullptr, -VelocityAffectorRange, VelocityAffectorRange, ImVec2(0.0f, 50.0f));
+		ImGui::PlotLines("X Velocity Steps", xValues, NumPlotValues, 0, nullptr, -cfg.velocityRange, cfg.velocityRange, ImVec2(0.0f, 50.0f));
+		ImGui::PlotLines("Y Velocity Steps", yValues, NumPlotValues, 0, nullptr, -cfg.velocityRange, cfg.velocityRange, ImVec2(0.0f, 50.0f));
 		ImGui::TreePop();
 	}
 }
 
 void MyEventHandler::createGuiEmission()
 {
+	const LuaLoader::Config &cfg = loader_->config();
 	nc::ParticleSystem *particleSystem = particleSystems_[systemIndex_].get();
 	ParticleSystemGuiState &s = sysStates_[systemIndex_];
 
@@ -1067,11 +1095,11 @@ void MyEventHandler::createGuiEmission()
 		if (s.lifeCurrentItem == 0)
 		{
 			s.init.rndLife.x = (s.init.rndLife.x + s.init.rndLife.y) * 0.5f;
-			ImGui::SliderFloat("Life", &s.init.rndLife.x, 0.0f, MaxRndLife);
+			ImGui::SliderFloat("Life", &s.init.rndLife.x, 0.0f, cfg.maxRandomLife, "%.2fs");
 			s.init.rndLife.y = s.init.rndLife.x;
 		}
 		else if (s.lifeCurrentItem == 1)
-			ImGui::DragFloatRange2("Life", &s.init.rndLife.x, &s.init.rndLife.y, 0.01f, 0.0f, MaxRndLife, "Min: %.2f", "Max: %.2f");
+			ImGui::DragFloatRange2("Life", &s.init.rndLife.x, &s.init.rndLife.y, 0.01f, 0.0f, cfg.maxRandomLife, "Min: %.2fs", "Max: %.2fs");
 
 		ImGui::NextColumn();
 		ImGui::PushItemWidth(80);
@@ -1087,17 +1115,17 @@ void MyEventHandler::createGuiEmission()
 		if (s.positionCurrentItem == 0)
 		{
 			s.init.rndPositionX.x = (s.init.rndPositionX.x + s.init.rndPositionX.y) * 0.5f;
-			ImGui::SliderFloat("Position X", &s.init.rndPositionX.x, -PositionRange, PositionRange);
+			ImGui::SliderFloat("Position X", &s.init.rndPositionX.x, -cfg.randomPositionRange, cfg.randomPositionRange);
 			s.init.rndPositionX.y = s.init.rndPositionX.x;
 
 			s.init.rndPositionY.x = (s.init.rndPositionY.x + s.init.rndPositionY.y) * 0.5f;
-			ImGui::SliderFloat("Position Y", &s.init.rndPositionY.x, -PositionRange, PositionRange);
+			ImGui::SliderFloat("Position Y", &s.init.rndPositionY.x, -cfg.randomPositionRange, cfg.randomPositionRange);
 			s.init.rndPositionY.y = s.init.rndPositionY.x;
 		}
 		else if (s.positionCurrentItem == 1)
 		{
-			ImGui::DragFloatRange2("Position X", &s.init.rndPositionX.x, &s.init.rndPositionX.y, 1.0f, -PositionRange, PositionRange, "Min: %.1f", "Max: %.1f");
-			ImGui::DragFloatRange2("Position Y", &s.init.rndPositionY.x, &s.init.rndPositionY.y, 1.0f, -PositionRange, PositionRange, "Min: %.1f", "Max: %.1f");
+			ImGui::DragFloatRange2("Position X", &s.init.rndPositionX.x, &s.init.rndPositionX.y, 1.0f, -cfg.randomPositionRange, cfg.randomPositionRange, "Min: %.1f", "Max: %.1f");
+			ImGui::DragFloatRange2("Position Y", &s.init.rndPositionY.x, &s.init.rndPositionY.y, 1.0f, -cfg.randomPositionRange, cfg.randomPositionRange, "Min: %.1f", "Max: %.1f");
 		}
 		else if (s.positionCurrentItem == 2)
 		{
@@ -1106,9 +1134,9 @@ void MyEventHandler::createGuiEmission()
 			float radius = ((s.init.rndPositionX.y - s.init.rndPositionX.x) +
 			               (s.init.rndPositionY.y - s.init.rndPositionY.x)) * 0.25f;
 
-			ImGui::SliderFloat("Position X", &centerX, -PositionRange, PositionRange);
-			ImGui::SliderFloat("Position Y", &centerY, -PositionRange, PositionRange);
-			ImGui::SliderFloat("Radius", &radius, -PositionRange, PositionRange);
+			ImGui::SliderFloat("Position X", &centerX, -cfg.randomPositionRange, cfg.randomPositionRange);
+			ImGui::SliderFloat("Position Y", &centerY, -cfg.randomPositionRange, cfg.randomPositionRange);
+			ImGui::SliderFloat("Radius", &radius, -cfg.randomPositionRange, cfg.randomPositionRange);
 			s.init.setPositionAndRadius(centerX, centerY, radius);
 		}
 
@@ -1129,17 +1157,17 @@ void MyEventHandler::createGuiEmission()
 		if (s.velocityCurrentItem == 0)
 		{
 			s.init.rndVelocityX.x = (s.init.rndVelocityX.x + s.init.rndVelocityX.y) * 0.5f;
-			ImGui::SliderFloat("Velocity X", &s.init.rndVelocityX.x, -VelocityRange, VelocityRange);
+			ImGui::SliderFloat("Velocity X", &s.init.rndVelocityX.x, -cfg.randomVelocityRange, cfg.randomVelocityRange);
 			s.init.rndVelocityX.y = s.init.rndVelocityX.x;
 
 			s.init.rndVelocityY.x = (s.init.rndVelocityY.x + s.init.rndVelocityY.y) * 0.5f;
-			ImGui::SliderFloat("Velocity Y", &s.init.rndVelocityY.x, -VelocityRange, VelocityRange);
+			ImGui::SliderFloat("Velocity Y", &s.init.rndVelocityY.x, -cfg.randomVelocityRange, cfg.randomVelocityRange);
 			s.init.rndVelocityY.y = s.init.rndVelocityY.x;
 		}
 		else if (s.velocityCurrentItem == 1)
 		{
-			ImGui::DragFloatRange2("Velocity X", &s.init.rndVelocityX.x, &s.init.rndVelocityX.y, 1.0f, -VelocityRange, VelocityRange, "Min: %.1f", "Max: %.1f");
-			ImGui::DragFloatRange2("Velocity Y", &s.init.rndVelocityY.x, &s.init.rndVelocityY.y, 1.0f, -VelocityRange, VelocityRange, "Min: %.1f", "Max: %.1f");
+			ImGui::DragFloatRange2("Velocity X", &s.init.rndVelocityX.x, &s.init.rndVelocityX.y, 1.0f, -cfg.randomVelocityRange, cfg.randomVelocityRange, "Min: %.1f", "Max: %.1f");
+			ImGui::DragFloatRange2("Velocity Y", &s.init.rndVelocityY.x, &s.init.rndVelocityY.y, 1.0f, -cfg.randomVelocityRange, cfg.randomVelocityRange, "Min: %.1f", "Max: %.1f");
 		}
 		else if (s.velocityCurrentItem == 2)
 		{
@@ -1148,9 +1176,9 @@ void MyEventHandler::createGuiEmission()
 			float velX = s.init.rndVelocityX.x;
 			float velY = s.init.rndVelocityY.x;
 			nc::Vector2f scale(1.0f, maxScale);
-			ImGui::SliderFloat("Velocity X", &velX, -VelocityRange, VelocityRange);
-			ImGui::SliderFloat("Velocity Y", &velY, -VelocityRange, VelocityRange);
-			ImGui::DragFloatRange2("Scale", &scale.x, &scale.y, 1.0f, -VelocityRange, VelocityRange, "Min: %.1f", "Max: %.1f");
+			ImGui::SliderFloat("Velocity X", &velX, -cfg.randomVelocityRange, cfg.randomVelocityRange);
+			ImGui::SliderFloat("Velocity Y", &velY, -cfg.randomVelocityRange, cfg.randomVelocityRange);
+			ImGui::DragFloatRange2("Scale", &scale.x, &scale.y, 1.0f, -cfg.randomVelocityRange, cfg.randomVelocityRange, "Min: %.1f", "Max: %.1f");
 			s.init.setVelocityAndScale(velX, velY, scale.x, scale.y);
 		}
 		ImGui::NextColumn();
@@ -1187,7 +1215,7 @@ void MyEventHandler::createGuiEmission()
 		ImGui::PushID("Delay");
 		ImGui::Columns(2);
 		ImGui::SetColumnWidth(0, columnWidth);
-		ImGui::SliderFloat("Delay", &s.emitDelay, 0.0f, MaxDelay);
+		ImGui::SliderFloat("Delay", &s.emitDelay, 0.0f, cfg.maxDelay, "%.2fs");
 		ImGui::NextColumn();
 		if (ImGui::Button("As life"))
 			s.emitDelay = (s.init.rndLife.x + s.init.rndLife.y) * 0.5f;
@@ -1213,8 +1241,6 @@ void MyEventHandler::createGuiEmission()
 		{
 			for (unsigned int i = 0; i < particleSystems_.size(); i++)
 			{
-				ImGui::Text("#%u", i);
-				ImGui::SameLine();
 				widgetName_.format("Emit##%u", i);
 				if (ImGui::Button(widgetName_.data()))
 					emitParticles(i);
@@ -1223,7 +1249,14 @@ void MyEventHandler::createGuiEmission()
 				if (ImGui::Button(widgetName_.data()))
 					killParticles(i);
 				ImGui::SameLine();
+				ImGui::Checkbox("Active", &sysStates_[i].active);
+				ImGui::SameLine();
 				ImGui::Text("Alive: %u/%u", particleSystems_[i]->numAliveParticles(), particleSystems_[i]->numParticles());
+				ImGui::SameLine();
+				if (sysStates_[i].name.isEmpty() == false)
+					ImGui::Text("#%u %s", i, sysStates_[i].name.data());
+				else
+					ImGui::Text("#%u", i);
 			}
 			ImGui::TreePop();
 		}
