@@ -52,42 +52,28 @@ void MyEventHandler::onPreInit(nc::AppConfiguration &config)
 	if (nc::IFile::access(texturesPath_.data(), nc::IFile::AccessMode::READABLE) == false)
 		texturesPath_ = nc::IFile::dataPath() + "textures/";
 
+	LuaLoader::Config &luaConfig = loader_->config();
 	if (nc::IFile::access(configFile_.data(), nc::IFile::AccessMode::READABLE))
 	{
-		LuaLoader::Config &luaConfig = loader_->config();
-		luaConfig.width = config.xResolution();
-		luaConfig.height = config.yResolution();
-		luaConfig.fullscreen = config.inFullscreen();
-		luaConfig.vboSize = config.vboSize();
-		luaConfig.iboSize = config.iboSize();
-		luaConfig.batching = true;
-		luaConfig.culling = true;
-
 		if (loader_->loadConfig(configFile_.data()))
-		{
-			config.setResolution(luaConfig.width, luaConfig.height);
-			config.setFullScreen(luaConfig.fullscreen);
-			config.setVboSize(luaConfig.vboSize);
-			config.setIboSize(luaConfig.iboSize);
 			logString_.formatAppend("Loaded config file \"%s\"\n", configFile_.data());
-		}
 		else
 			logString_.formatAppend("Could not load config file \"%s\"\n", configFile_.data());
 	}
+	else
+		logString_.formatAppend("Config file \"%s\" is not accessible or does not exist\n", configFile_.data());
 
-	const unsigned long MinimumVboSize = 256 * 1024;
-	if (config.vboSize() < MinimumVboSize)
+	if (logString_.capacity() < luaConfig.logMaxSize)
 	{
-		logString_.formatAppend("The required VBO size of %lu is too low and it has been raised to %lu bytes\n", config.vboSize(), MinimumVboSize);
-		config.setVboSize(MinimumVboSize);
+		nctl::String temp = nctl::String(luaConfig.logMaxSize);
+		logString_.copy(temp);
+		logString_ = nctl::move(temp);
 	}
 
-	const unsigned long MinimumIboSize = 32 * 1024;
-	if (config.iboSize() < MinimumIboSize)
-	{
-		logString_.formatAppend("The required IBO size of %lu is too low and it has been raised to %lu bytes\n", config.iboSize(), MinimumIboSize);
-		config.setIboSize(MinimumIboSize);
-	}
+	config.setResolution(luaConfig.width, luaConfig.height);
+	config.setFullScreen(luaConfig.fullscreen);
+	config.setVboSize(luaConfig.vboSize);
+	config.setIboSize(luaConfig.iboSize);
 
 	config.setWindowTitle("ncParticleEditor");
 	config.setWindowIconFilename("icon48.png");
@@ -95,6 +81,7 @@ void MyEventHandler::onPreInit(nc::AppConfiguration &config)
 
 void MyEventHandler::onInit()
 {
+	backgroundImagePosition_.set(nc::theApplication().width() * 0.5f, nc::theApplication().height() * 0.5f);
 	parentPosition_.set(nc::theApplication().width() * 0.5f, nc::theApplication().height() * 0.5f);
 	nc::SceneNode &rootNode = nc::theApplication().rootNode();
 	dummy_ = nctl::makeUnique<nc::SceneNode>(&rootNode, parentPosition_.x, parentPosition_.y);
@@ -186,22 +173,19 @@ bool MyEventHandler::load(const char *filename)
 	else
 		clearData();
 
-	background_ = loaderState.background;
+	background_ = loaderState.background.color;
 	nc::theApplication().gfxDevice().setClearColor(background_);
 
-	backgroundImageName_ = loaderState.backgroundImageName;
-	backgroundImagePosition_ = loaderState.backgroundImageNormalizedPosition * nc::Vector2f(nc::theApplication().width(), nc::theApplication().height());
-	backgroundImageScale_ = loaderState.backgroundImageScale;
-	backgroundImageLayer_ = loaderState.backgroundImageLayer;
+	backgroundImageName_ = loaderState.background.imageName;
+	backgroundImagePosition_ = loaderState.background.imageNormalizedPosition * nc::Vector2f(nc::theApplication().width(), nc::theApplication().height());
+	backgroundImageScale_ = loaderState.background.imageScale;
+	backgroundImageLayer_ = loaderState.background.imageLayer;
+	backgroundImageColor_ = loaderState.background.imageColor;
+	backgroundImageRect_ = loaderState.background.imageRect;
 	if (backgroundImageName_.isEmpty() == false)
 	{
 		loadBackgroundImage(backgroundImageName_);
-		if (backgroundSprite_)
-		{
-			backgroundSprite_->setPosition(backgroundImagePosition_);
-			backgroundSprite_->setScale(backgroundImageScale_);
-			backgroundSprite_->setLayer(backgroundImageLayer_);
-		}
+		applyBackgroundImageProperties();
 	}
 	else
 		deleteBackgroundImage();
@@ -298,12 +282,14 @@ void MyEventHandler::save(const char *filename)
 {
 	LuaLoader::State loaderState;
 
-	loaderState.background = background_;
-	loaderState.backgroundImageName = backgroundImageName_;
-	loaderState.backgroundImageNormalizedPosition.x = backgroundImagePosition_.x / nc::theApplication().width();
-	loaderState.backgroundImageNormalizedPosition.y = backgroundImagePosition_.y / nc::theApplication().height();
-	loaderState.backgroundImageScale = backgroundImageScale_;
-	loaderState.backgroundImageLayer = backgroundImageLayer_;
+	loaderState.background.color = background_;
+	loaderState.background.imageName = backgroundImageName_;
+	loaderState.background.imageNormalizedPosition.x = backgroundImagePosition_.x / nc::theApplication().width();
+	loaderState.background.imageNormalizedPosition.y = backgroundImagePosition_.y / nc::theApplication().height();
+	loaderState.background.imageScale = backgroundImageScale_;
+	loaderState.background.imageLayer = backgroundImageLayer_;
+	loaderState.background.imageColor = backgroundImageColor_;
+	loaderState.background.imageRect = backgroundImageRect_;
 
 	loaderState.normalizedAbsPosition.x = parentPosition_.x / nc::theApplication().width();
 	loaderState.normalizedAbsPosition.y = parentPosition_.y / nc::theApplication().height();
@@ -405,13 +391,10 @@ void MyEventHandler::save(const char *filename)
 
 void MyEventHandler::applyConfig()
 {
-	if (loader_->configLoaded())
-	{
-		const LuaLoader::Config &cfg = loader_->config();
-		nc::Application::RenderingSettings &settings = nc::theApplication().renderingSettings();
-		settings.batchingEnabled = cfg.batching;
-		settings.cullingEnabled = cfg.culling;
-	}
+	const LuaLoader::Config &cfg = loader_->config();
+	nc::Application::RenderingSettings &settings = nc::theApplication().renderingSettings();
+	settings.batchingEnabled = cfg.batching;
+	settings.cullingEnabled = cfg.culling;
 }
 
 void MyEventHandler::clearData()
@@ -472,6 +455,20 @@ void MyEventHandler::deleteBackgroundImage()
 		backgroundTexture_.reset(nullptr);
 		logString_.formatAppend("Background image destroyed\n");
 	}
+}
+
+bool MyEventHandler::applyBackgroundImageProperties()
+{
+	if (backgroundSprite_)
+	{
+		backgroundSprite_->setPosition(backgroundImagePosition_);
+		backgroundSprite_->setScale(backgroundImageScale_);
+		backgroundSprite_->setLayer(backgroundImageLayer_);
+		backgroundSprite_->setColor(backgroundImageColor_);
+		backgroundSprite_->setTexRect(backgroundImageRect_);
+	}
+
+	return (backgroundSprite_ != nullptr);
 }
 
 unsigned int MyEventHandler::retrieveTexture(unsigned int particleSystemIndex)

@@ -322,6 +322,11 @@ void MyEventHandler::createGuiConfig()
 		int saveFileSize = cfg.saveFileMaxSize / 1024;
 		ImGui::SliderInt("Savefile Size", &saveFileSize, 0, 128, "%d KB");
 		cfg.saveFileMaxSize = saveFileSize * 1024;
+		int logStringSize = cfg.logMaxSize / 1024;
+		ImGui::SliderInt("Log Size", &logStringSize, 0, 64, "%d KB");
+		cfg.logMaxSize = logStringSize * 1024;
+
+		loader_->sanitizeInitValues();
 
 		ImGui::NewLine();
 		if (ImGui::TreeNode("GUI Limits"))
@@ -369,34 +374,50 @@ void MyEventHandler::createGuiBackground()
 {
 	const LuaLoader::Config &cfg = loader_->config();
 
+	widgetName_.format("Background");
+	if (backgroundTexture_)
+		widgetName_.formatAppend(" (%s)", backgroundImageName_.data());
+	widgetName_.append("###Background");
 	ImGui::PushID("Background");
-	if (ImGui::CollapsingHeader("Background"))
+	if (ImGui::CollapsingHeader(widgetName_.data()))
 	{
-		ImGui::ColorEdit4("Background", background_.data(), ImGuiColorEditFlags_NoAlpha);
+		ImGui::ColorEdit4("Color", background_.data(), ImGuiColorEditFlags_NoAlpha);
 		nc::theApplication().gfxDevice().setClearColor(background_);
 
 		ImGui::Separator();
-		ImGui::InputText("Background image", backgroundImageName_.data(), MaxStringLength,
+		ImGui::InputText("Image to load", backgroundImageName_.data(), MaxStringLength,
 		                 ImGuiInputTextFlags_CallbackResize, inputTextCallback, &backgroundImageName_);
 
 		if (ImGui::Button("New"))
 		{
-			if (loadBackgroundImage(backgroundImageName_) == false)
+			if (loadBackgroundImage(backgroundImageName_))
+				backgroundImageRect_ = backgroundTexture_->rect();
+			else
 				backgroundImageName_ = "Loading error";
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Delete"))
 			deleteBackgroundImage();
 
-		ImGui::SliderFloat("Background image Pos X", &backgroundImagePosition_.x, 0.0f, nc::theApplication().width());
-		ImGui::SliderFloat("Background image Pos Y", &backgroundImagePosition_.y, 0.0f, nc::theApplication().height());
-		ImGui::SliderFloat("Background image Scale", &backgroundImageScale_, 0.0f, cfg.maxBackgroundImageScale);
-		ImGui::SliderInt("Background image Layer", &backgroundImageLayer_, 0, cfg.maxRenderingLayer);
-		if (backgroundSprite_)
+		if (backgroundTexture_)
 		{
-			backgroundSprite_->setPosition(backgroundImagePosition_);
-			backgroundSprite_->setScale(backgroundImageScale_);
-			backgroundSprite_->setLayer(backgroundImageLayer_);
+			ImGui::SliderFloat("Image Pos X", &backgroundImagePosition_.x, 0.0f, nc::theApplication().width());
+			ImGui::SliderFloat("Image Pos Y", &backgroundImagePosition_.y, 0.0f, nc::theApplication().height());
+			ImGui::SliderFloat("Image Scale", &backgroundImageScale_, 0.0f, cfg.maxBackgroundImageScale);
+			ImGui::SliderInt("Image Layer", &backgroundImageLayer_, 0, cfg.maxRenderingLayer);
+			ImGui::ColorEdit4("Image Color", backgroundImageColor_.data(), ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf);
+
+			int minX = backgroundImageRect_.x; int maxX = minX + backgroundImageRect_.w;
+			int minY = backgroundImageRect_.y; int maxY = minY + backgroundImageRect_.h;
+			ImGui::DragIntRange2("Image Rect X", &minX, &maxX, 1.0f, 0, backgroundTexture_->width());
+			ImGui::DragIntRange2("Image Rect Y", &minY, &maxY, 1.0f, 0, backgroundTexture_->height());
+			backgroundImageRect_.x = minX; backgroundImageRect_.w = maxX - minX;
+			backgroundImageRect_.y = minY; backgroundImageRect_.h = maxY - minY;
+			ImGui::SameLine();
+			if (ImGui::Button("Reset##Rect"))
+				backgroundImageRect_ = nc::Recti(0, 0, backgroundTexture_->width(), backgroundTexture_->height());
+
+			applyBackgroundImageProperties();
 		}
 	}
 	ImGui::PopID();

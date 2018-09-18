@@ -84,12 +84,19 @@ class LuaLoader :
 			float emitDelay;
 		};
 
+		struct BackgroundProperties
+		{
+			nc::Colorf color;
+			nctl::String imageName = nctl::String(MaxFilenameLength);
+			nc::Vector2f imageNormalizedPosition;
+			float imageScale;
+			int imageLayer;
+			nc::Colorf imageColor;
+			nc::Recti imageRect;
+		};
+
 		nc::Vector2f normalizedAbsPosition;
-		nc::Colorf background;
-		nctl::String backgroundImageName = nctl::String(MaxFilenameLength);
-		nc::Vector2f backgroundImageNormalizedPosition;
-		float backgroundImageScale;
-		int backgroundImageLayer;
+		BackgroundProperties background;
 		nctl::Array<ParticleSystem> systems;
 	};
 
@@ -102,7 +109,8 @@ class LuaLoader :
 		unsigned long iboSize = 32 * 1024;
 		bool batching = true;
 		bool culling = true;
-		unsigned int saveFileMaxSize = 16 * 1024;
+		unsigned int saveFileMaxSize = 8 * 1024;
+		unsigned int logMaxSize = 4 * 1024;
 
 		float maxBackgroundImageScale = 5.0f;
 		int maxRenderingLayer = 16;
@@ -120,10 +128,10 @@ class LuaLoader :
 		float maxDelay = 5.0f;
 	};
 
-	LuaLoader() : configLoaded_(false) { }
-	inline bool configLoaded() const { return configLoaded_; }
+	LuaLoader() { }
 	inline const Config &config() const { return config_; }
 	inline Config &config() { return config_; }
+	void sanitizeInitValues();
 	void sanitizeGuiLimits();
 	bool loadConfig(const char *filename);
 	bool saveConfig(const char *filename);
@@ -133,7 +141,6 @@ class LuaLoader :
   private:
 	nctl::UniquePtr<nc::LuaStateManager> luaState_;
 	Config config_;
-	bool configLoaded_;
 
 	void createNewState();
 };

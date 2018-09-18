@@ -20,8 +20,8 @@ void indent(nctl::String &string, int amount)
 		string.append("\t");
 }
 
-const unsigned int ProjectFileVersion = 4;
-const unsigned int ConfigFileVersion = 4;
+const unsigned int ProjectFileVersion = 5;
+const unsigned int ConfigFileVersion = 5;
 
 namespace Names
 {
@@ -36,6 +36,8 @@ const char *backgroundImage = "background_image"; // version 4
 const char *backgroundImageNormalizedPosition = "background_image_normalized_position"; // version 4
 const char *backgroundImageScale = "background_image_scale"; // version 4
 const char *backgroundImageLayer = "background_image_layer"; // version 4
+const char *backgroundImageColor = "background_image_color"; // version 5
+const char *backgroundImageRect = "background_image_rect"; // version 5
 
 const char *name = "name"; // version 3
 const char *numParticles = "num_particles";
@@ -77,6 +79,7 @@ const char *iboSize = "ibo_size";
 const char *batching = "batching";
 const char *culling = "culling";
 const char *saveFileMaxSize = "savefile_maxsize"; // version 3
+const char *logMaxSize = "log_maxsize"; // version 5
 
 const char *guiLimits = "gui_limits"; // version 3
 const char *maxBackgroundImageScale = "max_background_image_scale"; // version 4
@@ -96,6 +99,24 @@ const char *maxDelay = "max_delay"; // version 3
 
 }
 
+}
+
+void LuaLoader::sanitizeInitValues()
+{
+	if (config_.width < 640)
+		config_.width = 640;
+	if (config_.height < 480)
+		config_.height = 480;
+
+	if (config_.vboSize < 256 * 1024)
+		config_.vboSize = 256 * 1024;
+	if (config_.iboSize < 32 * 1024)
+		config_.iboSize = 32 * 1024;
+
+	if (config_.saveFileMaxSize < 8 * 1024)
+		config_.saveFileMaxSize = 8 * 1024;
+	if (config_.logMaxSize < 4 * 1024)
+		config_.logMaxSize = 4 * 1024;
 }
 
 void LuaLoader::sanitizeGuiLimits()
@@ -149,6 +170,9 @@ bool LuaLoader::loadConfig(const char *filename)
 	{
 		nc::LuaUtils::tryRetrieveGlobal<uint32_t>(L, CfgNames::saveFileMaxSize, config_.saveFileMaxSize);
 
+		if (version >= 5)
+			nc::LuaUtils::tryRetrieveGlobal<uint32_t>(L, CfgNames::logMaxSize, config_.logMaxSize);
+
 		if (nc::LuaUtils::tryRetrieveGlobalTable(L, CfgNames::guiLimits))
 		{
 			nc::LuaUtils::tryRetrieveField<int32_t>(L, -1, CfgNames::maxNumParticles, config_.maxNumParticles);
@@ -172,15 +196,16 @@ bool LuaLoader::loadConfig(const char *filename)
 		}
 		nc::LuaUtils::pop(L);
 
+		sanitizeInitValues();
 		sanitizeGuiLimits();
 	}
 
-	configLoaded_ = true;
-	return configLoaded_;
+	return true;;
 }
 
 bool LuaLoader::saveConfig(const char *filename)
 {
+	sanitizeInitValues();
 	sanitizeGuiLimits();
 
 	nctl::String file(4096);
@@ -195,6 +220,7 @@ bool LuaLoader::saveConfig(const char *filename)
 	indent(file, amount); file.formatAppend("%s = %s\n", CfgNames::batching, config_.batching ? "true" : "false");
 	indent(file, amount); file.formatAppend("%s = %s\n", CfgNames::culling, config_.culling ? "true" : "false");
 	indent(file, amount); file.formatAppend("%s = %u\n", CfgNames::saveFileMaxSize, config_.saveFileMaxSize);
+	indent(file, amount); file.formatAppend("%s = %u\n", CfgNames::logMaxSize, config_.logMaxSize);
 
 	indent(file, amount); file.append("\n");
 	indent(file, amount); file.formatAppend("%s =\n", CfgNames::guiLimits);
@@ -242,26 +268,25 @@ bool LuaLoader::load(const char *filename, State &state)
 		state.normalizedAbsPosition = nc::LuaVector2fUtils::retrieveTable(L, -1);
 	nc::LuaUtils::pop(L);
 
-	state.background = nc::Colorf::Black; // black background as default
-	state.backgroundImageNormalizedPosition = nc::Vector2f(0.5f, 0.5f); // center of the screen as default
-	state.backgroundImageScale = 1.0f;
-	state.backgroundImageLayer = 0;
+	state.background.color = nc::Colorf::Black; // black background as default
+	state.background.imageNormalizedPosition = nc::Vector2f(0.5f, 0.5f); // center of the screen as default
+	state.background.imageScale = 1.0f;
+	state.background.imageLayer = 0;
 	if (version >= 4)
 	{
 		nc::LuaUtils::retrieveGlobalTable(L, Names::backgroundProperties);
 
-		if (nc::LuaUtils::tryRetrieveFieldTable(L, -1, Names::backgroundColor))
-			state.background = nc::LuaColorUtils::retrieveTable(L, -1);
-		nc::LuaUtils::pop(L);
+		state.background.color = nc::LuaColorUtils::retrieveTableField(L, -1, Names::backgroundColor);
+		state.background.imageName = nc::LuaUtils::retrieveField<const char *>(L, -1, Names::backgroundImage);
+		state.background.imageNormalizedPosition = nc::LuaVector2fUtils::retrieveTableField(L, -1, Names::backgroundImageNormalizedPosition);
+		state.background.imageScale = nc::LuaUtils::retrieveField<float>(L, -1, Names::backgroundImageScale);
+		state.background.imageLayer = nc::LuaUtils::retrieveField<int32_t>(L, -1, Names::backgroundImageLayer);
 
-		state.backgroundImageName = nc::LuaUtils::retrieveField<const char *>(L, -1, Names::backgroundImage);
-
-		if (nc::LuaUtils::tryRetrieveFieldTable(L, -1, Names::backgroundImageNormalizedPosition))
-			state.backgroundImageNormalizedPosition = nc::LuaVector2fUtils::retrieveTable(L, -1);
-		nc::LuaUtils::pop(L);
-
-		state.backgroundImageScale = nc::LuaUtils::retrieveField<float>(L, -1, Names::backgroundImageScale);
-		state.backgroundImageLayer = nc::LuaUtils::retrieveField<int32_t>(L, -1, Names::backgroundImageLayer);
+		if (version >= 5)
+		{
+			state.background.imageColor = nc::LuaColorUtils::retrieveTableField(L, -1, Names::backgroundImageColor);
+			state.background.imageRect = nc::LuaRectiUtils::retrieveTableField(L, -1, Names::backgroundImageRect);
+		}
 
 		nc::LuaUtils::pop(L);
 	}
@@ -433,12 +458,17 @@ void LuaLoader::save(const char *filename, const State &state)
 	indent(file, amount); file.append("{\n");
 	amount++;
 
-	indent(file, amount); file.formatAppend("%s = {r = %f, g = %f, b = %f, a = %f},\n", Names::backgroundColor,
-	                                        state.background.r(), state.background.g(), state.background.b(), 1.0f);
-	indent(file, amount); file.formatAppend("%s = \"%s\",\n", Names::backgroundImage, state.backgroundImageName.data());
-	indent(file, amount); file.formatAppend("%s = {x = %f, y = %f},\n", Names::backgroundImageNormalizedPosition, state.backgroundImageNormalizedPosition.x, state.backgroundImageNormalizedPosition.y);
-	indent(file, amount); file.formatAppend("%s = %f,\n", Names::backgroundImageScale, state.backgroundImageScale);
-	indent(file, amount); file.formatAppend("%s = %d\n", Names::backgroundImageLayer, state.backgroundImageLayer);
+	const nc::Colorf &bgColor = state.background.color;
+	indent(file, amount); file.formatAppend("%s = {r = %f, g = %f, b = %f, a = %f},\n", Names::backgroundColor, bgColor.r(), bgColor.g(), bgColor.b(), 1.0f);
+	indent(file, amount); file.formatAppend("%s = \"%s\",\n", Names::backgroundImage, state.background.imageName.data());
+	indent(file, amount); file.formatAppend("%s = {x = %f, y = %f},\n", Names::backgroundImageNormalizedPosition,
+	                                        state.background.imageNormalizedPosition.x, state.background.imageNormalizedPosition.y);
+	indent(file, amount); file.formatAppend("%s = %f,\n", Names::backgroundImageScale, state.background.imageScale);
+	indent(file, amount); file.formatAppend("%s = %d,\n", Names::backgroundImageLayer, state.background.imageLayer);
+	const nc::Colorf &imgColor = state.background.imageColor;
+	indent(file, amount); file.formatAppend("%s = {r = %f, g = %f, b = %f, a = %f},\n", Names::backgroundImageColor, imgColor.r(), imgColor.g(), imgColor.b(), imgColor.a());
+	indent(file, amount); file.formatAppend("%s = {x = %d, y = %d, w = %d, h = %d}\n", Names::backgroundImageRect,
+	                                        state.background.imageRect.x, state.background.imageRect.y, state.background.imageRect.w, state.background.imageRect.h);
 
 	amount--;
 	indent(file, amount); file.append("}\n");

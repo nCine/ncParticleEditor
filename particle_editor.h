@@ -45,8 +45,11 @@ class MyEventHandler :
 	nc::Colorf background_ = nc::Colorf::Black;
 	nctl::String backgroundImageName_ = nctl::String(MaxStringLength);
 	nc::Vector2f backgroundImagePosition_ = nc::Vector2f::Zero;
-	int backgroundImageLayer_ = 0;
 	float backgroundImageScale_ = 1.0f;
+	int backgroundImageLayer_ = 0;
+	nc::Colorf backgroundImageColor_ = nc::Colorf::White;
+	nc::Recti backgroundImageRect_;
+
 	nc::Vector2f parentPosition_ = nc::Vector2f::Zero;
 	int systemIndex_ = 0;
 	bool autoEmission_ = false;
@@ -174,6 +177,7 @@ class MyEventHandler :
 
 	bool loadBackgroundImage(const nctl::String &filename);
 	void deleteBackgroundImage();
+	bool applyBackgroundImageProperties();
 	unsigned int retrieveTexture(unsigned int particleSystemIndex);
 	bool createTexture(unsigned int index);
 	void destroyTexture(unsigned int index);
