@@ -5,6 +5,7 @@
 #include "particle_editor_lua.h"
 #include "Application.h"
 #include "Texture.h"
+#include "Sprite.h"
 #include "ParticleSystem.h"
 #include "IFile.h"
 
@@ -115,6 +116,7 @@ void MyEventHandler::createGui()
 
 	createGuiLog();
 	createGuiConfig();
+	createGuiBackground();
 	createGuiTextures();
 	createGuiManageSystems();
 
@@ -129,6 +131,7 @@ void MyEventHandler::createGui()
 		createGuiEmission();
 	}
 
+	ImGui::Separator();
 	ImGui::End();
 }
 
@@ -286,6 +289,8 @@ void MyEventHandler::createGuiLog()
 		ImGui::BeginChild("scrolling", ImVec2(0, 150), false, ImGuiWindowFlags_HorizontalScrollbar);
 		ImGui::TextUnformatted(logString_.data());
 		ImGui::EndChild();
+		if (ImGui::Button("Clear"))
+			logString_.clear();
 	}
 	ImGui::PopID();
 }
@@ -319,12 +324,11 @@ void MyEventHandler::createGuiConfig()
 		cfg.saveFileMaxSize = saveFileSize * 1024;
 
 		ImGui::NewLine();
-		ImGui::ColorEdit4("Background", cfg.background.data(), ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf);
-
-		ImGui::NewLine();
 		if (ImGui::TreeNode("GUI Limits"))
 		{
 			ImGui::PushItemWidth(100.0f);
+			ImGui::InputFloat("Max Background Image Scale", &cfg.maxBackgroundImageScale);
+			ImGui::InputInt("Max Rendering Layer", &cfg.maxRenderingLayer);
 			ImGui::InputInt("Max Number of Particles", &cfg.maxNumParticles);
 			ImGui::InputFloat("System Position Range", &cfg.systemPositionRange);
 			ImGui::InputFloat("Min Particle Scale", &cfg.minParticleScale);
@@ -356,6 +360,43 @@ void MyEventHandler::createGuiConfig()
 		{
 			loader_->saveConfig(configFile_.data());
 			logString_.formatAppend("Saved config file \"%s\"\n", configFile_.data());
+		}
+	}
+	ImGui::PopID();
+}
+
+void MyEventHandler::createGuiBackground()
+{
+	const LuaLoader::Config &cfg = loader_->config();
+
+	ImGui::PushID("Background");
+	if (ImGui::CollapsingHeader("Background"))
+	{
+		ImGui::ColorEdit4("Background", background_.data(), ImGuiColorEditFlags_NoAlpha);
+		nc::theApplication().gfxDevice().setClearColor(background_);
+
+		ImGui::Separator();
+		ImGui::InputText("Background image", backgroundImageName_.data(), MaxStringLength,
+		                 ImGuiInputTextFlags_CallbackResize, inputTextCallback, &backgroundImageName_);
+
+		if (ImGui::Button("New"))
+		{
+			if (loadBackgroundImage(backgroundImageName_) == false)
+				backgroundImageName_ = "Loading error";
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Delete"))
+			deleteBackgroundImage();
+
+		ImGui::SliderFloat("Background image Pos X", &backgroundImagePosition_.x, 0.0f, nc::theApplication().width());
+		ImGui::SliderFloat("Background image Pos Y", &backgroundImagePosition_.y, 0.0f, nc::theApplication().height());
+		ImGui::SliderFloat("Background image Scale", &backgroundImageScale_, 0.0f, cfg.maxBackgroundImageScale);
+		ImGui::SliderInt("Background image Layer", &backgroundImageLayer_, 0, cfg.maxRenderingLayer);
+		if (backgroundSprite_)
+		{
+			backgroundSprite_->setPosition(backgroundImagePosition_);
+			backgroundSprite_->setScale(backgroundImageScale_);
+			backgroundSprite_->setLayer(backgroundImageLayer_);
 		}
 	}
 	ImGui::PopID();
@@ -543,6 +584,8 @@ void MyEventHandler::createGuiParticleSystem()
 			s.position.set(0.0f, 0.0f);
 		ImGui::SliderFloat("Rel Pos Y", &s.position.y, -cfg.systemPositionRange, cfg.systemPositionRange);
 		particleSystem->setPosition(s.position);
+		ImGui::SliderInt("Layer", &s.layer, 0, cfg.maxRenderingLayer);
+		particleSystem->setLayer(static_cast<unsigned int>(s.layer));
 		ImGui::Checkbox("Local Space", &s.inLocalSpace);
 		particleSystem->setInLocalSpace(s.inLocalSpace);
 	}
@@ -1251,12 +1294,16 @@ void MyEventHandler::createGuiEmission()
 				ImGui::SameLine();
 				ImGui::Checkbox("Active", &sysStates_[i].active);
 				ImGui::SameLine();
-				ImGui::Text("Alive: %u/%u", particleSystems_[i]->numAliveParticles(), particleSystems_[i]->numParticles());
+				ImGui::Text("#%u", i);
 				ImGui::SameLine();
+				ImGui::Text("Layer: %d", sysStates_[i].layer);
+				ImGui::SameLine();
+				ImGui::Text("Alive: %u/%u", particleSystems_[i]->numAliveParticles(), particleSystems_[i]->numParticles());
 				if (sysStates_[i].name.isEmpty() == false)
-					ImGui::Text("#%u %s", i, sysStates_[i].name.data());
-				else
-					ImGui::Text("#%u", i);
+				{
+					ImGui::SameLine();
+					ImGui::Text("Name: %s", sysStates_[i].name.data());
+				}
 			}
 			ImGui::TreePop();
 		}

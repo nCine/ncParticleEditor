@@ -1,23 +1,11 @@
 #include "particle_editor_lua.h"
 #include "Colorf.h"
+#include "LuaStateManager.h"
 #include "LuaUtils.h"
 #include "LuaRectUtils.h"
 #include "LuaVector2Utils.h"
 #include "LuaColorUtils.h"
 #include "IFile.h"
-
-///////////////////////////////////////////////////////////
-// CONSTRUCTORS and DESTRUCTOR
-///////////////////////////////////////////////////////////
-
-LuaLoader::LuaLoader()
-	: luaState_(nc::LuaStateManager::ApiType::NONE,
-		nc::LuaStateManager::StatisticsTracking::DISABLED,
-		nc::LuaStateManager::StandardLibraries::NOT_LOADED),
-	  configLoaded_(false)
-{
-
-}
 
 ///////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
@@ -32,8 +20,8 @@ void indent(nctl::String &string, int amount)
 		string.append("\t");
 }
 
-const unsigned int ConfigFileVersion = 3;
-const unsigned int ProjectFileVersion = 3;
+const unsigned int ProjectFileVersion = 4;
+const unsigned int ConfigFileVersion = 4;
 
 namespace Names
 {
@@ -41,14 +29,20 @@ namespace Names
 const char *version = "project_version"; // version 3
 
 const char *normalizedAbsPosition = "normalized_absolute_position"; // version 2
-
 const char *particleSystems = "particle_systems";
+const char *backgroundProperties = "background_properties"; // version 4
+const char *backgroundColor = "background_color"; // version 4
+const char *backgroundImage = "background_image"; // version 4
+const char *backgroundImageNormalizedPosition = "background_image_normalized_position"; // version 4
+const char *backgroundImageScale = "background_image_scale"; // version 4
+const char *backgroundImageLayer = "background_image_layer"; // version 4
 
 const char *name = "name"; // version 3
 const char *numParticles = "num_particles";
 const char *texture = "texture";
 const char *texRext = "texture_rect";
 const char *relativePosition = "relative_position";
+const char *layer = "layer";
 const char *inLocalSpace = "local_space";
 const char *active = "active";
 
@@ -82,10 +76,11 @@ const char *vboSize = "vbo_size";
 const char *iboSize = "ibo_size";
 const char *batching = "batching";
 const char *culling = "culling";
-const char *background = "background"; // version 3
 const char *saveFileMaxSize = "savefile_maxsize"; // version 3
 
 const char *guiLimits = "gui_limits"; // version 3
+const char *maxBackgroundImageScale = "max_background_image_scale"; // version 4
+const char *maxRenderingLayer = "max_rendering_layer"; // version 4
 const char *maxNumParticles = "max_num_particles"; // version 3
 const char *systemPositionRange = "system_position_range"; // version 3
 const char *minParticleScale = "min_particle_scale"; // version 3
@@ -105,6 +100,11 @@ const char *maxDelay = "max_delay"; // version 3
 
 void LuaLoader::sanitizeGuiLimits()
 {
+	if (config_.maxRenderingLayer > 65535)
+		config_.maxRenderingLayer = 65535;
+	else if (config_.maxRenderingLayer < 0)
+		config_.maxRenderingLayer = 0;
+
 	if (config_.maxNumParticles == 0)
 		config_.maxNumParticles = 1;
 	else if (config_.maxNumParticles < 0)
@@ -129,8 +129,10 @@ void LuaLoader::sanitizeGuiLimits()
 
 bool LuaLoader::loadConfig(const char *filename)
 {
-	lua_State *L = luaState_.state();
-	luaState_.run(filename);
+	createNewState();
+	if (luaState_->run(filename) == false)
+		return false;
+	lua_State *L = luaState_->state();
 
 	unsigned int version = 1;
 	nc::LuaUtils::tryRetrieveGlobal<uint32_t>(L, CfgNames::version, version);
@@ -146,9 +148,6 @@ bool LuaLoader::loadConfig(const char *filename)
 	if (version >= 3)
 	{
 		nc::LuaUtils::tryRetrieveGlobal<uint32_t>(L, CfgNames::saveFileMaxSize, config_.saveFileMaxSize);
-		if (nc::LuaUtils::tryRetrieveGlobalTable(L, CfgNames::background))
-			config_.background = nc::LuaColorUtils::retrieveTable(L, -1);
-		nc::LuaUtils::pop(L);
 
 		if (nc::LuaUtils::tryRetrieveGlobalTable(L, CfgNames::guiLimits))
 		{
@@ -164,6 +163,12 @@ bool LuaLoader::loadConfig(const char *filename)
 			nc::LuaUtils::tryRetrieveField<float>(L, -1, CfgNames::randomPositionRange, config_.randomPositionRange);
 			nc::LuaUtils::tryRetrieveField<float>(L, -1, CfgNames::randomVelocityRange, config_.randomVelocityRange);
 			nc::LuaUtils::tryRetrieveField<float>(L, -1, CfgNames::maxDelay, config_.maxDelay);
+
+			if (version >= 4)
+			{
+				nc::LuaUtils::tryRetrieveField<float>(L, -1, CfgNames::maxBackgroundImageScale, config_.maxBackgroundImageScale);
+				nc::LuaUtils::tryRetrieveField<int32_t>(L, -1, CfgNames::maxRenderingLayer, config_.maxRenderingLayer);
+			}
 		}
 		nc::LuaUtils::pop(L);
 
@@ -176,6 +181,8 @@ bool LuaLoader::loadConfig(const char *filename)
 
 bool LuaLoader::saveConfig(const char *filename)
 {
+	sanitizeGuiLimits();
+
 	nctl::String file(4096);
 	int amount = 0;
 
@@ -188,14 +195,14 @@ bool LuaLoader::saveConfig(const char *filename)
 	indent(file, amount); file.formatAppend("%s = %s\n", CfgNames::batching, config_.batching ? "true" : "false");
 	indent(file, amount); file.formatAppend("%s = %s\n", CfgNames::culling, config_.culling ? "true" : "false");
 	indent(file, amount); file.formatAppend("%s = %u\n", CfgNames::saveFileMaxSize, config_.saveFileMaxSize);
-	indent(file, amount); file.formatAppend("%s = { r = %f, g = %f, b = %f, a = %f }\n", CfgNames::background,
-	                                        config_.background.r(), config_.background.g(), config_.background.b(), config_.background.a());
 
 	indent(file, amount); file.append("\n");
 	indent(file, amount); file.formatAppend("%s =\n", CfgNames::guiLimits);
 	indent(file, amount); file.append("{\n");
 	amount++;
 
+	indent(file, amount); file.formatAppend("%s = %f,\n", CfgNames::maxBackgroundImageScale, config_.maxBackgroundImageScale);
+	indent(file, amount); file.formatAppend("%s = %d,\n", CfgNames::maxRenderingLayer, config_.maxRenderingLayer);
 	indent(file, amount); file.formatAppend("%s = %d,\n", CfgNames::maxNumParticles, config_.maxNumParticles);
 	indent(file, amount); file.formatAppend("%s = %f,\n", CfgNames::systemPositionRange, config_.systemPositionRange);
 	indent(file, amount); file.formatAppend("%s = %f,\n", CfgNames::minParticleScale, config_.minParticleScale);
@@ -222,17 +229,42 @@ bool LuaLoader::saveConfig(const char *filename)
 
 bool LuaLoader::load(const char *filename, State &state)
 {
-	lua_State *L = luaState_.state();
-	luaState_.run(filename);
+	createNewState();
+	if (luaState_->run(filename) == false)
+		return false;
+	lua_State *L = luaState_->state();
 
 	unsigned int version = 1;
 	nc::LuaUtils::tryRetrieveGlobal<uint32_t>(L, Names::version, version);
 
+	state.normalizedAbsPosition = nc::Vector2f(0.5f, 0.5f); // center of the screen as default
 	if (nc::LuaUtils::tryRetrieveGlobalTable(L, Names::normalizedAbsPosition))
 		state.normalizedAbsPosition = nc::LuaVector2fUtils::retrieveTable(L, -1);
-	else
-		state.normalizedAbsPosition = nc::Vector2f(0.5f, 0.5f); // center of the screen
 	nc::LuaUtils::pop(L);
+
+	state.background = nc::Colorf::Black; // black background as default
+	state.backgroundImageNormalizedPosition = nc::Vector2f(0.5f, 0.5f); // center of the screen as default
+	state.backgroundImageScale = 1.0f;
+	state.backgroundImageLayer = 0;
+	if (version >= 4)
+	{
+		nc::LuaUtils::retrieveGlobalTable(L, Names::backgroundProperties);
+
+		if (nc::LuaUtils::tryRetrieveFieldTable(L, -1, Names::backgroundColor))
+			state.background = nc::LuaColorUtils::retrieveTable(L, -1);
+		nc::LuaUtils::pop(L);
+
+		state.backgroundImageName = nc::LuaUtils::retrieveField<const char *>(L, -1, Names::backgroundImage);
+
+		if (nc::LuaUtils::tryRetrieveFieldTable(L, -1, Names::backgroundImageNormalizedPosition))
+			state.backgroundImageNormalizedPosition = nc::LuaVector2fUtils::retrieveTable(L, -1);
+		nc::LuaUtils::pop(L);
+
+		state.backgroundImageScale = nc::LuaUtils::retrieveField<float>(L, -1, Names::backgroundImageScale);
+		state.backgroundImageLayer = nc::LuaUtils::retrieveField<int32_t>(L, -1, Names::backgroundImageLayer);
+
+		nc::LuaUtils::pop(L);
+	}
 
 	nc::LuaUtils::retrieveGlobalTable(L, Names::particleSystems);
 	const unsigned int numSystems = nc::LuaUtils::rawLen(L, -1);
@@ -252,6 +284,10 @@ bool LuaLoader::load(const char *filename, State &state)
 		s.position = nc::LuaVector2fUtils::retrieveTableField(L, -1, Names::relativePosition);
 		s.inLocalSpace = nc::LuaUtils::retrieveField<bool>(L, -1, Names::inLocalSpace);
 		s.active = nc::LuaUtils::retrieveField<bool>(L, -1, Names::active);
+
+		s.layer = 1;
+		if (version >= 4)
+			s.layer = nc::LuaUtils::retrieveField<int32_t>(L, -1, Names::layer);
 
 		if (nc::LuaUtils::tryRetrieveFieldTable(L, -1, Names::colorSteps))
 		{
@@ -390,13 +426,27 @@ void LuaLoader::save(const char *filename, const State &state)
 	int amount = 0;
 
 	indent(file, amount); file.formatAppend("%s = %u\n", Names::version, ProjectFileVersion);
-
 	indent(file, amount); file.formatAppend("%s = {x = %f, y = %f}\n", Names::normalizedAbsPosition, state.normalizedAbsPosition.x, state.normalizedAbsPosition.y);
+	file.append("\n");
+
+	indent(file, amount); file.formatAppend("%s =\n", Names::backgroundProperties);
+	indent(file, amount); file.append("{\n");
+	amount++;
+
+	indent(file, amount); file.formatAppend("%s = {r = %f, g = %f, b = %f, a = %f},\n", Names::backgroundColor,
+	                                        state.background.r(), state.background.g(), state.background.b(), 1.0f);
+	indent(file, amount); file.formatAppend("%s = \"%s\",\n", Names::backgroundImage, state.backgroundImageName.data());
+	indent(file, amount); file.formatAppend("%s = {x = %f, y = %f},\n", Names::backgroundImageNormalizedPosition, state.backgroundImageNormalizedPosition.x, state.backgroundImageNormalizedPosition.y);
+	indent(file, amount); file.formatAppend("%s = %f,\n", Names::backgroundImageScale, state.backgroundImageScale);
+	indent(file, amount); file.formatAppend("%s = %d\n", Names::backgroundImageLayer, state.backgroundImageLayer);
+
+	amount--;
+	indent(file, amount); file.append("}\n");
+	file.append("\n");
 
 	indent(file, amount); file.formatAppend("%s =\n", Names::particleSystems);
 	indent(file, amount); file.append("{\n");
 	amount++;
-
 	const unsigned int numSystems = state.systems.size();
 	for (unsigned int index = 0; index < numSystems; index++)
 	{
@@ -411,6 +461,7 @@ void LuaLoader::save(const char *filename, const State &state)
 		indent(file, amount); file.formatAppend("%s = {x = %d, y = %d, w = %d, h = %d},\n", Names::texRext,
 		                                        sysState.texRect.x, sysState.texRect.y, sysState.texRect.w, sysState.texRect.h);
 		indent(file, amount); file.formatAppend("%s = {x = %f, y = %f},\n", Names::relativePosition, sysState.position.x, sysState.position.y);
+		indent(file, amount); file.formatAppend("%s = %d,\n", Names::layer, sysState.layer);
 		indent(file, amount); file.formatAppend("%s = %s,\n", Names::inLocalSpace, sysState.inLocalSpace ? "true" : "false");
 		indent(file, amount); file.formatAppend("%s = %s,\n", Names::active, sysState.active ? "true" : "false");
 		file.append("\n");
@@ -527,4 +578,16 @@ void LuaLoader::save(const char *filename, const State &state)
 	fileHandle->open(nc::IFile::OpenMode::WRITE | nc::IFile::OpenMode::BINARY);
 	fileHandle->write(file.data(), file.length());
 	fileHandle->close();
+}
+
+///////////////////////////////////////////////////////////
+// PRIVATE FUNCTIONS
+///////////////////////////////////////////////////////////
+
+void LuaLoader::createNewState()
+{
+	luaState_ = nctl::makeUnique<nc::LuaStateManager>(
+	            nc::LuaStateManager::ApiType::NONE,
+	            nc::LuaStateManager::StatisticsTracking::DISABLED,
+	            nc::LuaStateManager::StandardLibraries::NOT_LOADED);
 }

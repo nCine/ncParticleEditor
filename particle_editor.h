@@ -15,6 +15,7 @@
 
 namespace ncine {
 
+class Sprite;
 class Texture;
 class ParticleSystem;
 class SceneNode;
@@ -41,6 +42,11 @@ class MyEventHandler :
   private:
 	static const unsigned int MaxStringLength = 128;
 
+	nc::Colorf background_ = nc::Colorf::Black;
+	nctl::String backgroundImageName_ = nctl::String(MaxStringLength);
+	nc::Vector2f backgroundImagePosition_ = nc::Vector2f::Zero;
+	int backgroundImageLayer_ = 0;
+	float backgroundImageScale_ = 1.0f;
 	nc::Vector2f parentPosition_ = nc::Vector2f::Zero;
 	int systemIndex_ = 0;
 	bool autoEmission_ = false;
@@ -49,6 +55,7 @@ class MyEventHandler :
 		nctl::String name = nctl::String(MaxStringLength);
 		int numParticles = 128;
 		nc::Vector2f position = nc::Vector2f::Zero;
+		int layer = 1;
 		bool inLocalSpace = false;
 		bool active = true;
 
@@ -116,6 +123,8 @@ class MyEventHandler :
 	nctl::Array<nctl::UniquePtr<nc::Texture> > textures_;
 	nctl::Array<nctl::UniquePtr<nc::Texture> > texturesToDelete_;
 	nctl::Array<nc::Rectf> rects_;
+	nctl::UniquePtr<nc::Texture> backgroundTexture_;
+	nctl::UniquePtr<nc::Sprite> backgroundSprite_;
 	nctl::Array<nctl::UniquePtr<nc::ParticleSystem> > particleSystems_;
 	nctl::String widgetName_ = nctl::String(64);
 
@@ -134,6 +143,7 @@ class MyEventHandler :
 	void createGuiMenus();
 	void createGuiLog();
 	void createGuiConfig();
+	void createGuiBackground();
 	void createGuiTextures();
 	void createGuiManageSystems();
 	void createGuiParticleSystem();
@@ -162,6 +172,8 @@ class MyEventHandler :
 	void applyConfig();
 	void clearData();
 
+	bool loadBackgroundImage(const nctl::String &filename);
+	void deleteBackgroundImage();
 	unsigned int retrieveTexture(unsigned int particleSystemIndex);
 	bool createTexture(unsigned int index);
 	void destroyTexture(unsigned int index);

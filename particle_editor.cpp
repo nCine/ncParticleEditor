@@ -3,6 +3,7 @@
 
 #include "Application.h"
 #include "Texture.h"
+#include "Sprite.h"
 #include "ParticleSystem.h"
 #include "IInputManager.h"
 #include "IFile.h"
@@ -70,6 +71,8 @@ void MyEventHandler::onPreInit(nc::AppConfiguration &config)
 			config.setIboSize(luaConfig.iboSize);
 			logString_.formatAppend("Loaded config file \"%s\"\n", configFile_.data());
 		}
+		else
+			logString_.formatAppend("Could not load config file \"%s\"\n", configFile_.data());
 	}
 
 	const unsigned long MinimumVboSize = 256 * 1024;
@@ -98,10 +101,7 @@ void MyEventHandler::onInit()
 
 	nctl::String initialScript = scriptsPath_ + ScriptFile;
 	if (nc::IFile::access(initialScript.data(), nc::IFile::AccessMode::READABLE))
-	{
 		load(initialScript.data());
-		logString_.formatAppend("Loaded project file \"%s\"\n", initialScript.data());
-	}
 
 	configureGui();
 }
@@ -175,12 +175,36 @@ void MyEventHandler::killParticles()
 bool MyEventHandler::load(const char *filename)
 {
 	LuaLoader::State loaderState;
-	loader_->load(filename, loaderState);
+	if (loader_->load(filename, loaderState) == false)
+	{
+		logString_.formatAppend("Could not load project file \"%s\"\n", filename);
+		return false;
+	}
 
 	if (loaderState.systems.isEmpty())
 		return false;
 	else
 		clearData();
+
+	background_ = loaderState.background;
+	nc::theApplication().gfxDevice().setClearColor(background_);
+
+	backgroundImageName_ = loaderState.backgroundImageName;
+	backgroundImagePosition_ = loaderState.backgroundImageNormalizedPosition * nc::Vector2f(nc::theApplication().width(), nc::theApplication().height());
+	backgroundImageScale_ = loaderState.backgroundImageScale;
+	backgroundImageLayer_ = loaderState.backgroundImageLayer;
+	if (backgroundImageName_.isEmpty() == false)
+	{
+		loadBackgroundImage(backgroundImageName_);
+		if (backgroundSprite_)
+		{
+			backgroundSprite_->setPosition(backgroundImagePosition_);
+			backgroundSprite_->setScale(backgroundImageScale_);
+			backgroundSprite_->setLayer(backgroundImageLayer_);
+		}
+	}
+	else
+		deleteBackgroundImage();
 
 	parentPosition_ = loaderState.normalizedAbsPosition * nc::Vector2f(nc::theApplication().width(), nc::theApplication().height());
 	dummy_->setPosition(parentPosition_);
@@ -220,6 +244,7 @@ bool MyEventHandler::load(const char *filename)
 		}
 
 		dest.position = src.position;
+		dest.layer = src.layer;
 		dest.inLocalSpace = src.inLocalSpace;
 		dest.active = src.active;
 
@@ -273,6 +298,13 @@ void MyEventHandler::save(const char *filename)
 {
 	LuaLoader::State loaderState;
 
+	loaderState.background = background_;
+	loaderState.backgroundImageName = backgroundImageName_;
+	loaderState.backgroundImageNormalizedPosition.x = backgroundImagePosition_.x / nc::theApplication().width();
+	loaderState.backgroundImageNormalizedPosition.y = backgroundImagePosition_.y / nc::theApplication().height();
+	loaderState.backgroundImageScale = backgroundImageScale_;
+	loaderState.backgroundImageLayer = backgroundImageLayer_;
+
 	loaderState.normalizedAbsPosition.x = parentPosition_.x / nc::theApplication().width();
 	loaderState.normalizedAbsPosition.y = parentPosition_.y / nc::theApplication().height();
 
@@ -297,6 +329,7 @@ void MyEventHandler::save(const char *filename)
 		dest.textureName = *textureName;
 		dest.texRect = src.texRect;
 		dest.position = src.position;
+		dest.layer = src.layer;
 		dest.inLocalSpace = src.inLocalSpace;
 		dest.active = src.active;
 
@@ -378,7 +411,6 @@ void MyEventHandler::applyConfig()
 		nc::Application::RenderingSettings &settings = nc::theApplication().renderingSettings();
 		settings.batchingEnabled = cfg.batching;
 		settings.cullingEnabled = cfg.culling;
-		nc::theApplication().gfxDevice().setClearColor(cfg.background);
 	}
 }
 
@@ -411,6 +443,35 @@ void MyEventHandler::pushRecentFile(const nctl::String &filename)
 	recentFileIndexEnd_ = (recentFileIndexEnd_ + 1) % MaxRecentFiles;
 	if (recentFileIndexEnd_ == recentFileIndexStart_)
 		recentFileIndexStart_ = (recentFileIndexStart_ + 1) % MaxRecentFiles;
+}
+
+bool MyEventHandler::loadBackgroundImage(const nctl::String &filename)
+{
+	nctl::String filepath(texturesPath_ + filename);
+
+	if (filename.isEmpty() == false && nc::IFile::access(filepath.data(), nc::IFile::AccessMode::READABLE))
+	{
+		backgroundTexture_ = nctl::makeUnique<nc::Texture>(filepath.data());
+		if (backgroundSprite_ == nullptr)
+			backgroundSprite_ = nctl::makeUnique<nc::Sprite>(&nc::theApplication().rootNode(), backgroundTexture_.get());
+		else
+			backgroundSprite_->setTexture(backgroundTexture_.get());
+		logString_.formatAppend("Loaded background image \"%s\"\n", filepath.data());
+		return true;
+	}
+
+	logString_.formatAppend("Cannot load background image \"%s\"\n", filepath.data());
+	return false;
+}
+
+void MyEventHandler::deleteBackgroundImage()
+{
+	if (backgroundSprite_ || backgroundTexture_)
+	{
+		backgroundSprite_.reset(nullptr);
+		backgroundTexture_.reset(nullptr);
+		logString_.formatAppend("Background image destroyed\n");
+	}
 }
 
 unsigned int MyEventHandler::retrieveTexture(unsigned int particleSystemIndex)
@@ -473,6 +534,7 @@ void MyEventHandler::createParticleSystem(unsigned int index)
 	s.texRect = texStates_[texIndex_].texRect;
 	particleSystems_[index] = nctl::makeUnique<nc::ParticleSystem>(dummy_.get(), unsigned(s.numParticles), s.texture, s.texRect);
 	particleSystems_[index]->setPosition(s.position);
+	particleSystems_[index]->setLayer(static_cast<unsigned int>(s.layer));
 
 	nctl::UniquePtr<nc::ColorAffector> colAffector = nctl::makeUnique<nc::ColorAffector>();
 	s.colorAffector = colAffector.get();

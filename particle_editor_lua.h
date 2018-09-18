@@ -18,6 +18,7 @@ namespace ncine {
 
 class Texture;
 class ParticleSystem;
+class LuaStateManager;
 
 }
 
@@ -29,7 +30,7 @@ class LuaLoader :
 	public nc::IInputEventHandler
 {
   public:
-	static const unsigned int MaxFilenameLength = 64;
+	static const unsigned int MaxFilenameLength = 128;
 
 	struct State
 	{
@@ -70,6 +71,7 @@ class LuaLoader :
 			nctl::String textureName = nctl::String(MaxFilenameLength);
 			nc::Recti texRect;
 			nc::Vector2f position;
+			int layer;
 			bool inLocalSpace;
 			bool active;
 			nctl::Array<ColorStep> colorSteps;
@@ -83,6 +85,11 @@ class LuaLoader :
 		};
 
 		nc::Vector2f normalizedAbsPosition;
+		nc::Colorf background;
+		nctl::String backgroundImageName = nctl::String(MaxFilenameLength);
+		nc::Vector2f backgroundImageNormalizedPosition;
+		float backgroundImageScale;
+		int backgroundImageLayer;
 		nctl::Array<ParticleSystem> systems;
 	};
 
@@ -96,8 +103,9 @@ class LuaLoader :
 		bool batching = true;
 		bool culling = true;
 		unsigned int saveFileMaxSize = 16 * 1024;
-		nc::Colorf background = nc::Colorf::Black;
 
+		float maxBackgroundImageScale = 5.0f;
+		int maxRenderingLayer = 16;
 		int maxNumParticles = 256;
 		float systemPositionRange = 200.0f;
 		float minParticleScale = 0.0f;
@@ -112,7 +120,7 @@ class LuaLoader :
 		float maxDelay = 5.0f;
 	};
 
-	LuaLoader();
+	LuaLoader() : configLoaded_(false) { }
 	inline bool configLoaded() const { return configLoaded_; }
 	inline const Config &config() const { return config_; }
 	inline Config &config() { return config_; }
@@ -123,9 +131,11 @@ class LuaLoader :
 	void save(const char *filename, const State &state);
 
   private:
-	nc::LuaStateManager luaState_;
+	nctl::UniquePtr<nc::LuaStateManager> luaState_;
 	Config config_;
 	bool configLoaded_;
+
+	void createNewState();
 };
 
 #endif
