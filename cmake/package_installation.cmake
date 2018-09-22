@@ -34,6 +34,7 @@ if(MSVC)
 		SetOutPath '$INSTDIR'")
 	set(CPACK_NSIS_DELETE_ICONS_EXTRA "Delete '$SMPROGRAMS\\\\$MUI_TEMP\\\\${PACKAGE_NAME}.lnk'")
 
+	set(CMAKE_INSTALL_UCRT_LIBRARIES TRUE)
 	include(InstallRequiredSystemLibraries)
 elseif(APPLE)
 	set(CPACK_GENERATOR "Bundle")

@@ -1,4 +1,5 @@
 option(PACKAGE_BUILD_ANDROID "Build the Android version of the game" OFF)
+option(PACKAGE_CRASHRPT "Embed CrashRpt in debug builds" OFF)
 
 set(PACKAGE_DATA_DIR "${PARENT_SOURCE_DIR}/${PACKAGE_NAME}-data" CACHE PATH "Set the path to the game data directory")
 

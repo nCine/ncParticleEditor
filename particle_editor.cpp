@@ -8,6 +8,10 @@
 #include "IInputManager.h"
 #include "IFile.h"
 
+#ifdef WITH_CRASHRPT
+	#include "CrashRptWrapper.h"
+#endif
+
 namespace {
 
 const char *ScriptFile = "particles.lua";
@@ -30,6 +34,10 @@ MyEventHandler::MyEventHandler()
 
 void MyEventHandler::onPreInit(nc::AppConfiguration &config)
 {
+#ifdef WITH_CRASHRPT
+	CrashRptWrapper::install();
+#endif
+
 #ifdef __ANDROID__
 	config.setDataPath("/sdcard/ncparticleeditor/");
 #else
@@ -77,10 +85,19 @@ void MyEventHandler::onPreInit(nc::AppConfiguration &config)
 
 	config.setWindowTitle("ncParticleEditor");
 	config.setWindowIconFilename("icon48.png");
+
+#ifdef WITH_CRASHRPT
+	config.enableInfoText(false);
+	config.enableProfilerGraphs(false);
+#endif
 }
 
 void MyEventHandler::onInit()
 {
+#ifdef WITH_CRASHRPT
+	// CrashRptWrapper::emulateCrash();
+#endif
+
 	backgroundImagePosition_.set(nc::theApplication().width() * 0.5f, nc::theApplication().height() * 0.5f);
 	parentPosition_.set(nc::theApplication().width() * 0.5f, nc::theApplication().height() * 0.5f);
 	nc::SceneNode &rootNode = nc::theApplication().rootNode();
@@ -101,6 +118,13 @@ void MyEventHandler::onFrameStart()
 
 	if (autoEmission_)
 		emitParticles();
+}
+
+void MyEventHandler::onShutdown()
+{
+#ifdef WITH_CRASHRPT
+	CrashRptWrapper::uninstall();
+#endif
 }
 
 void MyEventHandler::onKeyPressed(const nc::KeyboardEvent &event)
