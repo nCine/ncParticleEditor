@@ -103,7 +103,7 @@ class MyEventHandler :
 
 	nctl::String filename_ = nctl::String(MaxStringLength);
 	nctl::String texFilename_ = nctl::String(MaxStringLength);
-	static const unsigned int MaxRecentFiles = 5;
+	static const unsigned int MaxRecentFiles = 6;
 	nctl::StaticArray<nctl::String, MaxRecentFiles> recentFilenames_;
 	int recentFileIndexStart_ = 0;
 	int recentFileIndexEnd_ = 0;
@@ -185,6 +185,7 @@ class MyEventHandler :
 	void deleteUnusedTextures();
 
 	void createParticleSystem(unsigned int index);
+	void cloneParticleSystem(unsigned int srcIndex, unsigned int destIndex, unsigned int numParticles);
 	void destroyParticleSystem(unsigned int index);
 };
 

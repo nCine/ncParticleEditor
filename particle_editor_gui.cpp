@@ -13,6 +13,7 @@
 
 namespace {
 
+const float PlotHeight = 50.0f;
 const char *amountItems[] = { "Constant", "Min/Max" };
 const char *lifeItems[] = { "Constant", "Min/Max" };
 const char *positionItems[] = { "Constant", "Min/Max", "Radius"};
@@ -291,6 +292,8 @@ void MyEventHandler::createGuiLog()
 		ImGui::EndChild();
 		if (ImGui::Button("Clear"))
 			logString_.clear();
+		ImGui::SameLine();
+		ImGui::Text("Length: %u / %u", logString_.length(), logString_.capacity());
 	}
 	ImGui::PopID();
 }
@@ -559,6 +562,14 @@ void MyEventHandler::createGuiManageSystems()
 		}
 
 		ImGui::SameLine();
+		if (ImGui::Button("Clone") && particleSystems_.size() > 0 && systemIndex_ < particleSystems_.size())
+		{
+			int srcSystemIndex = systemIndex_;
+			systemIndex_ = particleSystems_.size();
+			cloneParticleSystem(srcSystemIndex, systemIndex_, sysStates_[srcSystemIndex].numParticles);
+		}
+
+		ImGui::SameLine();
 		ImGui::PushItemWidth(80);
 		ImGui::InputInt("Index", &systemIndex_, 1, 10, particleSystems_.isEmpty() ? ImGuiInputTextFlags_ReadOnly : 0);
 		ImGui::PopItemWidth();
@@ -595,9 +606,15 @@ void MyEventHandler::createGuiParticleSystem()
 	{
 		ImGui::SliderInt("Particles", &s.numParticles, 1, cfg.maxNumParticles);
 		ImGui::SameLine();
-		if (ImGui::Button("Apply"))
-			createParticleSystem(systemIndex_);
-		ImGui::SameLine(); showHelpMarker("Applies the new number by destroying and recreating the particle system");
+		if (ImGui::Button("Apply") && s.numParticles != particleSystem->numParticles())
+		{
+			unsigned int tempSystemIndex = particleSystems_.size();
+			cloneParticleSystem(systemIndex_, tempSystemIndex, 1);
+			cloneParticleSystem(tempSystemIndex, systemIndex_, s.numParticles);
+			destroyParticleSystem(tempSystemIndex);
+			particleSystem = particleSystems_[systemIndex_].get();
+		}
+		ImGui::SameLine(); showHelpMarker("Applies the new number by creating a temporary clone and thus preserving the system state");
 
 		ImGui::SliderFloat("Rel Pos X", &s.position.x, -cfg.systemPositionRange, cfg.systemPositionRange);
 		ImGui::SameLine();
@@ -650,12 +667,7 @@ void MyEventHandler::createGuiColorAffector()
 		}
 
 		if (s.colorAffector->steps().isEmpty() == false)
-		{
 			ImGui::Separator();
-			const float minAge = s.colorAffector->steps().back().age;
-			if (s.colorAge < minAge)
-				s.colorAge = minAge;
-		}
 		if (ImGui::TreeNodeEx("New Step", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			widgetName_.format("Color##%d", stepId);
@@ -664,7 +676,20 @@ void MyEventHandler::createGuiColorAffector()
 			ImGui::SliderFloat(widgetName_.data(), &s.colorAge, 0.0f, 1.0f);
 
 			if (ImGui::Button("Add"))
-				s.colorAffector->addColorStep(s.colorAge, s.colorValue);
+			{
+				for (int i = static_cast<int>(s.colorAffector->steps().size()) - 1; i >= -1; i--)
+				{
+					const bool placeNotFound = (i > -1) ? s.colorAffector->steps()[i].age > s.colorAge : false;
+					if (placeNotFound)
+						s.colorAffector->steps()[i + 1] = s.colorAffector->steps()[i];
+					else
+					{
+						s.colorAffector->steps()[i + 1].age = s.colorAge;
+						s.colorAffector->steps()[i + 1].color = s.colorValue;
+						break;
+					}
+				}
+			}
 			ImGui::SameLine();
 			if (ImGui::Button("Remove") && s.colorAffector->steps().size() > 0)
 				s.colorAffector->steps().setSize(s.colorAffector->steps().size() - 1);
@@ -711,16 +736,16 @@ void MyEventHandler::createGuiColorPlot(const ParticleSystemGuiState &s)
 		}
 
 		ImGui::PushStyleColor(ImGuiCol_PlotLines, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
-		ImGui::PlotLines("Red Steps", redValues, NumPlotValues, 0, nullptr, 0.0f, 1.0f, ImVec2(0.0f, 50.0f));
+		ImGui::PlotLines("Red Steps", redValues, NumPlotValues, 0, nullptr, 0.0f, 1.0f, ImVec2(0.0f, PlotHeight));
 		ImGui::PopStyleColor();
 		ImGui::PushStyleColor(ImGuiCol_PlotLines, ImVec4(0.0f, 1.0f, 0.0f, 1.0f));
-		ImGui::PlotLines("Green Steps", greenValues, NumPlotValues, 0, nullptr, 0.0f, 1.0f, ImVec2(0.0f, 50.0f));
+		ImGui::PlotLines("Green Steps", greenValues, NumPlotValues, 0, nullptr, 0.0f, 1.0f, ImVec2(0.0f, PlotHeight));
 		ImGui::PopStyleColor();
 		ImGui::PushStyleColor(ImGuiCol_PlotLines, ImVec4(0.0f, 0.0f, 1.0f, 1.0f));
-		ImGui::PlotLines("Blue Steps", blueValues, NumPlotValues, 0, nullptr, 0.0f, 1.0f, ImVec2(0.0f, 50.0f));
+		ImGui::PlotLines("Blue Steps", blueValues, NumPlotValues, 0, nullptr, 0.0f, 1.0f, ImVec2(0.0f, PlotHeight));
 		ImGui::PopStyleColor();
 		ImGui::PushStyleColor(ImGuiCol_PlotLines, ImVec4(1.0f, 1.0f, 1.0f, 1.0f));
-		ImGui::PlotLines("Alpha Steps", alphaValues, NumPlotValues, 0, nullptr, 0.0f, 1.0f, ImVec2(0.0f, 50.0f));
+		ImGui::PlotLines("Alpha Steps", alphaValues, NumPlotValues, 0, nullptr, 0.0f, 1.0f, ImVec2(0.0f, PlotHeight));
 		ImGui::PopStyleColor();
 		ImGui::TreePop();
 	}
@@ -768,12 +793,7 @@ void MyEventHandler::createGuiSizeAffector()
 		}
 
 		if (s.sizeAffector->steps().isEmpty() == false)
-		{
 			ImGui::Separator();
-			const float minAge = s.sizeAffector->steps().back().age;
-			if (s.sizeAge < minAge)
-				s.sizeAge = minAge;
-		}
 		if (ImGui::TreeNodeEx("New Step", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			widgetName_.format("Scale##%d", stepId);
@@ -782,7 +802,20 @@ void MyEventHandler::createGuiSizeAffector()
 			ImGui::SliderFloat(widgetName_.data(), &s.sizeAge, 0.0f, 1.0f);
 
 			if (ImGui::Button("Add"))
-				s.sizeAffector->addSizeStep(s.sizeAge, s.sizeValue);
+			{
+				for (int i = static_cast<int>(s.sizeAffector->steps().size()) - 1; i >= -1; i--)
+				{
+					const bool placeNotFound = (i > -1) ? s.sizeAffector->steps()[i].age > s.sizeAge : false;
+					if (placeNotFound)
+						s.sizeAffector->steps()[i + 1] = s.sizeAffector->steps()[i];
+					else
+					{
+						s.sizeAffector->steps()[i + 1].age = s.sizeAge;
+						s.sizeAffector->steps()[i + 1].scale = s.sizeValue;
+						break;
+					}
+				}
+			}
 			ImGui::SameLine();
 			if (ImGui::Button("Remove") && s.sizeAffector->steps().size() > 0)
 				s.sizeAffector->steps().setSize(s.sizeAffector->steps().size() - 1);
@@ -818,7 +851,7 @@ void MyEventHandler::createGuiSizePlot(const ParticleSystemGuiState &s)
 		for (unsigned int i = prevIndex; i < NumPlotValues; i++)
 			values[i] = prevStep->scale;
 
-		ImGui::PlotLines("Size Steps", values, NumPlotValues, 0, nullptr, cfg.minParticleScale, cfg.maxParticleScale, ImVec2(0.0f, 100.0f));
+		ImGui::PlotLines("Size Steps", values, NumPlotValues, 0, nullptr, cfg.minParticleScale, cfg.maxParticleScale, ImVec2(0.0f, PlotHeight));
 		ImGui::TreePop();
 	}
 }
@@ -861,12 +894,7 @@ void MyEventHandler::createGuiRotationAffector()
 		}
 
 		if (s.rotationAffector->steps().isEmpty() == false)
-		{
 			ImGui::Separator();
-			const float minAge = s.rotationAffector->steps().back().age;
-			if (s.rotAge < minAge)
-				s.rotAge = minAge;
-		}
 		if (ImGui::TreeNodeEx("New Step", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			widgetName_.format("Angle##%d", stepId);
@@ -875,7 +903,20 @@ void MyEventHandler::createGuiRotationAffector()
 			ImGui::SliderFloat(widgetName_.data(), &s.rotAge, 0.0f, 1.0f);
 
 			if (ImGui::Button("Add"))
-				s.rotationAffector->addRotationStep(s.rotAge, s.rotValue);
+			{
+				for (int i = static_cast<int>(s.rotationAffector->steps().size()) - 1; i >= -1; i--)
+				{
+					const bool placeNotFound = (i > -1) ? s.rotationAffector->steps()[i].age > s.rotAge : false;
+					if (placeNotFound)
+						s.rotationAffector->steps()[i + 1] = s.rotationAffector->steps()[i];
+					else
+					{
+						s.rotationAffector->steps()[i + 1].age = s.rotAge;
+						s.rotationAffector->steps()[i + 1].angle = s.rotValue;
+						break;
+					}
+				}
+			}
 			ImGui::SameLine();
 			if (ImGui::Button("Remove") && s.rotationAffector->steps().size() > 0)
 				s.rotationAffector->steps().setSize(s.rotationAffector->steps().size() - 1);
@@ -911,7 +952,7 @@ void MyEventHandler::createGuiRotationPlot(const ParticleSystemGuiState &s)
 		for (unsigned int i = prevIndex; i < NumPlotValues; i++)
 			values[i] = prevStep->angle;
 
-		ImGui::PlotLines("Rotation Steps", values, NumPlotValues, 0, nullptr, cfg.minParticleAngle, cfg.maxParticleAngle, ImVec2(0.0f, 100.0f));
+		ImGui::PlotLines("Rotation Steps", values, NumPlotValues, 0, nullptr, cfg.minParticleAngle, cfg.maxParticleAngle, ImVec2(0.0f, PlotHeight));
 		ImGui::TreePop();
 	}
 }
@@ -956,12 +997,7 @@ void MyEventHandler::createGuiPositionAffector()
 		}
 
 		if (s.positionAffector->steps().isEmpty() == false)
-		{
 			ImGui::Separator();
-			const float minAge = s.positionAffector->steps().back().age;
-			if (s.positionAge < minAge)
-				s.positionAge = minAge;
-		}
 		if (ImGui::TreeNodeEx("New Step", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			widgetName_.format("Position X##%d", stepId);
@@ -972,7 +1008,20 @@ void MyEventHandler::createGuiPositionAffector()
 			ImGui::SliderFloat(widgetName_.data(), &s.positionAge, 0.0f, 1.0f);
 
 			if (ImGui::Button("Add"))
-				s.positionAffector->addPositionStep(s.positionAge, s.positionValue);
+			{
+				for (int i = static_cast<int>(s.positionAffector->steps().size()) - 1; i >= -1; i--)
+				{
+					const bool placeNotFound = (i > -1) ? s.positionAffector->steps()[i].age > s.positionAge : false;
+					if (placeNotFound)
+						s.positionAffector->steps()[i + 1] = s.positionAffector->steps()[i];
+					else
+					{
+						s.positionAffector->steps()[i + 1].age = s.positionAge;
+						s.positionAffector->steps()[i + 1].position = s.positionValue;
+						break;
+					}
+				}
+			}
 			ImGui::SameLine();
 			if (ImGui::Button("Remove") && s.positionAffector->steps().size() > 0)
 				s.positionAffector->steps().setSize(s.positionAffector->steps().size() - 1);
@@ -1013,8 +1062,8 @@ void MyEventHandler::createGuiPositionPlot(const ParticleSystemGuiState &s)
 			yValues[i] = prevStep->position.y;
 		}
 
-		ImGui::PlotLines("X Position Steps", xValues, NumPlotValues, 0, nullptr, -cfg.positionRange, cfg.positionRange, ImVec2(0.0f, 50.0f));
-		ImGui::PlotLines("Y Position Steps", yValues, NumPlotValues, 0, nullptr, -cfg.positionRange, cfg.positionRange, ImVec2(0.0f, 50.0f));
+		ImGui::PlotLines("X Position Steps", xValues, NumPlotValues, 0, nullptr, -cfg.positionRange, cfg.positionRange, ImVec2(0.0f, PlotHeight));
+		ImGui::PlotLines("Y Position Steps", yValues, NumPlotValues, 0, nullptr, -cfg.positionRange, cfg.positionRange, ImVec2(0.0f, PlotHeight));
 		ImGui::TreePop();
 	}
 }
@@ -1059,12 +1108,7 @@ void MyEventHandler::createGuiVelocityAffector()
 		}
 
 		if (s.velocityAffector->steps().isEmpty() == false)
-		{
 			ImGui::Separator();
-			const float minAge = s.velocityAffector->steps().back().age;
-			if (s.velocityAge < minAge)
-				s.velocityAge = minAge;
-		}
 		if (ImGui::TreeNodeEx("New Step", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			widgetName_.format("Velocity X##%d", stepId);
@@ -1075,7 +1119,20 @@ void MyEventHandler::createGuiVelocityAffector()
 			ImGui::SliderFloat(widgetName_.data(), &s.velocityAge, 0.0f, 1.0f);
 
 			if (ImGui::Button("Add"))
-				s.velocityAffector->addVelocityStep(s.velocityAge, s.velocityValue);
+			{
+				for (int i = static_cast<int>(s.velocityAffector->steps().size()) - 1; i >= -1; i--)
+				{
+					const bool placeNotFound = (i > -1) ? s.velocityAffector->steps()[i].age > s.velocityAge : false;
+					if (placeNotFound)
+						s.velocityAffector->steps()[i + 1] = s.velocityAffector->steps()[i];
+					else
+					{
+						s.velocityAffector->steps()[i + 1].age = s.velocityAge;
+						s.velocityAffector->steps()[i + 1].velocity = s.velocityValue;
+						break;
+					}
+				}
+			}
 			ImGui::SameLine();
 			if (ImGui::Button("Remove") && s.velocityAffector->steps().size() > 0)
 				s.velocityAffector->steps().setSize(s.velocityAffector->steps().size() - 1);
@@ -1116,8 +1173,8 @@ void MyEventHandler::createGuiVelocityPlot(const ParticleSystemGuiState &s)
 			yValues[i] = prevStep->velocity.y;
 		}
 
-		ImGui::PlotLines("X Velocity Steps", xValues, NumPlotValues, 0, nullptr, -cfg.velocityRange, cfg.velocityRange, ImVec2(0.0f, 50.0f));
-		ImGui::PlotLines("Y Velocity Steps", yValues, NumPlotValues, 0, nullptr, -cfg.velocityRange, cfg.velocityRange, ImVec2(0.0f, 50.0f));
+		ImGui::PlotLines("X Velocity Steps", xValues, NumPlotValues, 0, nullptr, -cfg.velocityRange, cfg.velocityRange, ImVec2(0.0f, PlotHeight));
+		ImGui::PlotLines("Y Velocity Steps", yValues, NumPlotValues, 0, nullptr, -cfg.velocityRange, cfg.velocityRange, ImVec2(0.0f, PlotHeight));
 		ImGui::TreePop();
 	}
 }

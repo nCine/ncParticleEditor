@@ -443,7 +443,7 @@ void MyEventHandler::pushRecentFile(const nctl::String &filename)
 	{
 		if (recentFilenames_[i] == filename)
 			return;
-		i++;
+		i = (i + 1) % MaxRecentFiles;
 	}
 
 	recentFilenames_[recentFileIndexEnd_] = filename;
@@ -556,6 +556,7 @@ void MyEventHandler::createParticleSystem(unsigned int index)
 	particleSystems_[index] = nctl::makeUnique<nc::ParticleSystem>(dummy_.get(), unsigned(s.numParticles), s.texture, s.texRect);
 	particleSystems_[index]->setPosition(s.position);
 	particleSystems_[index]->setLayer(static_cast<unsigned int>(s.layer));
+	particleSystems_[index]->setInLocalSpace(s.inLocalSpace);
 
 	nctl::UniquePtr<nc::ColorAffector> colAffector = nctl::makeUnique<nc::ColorAffector>();
 	s.colorAffector = colAffector.get();
@@ -578,6 +579,61 @@ void MyEventHandler::createParticleSystem(unsigned int index)
 	particleSystems_[index]->addAffector(nctl::move(velAffector));
 
 	logString_.formatAppend("Created a new particle system at index #%u\n", index);
+}
+
+void MyEventHandler::cloneParticleSystem(unsigned int srcIndex, unsigned int destIndex, unsigned int numParticles)
+{
+	const ParticleSystemGuiState &src  = sysStates_[srcIndex];
+	ParticleSystemGuiState &dest = sysStates_[destIndex];
+
+	dest.name = src.name;
+	dest.active = src.active;
+
+	dest.texture = src.texture;
+	dest.texRect = src.texRect;
+	particleSystems_[destIndex] = nctl::makeUnique<nc::ParticleSystem>(dummy_.get(), numParticles, dest.texture, dest.texRect);
+	dest.position = src.position;
+	particleSystems_[destIndex]->setPosition(dest.position);
+	dest.layer = src.layer;
+	particleSystems_[destIndex]->setLayer(static_cast<unsigned int>(dest.layer));
+	dest.inLocalSpace = src.inLocalSpace;
+	particleSystems_[destIndex]->setInLocalSpace(dest.inLocalSpace);
+
+	nctl::UniquePtr<nc::ColorAffector> colAffector = nctl::makeUnique<nc::ColorAffector>();
+	dest.colorAffector = colAffector.get();
+	particleSystems_[destIndex]->addAffector(nctl::move(colAffector));
+	for (unsigned int i = 0; i < src.colorAffector->steps().size(); i++)
+		dest.colorAffector->steps()[i] = src.colorAffector->steps()[i];
+
+	nctl::UniquePtr<nc::SizeAffector> sizeAffector = nctl::makeUnique<nc::SizeAffector>(1.0f);
+	dest.sizeAffector = sizeAffector.get();
+	particleSystems_[destIndex]->addAffector(nctl::move(sizeAffector));
+	dest.sizeAffector->setBaseScale(src.sizeAffector->baseScale());
+	for (unsigned int i = 0; i < src.sizeAffector->steps().size(); i++)
+		dest.sizeAffector->steps()[i] = src.sizeAffector->steps()[i];
+
+	nctl::UniquePtr<nc::RotationAffector> rotAffector = nctl::makeUnique<nc::RotationAffector>();
+	dest.rotationAffector = rotAffector.get();
+	particleSystems_[destIndex]->addAffector(nctl::move(rotAffector));
+	for (unsigned int i = 0; i < src.rotationAffector->steps().size(); i++)
+		dest.rotationAffector->steps()[i] = src.rotationAffector->steps()[i];
+
+	nctl::UniquePtr<nc::PositionAffector> posAffector = nctl::makeUnique<nc::PositionAffector>();
+	dest.positionAffector = posAffector.get();
+	particleSystems_[destIndex]->addAffector(nctl::move(posAffector));
+	for (unsigned int i = 0; i < src.positionAffector->steps().size(); i++)
+		dest.positionAffector->steps()[i] = src.positionAffector->steps()[i];
+
+	nctl::UniquePtr<nc::VelocityAffector> velAffector = nctl::makeUnique<nc::VelocityAffector>();
+	dest.velocityAffector = velAffector.get();
+	particleSystems_[destIndex]->addAffector(nctl::move(velAffector));
+	for (unsigned int i = 0; i < src.velocityAffector->steps().size(); i++)
+		dest.velocityAffector->steps()[i] = src.velocityAffector->steps()[i];
+
+	dest.init = src.init;
+	dest.emitDelay = src.emitDelay;
+
+	logString_.formatAppend("Cloned particle system at index #%u to index #%u\n", srcIndex, destIndex);
 }
 
 void MyEventHandler::destroyParticleSystem(unsigned int index)
