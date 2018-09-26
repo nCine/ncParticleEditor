@@ -114,7 +114,10 @@ void MyEventHandler::onFrameStart()
 {
 	applyConfig();
 	deleteUnusedTextures();
-	createGui();
+
+	createGuiMainWindow();
+	createGuiConfigWindow();
+	createGuiLogWindow();
 
 	if (autoEmission_)
 		emitParticles();
@@ -131,7 +134,13 @@ void MyEventHandler::onKeyPressed(const nc::KeyboardEvent &event)
 {
 	if (event.mod & nc::KeyMod::CTRL)
 	{
-		if (event.sym == nc::KeySym::N)
+		if (event.sym == nc::KeySym::N1)
+			showMainWindow_ = !showMainWindow_;
+		else if (event.sym == nc::KeySym::N2)
+			showConfigWindow_ = !showConfigWindow_;
+		else if (event.sym == nc::KeySym::N3)
+			showLogWindow_ = !showLogWindow_;
+		else if (event.sym == nc::KeySym::N)
 		{
 			if (menuNewEnabled())
 				menuNew();

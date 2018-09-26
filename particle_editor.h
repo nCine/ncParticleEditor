@@ -134,6 +134,10 @@ class MyEventHandler :
 
 	static const unsigned int NumPlotValues = 64;
 
+	bool showMainWindow_ = true;
+	bool showConfigWindow_ = false;
+	bool showLogWindow_ = false;
+
 	bool menuNewEnabled();
 	void menuNew();
 	void menuOpen();
@@ -143,10 +147,8 @@ class MyEventHandler :
 	void closeModalsAndAbout();
 
 	void configureGui();
-	void createGui();
+	void createGuiMainWindow();
 	void createGuiMenus();
-	void createGuiLog();
-	void createGuiConfig();
 	void createGuiBackground();
 	void createGuiTextures();
 	void createGuiManageSystems();
@@ -163,6 +165,8 @@ class MyEventHandler :
 	void createGuiVelocityPlot(const ParticleSystemGuiState &s);
 	void createGuiEmission();
 	void createGuiEmissionPlot();
+	void createGuiConfigWindow();
+	void createGuiLogWindow();
 
 	void emitParticles(unsigned int index);
 	void emitParticles();

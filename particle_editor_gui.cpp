@@ -23,7 +23,7 @@ const char *rotationItems[] = { "Emitter", "Constant", "Min/Max"};
 static bool requestCloseModal = false;
 static bool openModal = false;
 static bool saveAsModal = false;
-static bool aboutWindow = false;
+static bool showAboutWindow = false;
 static bool allowOverwrite = false;
 
 void showHelpMarker(const char *description)
@@ -90,7 +90,7 @@ void MyEventHandler::menuQuit()
 void MyEventHandler::closeModalsAndAbout()
 {
 	requestCloseModal = true;
-	aboutWindow = false;
+	showAboutWindow = false;
 }
 
 void MyEventHandler::configureGui()
@@ -105,35 +105,34 @@ void MyEventHandler::configureGui()
 	style.FrameBorderSize = 1.0f;
 }
 
-void MyEventHandler::createGui()
+void MyEventHandler::createGuiMainWindow()
 {
-	if (!ImGui::Begin("ncParticleEditor", nullptr, ImGuiWindowFlags_MenuBar))
+	if (showMainWindow_)
 	{
+		const ImVec2 windowSize = ImVec2(400.0f, 400.0f);
+		ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
+		ImGui::Begin("ncParticleEditor", &showMainWindow_, ImGuiWindowFlags_MenuBar);
+
+		createGuiMenus();
+
+		createGuiBackground();
+		createGuiTextures();
+		createGuiManageSystems();
+
+		if (particleSystems_.size() > 0)
+		{
+			createGuiParticleSystem();
+			createGuiColorAffector();
+			createGuiSizeAffector();
+			createGuiRotationAffector();
+			createGuiPositionAffector();
+			createGuiVelocityAffector();
+			createGuiEmission();
+		}
+
+		ImGui::Separator();
 		ImGui::End();
-		return;
 	}
-
-	createGuiMenus();
-
-	createGuiLog();
-	createGuiConfig();
-	createGuiBackground();
-	createGuiTextures();
-	createGuiManageSystems();
-
-	if (particleSystems_.size() > 0)
-	{
-		createGuiParticleSystem();
-		createGuiColorAffector();
-		createGuiSizeAffector();
-		createGuiRotationAffector();
-		createGuiPositionAffector();
-		createGuiVelocityAffector();
-		createGuiEmission();
-	}
-
-	ImGui::Separator();
-	ImGui::End();
 }
 
 void MyEventHandler::createGuiMenus()
@@ -182,10 +181,18 @@ void MyEventHandler::createGuiMenus()
 			ImGui::EndMenu();
 		}
 
+		if (ImGui::BeginMenu("View"))
+		{
+			ImGui::MenuItem("Main", "CTRL + 1", &showMainWindow_);
+			ImGui::MenuItem("Config", "CTRL + 2", &showConfigWindow_);
+			ImGui::MenuItem("Log", "CTRL + 3", &showLogWindow_);
+			ImGui::EndMenu();
+		}
+
 		if (ImGui::BeginMenu("?"))
 		{
 			if (ImGui::MenuItem("About"))
-				aboutWindow = true;
+				showAboutWindow = true;
 
 			ImGui::EndMenu();
 		}
@@ -198,9 +205,9 @@ void MyEventHandler::createGuiMenus()
 		ImGui::OpenPopup("Open##Modal");
 	else if (saveAsModal)
 		ImGui::OpenPopup("Save As##Modal");
-	else if (aboutWindow)
+	else if (showAboutWindow)
 	{
-		ImGui::Begin("About", &aboutWindow, ImGuiWindowFlags_AlwaysAutoResize);
+		ImGui::Begin("About", &showAboutWindow, ImGuiWindowFlags_AlwaysAutoResize);
 		ImGui::Text("ncParticleEditor compiled on %s at %s", __DATE__, __TIME__);
 		ImGui::Separator();
 		ImGui::Text("Based on nCine %s (%s)", nc::VersionStrings::Version, nc::VersionStrings::GitBranch);
@@ -280,97 +287,6 @@ void MyEventHandler::createGuiMenus()
 
 		ImGui::EndPopup();
 	}
-}
-
-void MyEventHandler::createGuiLog()
-{
-	ImGui::PushID("Log");
-	if (ImGui::CollapsingHeader("Log"))
-	{
-		ImGui::BeginChild("scrolling", ImVec2(0, 150), false, ImGuiWindowFlags_HorizontalScrollbar);
-		ImGui::TextUnformatted(logString_.data());
-		ImGui::EndChild();
-		if (ImGui::Button("Clear"))
-			logString_.clear();
-		ImGui::SameLine();
-		ImGui::Text("Length: %u / %u", logString_.length(), logString_.capacity());
-	}
-	ImGui::PopID();
-}
-
-void MyEventHandler::createGuiConfig()
-{
-	ImGui::PushID("Config");
-	if (ImGui::CollapsingHeader("Configuration"))
-	{
-		LuaLoader::Config &cfg = loader_->config();
-
-		ImGui::SliderInt("Screen Width", &cfg.width, 0, 1920);
-		ImGui::SliderInt("Screen Height", &cfg.height, 0, 1080);
-		ImGui::Checkbox("Fullscreen", &cfg.fullscreen);
-
-		ImGui::NewLine();
-		int vboSize = cfg.vboSize / 1024;
-		ImGui::SliderInt("VBO Size", &vboSize, 0, 1024, "%d KB");
-		cfg.vboSize = vboSize * 1024;
-		int iboSize = cfg.iboSize / 1024;
-		ImGui::SliderInt("IBO Size", &iboSize, 0, 256, "%d KB");
-		cfg.iboSize = iboSize * 1024;
-
-		ImGui::Checkbox("Batching", &cfg.batching);
-		ImGui::SameLine();
-		ImGui::Checkbox("Culling", &cfg.culling);
-
-		ImGui::NewLine();
-		int saveFileSize = cfg.saveFileMaxSize / 1024;
-		ImGui::SliderInt("Savefile Size", &saveFileSize, 0, 128, "%d KB");
-		cfg.saveFileMaxSize = saveFileSize * 1024;
-		int logStringSize = cfg.logMaxSize / 1024;
-		ImGui::SliderInt("Log Size", &logStringSize, 0, 64, "%d KB");
-		cfg.logMaxSize = logStringSize * 1024;
-
-		loader_->sanitizeInitValues();
-
-		ImGui::NewLine();
-		if (ImGui::TreeNode("GUI Limits"))
-		{
-			ImGui::PushItemWidth(100.0f);
-			ImGui::InputFloat("Max Background Image Scale", &cfg.maxBackgroundImageScale);
-			ImGui::InputInt("Max Rendering Layer", &cfg.maxRenderingLayer);
-			ImGui::InputInt("Max Number of Particles", &cfg.maxNumParticles);
-			ImGui::InputFloat("System Position Range", &cfg.systemPositionRange);
-			ImGui::InputFloat("Min Particle Scale", &cfg.minParticleScale);
-			ImGui::SameLine();
-			ImGui::InputFloat("Max Particle Scale", &cfg.maxParticleScale);
-			ImGui::InputFloat("Min Particle Angle", &cfg.minParticleAngle);
-			ImGui::SameLine();
-			ImGui::InputFloat("Max Particle Angle", &cfg.maxParticleAngle);
-			ImGui::InputFloat("Position Range", &cfg.positionRange);
-			ImGui::InputFloat("Velocity Range", &cfg.velocityRange);
-			ImGui::InputFloat("Max Random Life", &cfg.maxRandomLife);
-			ImGui::InputFloat("Random Position Range", &cfg.randomPositionRange);
-			ImGui::InputFloat("Random Velocity Range", &cfg.randomVelocityRange);
-			ImGui::InputFloat("Max Delay", &cfg.maxDelay);
-			ImGui::PopItemWidth();
-
-			loader_->sanitizeGuiLimits();
-			ImGui::TreePop();
-		}
-
-		ImGui::NewLine();
-		if (ImGui::Button("Load"))
-		{
-			loader_->loadConfig(configFile_.data());
-			logString_.formatAppend("Loaded config file \"%s\"\n", configFile_.data());
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("Save"))
-		{
-			loader_->saveConfig(configFile_.data());
-			logString_.formatAppend("Saved config file \"%s\"\n", configFile_.data());
-		}
-	}
-	ImGui::PopID();
 }
 
 void MyEventHandler::createGuiBackground()
@@ -1419,4 +1335,104 @@ void MyEventHandler::createGuiEmissionPlot()
 	ImGui::PlotLines("", values, NumPlotValues, 0, nullptr, 0, totalParticles, ImVec2(0.0f, 25.0f));
 	ImGui::SameLine();
 	ImGui::Text("Alive: %u/%u", aliveParticles, totalParticles);
+}
+
+void MyEventHandler::createGuiConfigWindow()
+{
+	if (showConfigWindow_)
+	{
+		const ImVec2 windowSize = ImVec2(450.0f, 450.0f);
+		ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
+		ImGui::Begin("Config", &showConfigWindow_, 0);
+
+		LuaLoader::Config &cfg = loader_->config();
+
+		ImGui::SliderInt("Screen Width", &cfg.width, 0, 1920);
+		ImGui::SliderInt("Screen Height", &cfg.height, 0, 1080);
+		ImGui::Checkbox("Fullscreen", &cfg.fullscreen);
+
+		ImGui::NewLine();
+		int vboSize = cfg.vboSize / 1024;
+		ImGui::SliderInt("VBO Size", &vboSize, 0, 1024, "%d KB");
+		cfg.vboSize = vboSize * 1024;
+		int iboSize = cfg.iboSize / 1024;
+		ImGui::SliderInt("IBO Size", &iboSize, 0, 256, "%d KB");
+		cfg.iboSize = iboSize * 1024;
+
+		ImGui::Checkbox("Batching", &cfg.batching);
+		ImGui::SameLine();
+		ImGui::Checkbox("Culling", &cfg.culling);
+
+		ImGui::NewLine();
+		int saveFileSize = cfg.saveFileMaxSize / 1024;
+		ImGui::SliderInt("Savefile Size", &saveFileSize, 0, 128, "%d KB");
+		cfg.saveFileMaxSize = saveFileSize * 1024;
+		int logStringSize = cfg.logMaxSize / 1024;
+		ImGui::SliderInt("Log Size", &logStringSize, 0, 64, "%d KB");
+		cfg.logMaxSize = logStringSize * 1024;
+
+		loader_->sanitizeInitValues();
+
+		ImGui::NewLine();
+		if (ImGui::TreeNode("GUI Limits"))
+		{
+			ImGui::PushItemWidth(100.0f);
+			ImGui::InputFloat("Max Background Image Scale", &cfg.maxBackgroundImageScale);
+			ImGui::InputInt("Max Rendering Layer", &cfg.maxRenderingLayer);
+			ImGui::InputInt("Max Number of Particles", &cfg.maxNumParticles);
+			ImGui::InputFloat("System Position Range", &cfg.systemPositionRange);
+			ImGui::InputFloat("Min Particle Scale", &cfg.minParticleScale);
+			ImGui::SameLine();
+			ImGui::InputFloat("Max Particle Scale", &cfg.maxParticleScale);
+			ImGui::InputFloat("Min Particle Angle", &cfg.minParticleAngle);
+			ImGui::SameLine();
+			ImGui::InputFloat("Max Particle Angle", &cfg.maxParticleAngle);
+			ImGui::InputFloat("Position Range", &cfg.positionRange);
+			ImGui::InputFloat("Velocity Range", &cfg.velocityRange);
+			ImGui::InputFloat("Max Random Life", &cfg.maxRandomLife);
+			ImGui::InputFloat("Random Position Range", &cfg.randomPositionRange);
+			ImGui::InputFloat("Random Velocity Range", &cfg.randomVelocityRange);
+			ImGui::InputFloat("Max Delay", &cfg.maxDelay);
+			ImGui::PopItemWidth();
+
+			loader_->sanitizeGuiLimits();
+			ImGui::TreePop();
+		}
+
+		ImGui::NewLine();
+		if (ImGui::Button("Load"))
+		{
+			loader_->loadConfig(configFile_.data());
+			logString_.formatAppend("Loaded config file \"%s\"\n", configFile_.data());
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Save"))
+		{
+			loader_->saveConfig(configFile_.data());
+			logString_.formatAppend("Saved config file \"%s\"\n", configFile_.data());
+		}
+
+		ImGui::End();
+	}
+}
+
+void MyEventHandler::createGuiLogWindow()
+{
+	if (showLogWindow_)
+	{
+		const ImVec2 windowSize = ImVec2(600.0f, 300.0f);
+		ImGui::SetNextWindowSize(windowSize, ImGuiCond_FirstUseEver);
+		ImGui::Begin("Log", &showLogWindow_, 0);
+
+		ImGui::BeginChild("scrolling", ImVec2(0.0f, -1.2f * ImGui::GetFrameHeightWithSpacing()), false, ImGuiWindowFlags_HorizontalScrollbar);
+		ImGui::TextUnformatted(logString_.data());
+		ImGui::EndChild();
+		ImGui::Separator();
+		if (ImGui::Button("Clear"))
+			logString_.clear();
+		ImGui::SameLine();
+		ImGui::Text("Length: %u / %u", logString_.length(), logString_.capacity());
+
+		ImGui::End();
+	}
 }
