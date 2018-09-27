@@ -98,9 +98,6 @@ class MyEventHandler :
 	};
 
 	nctl::String configFile_ = nctl::String(MaxStringLength);
-	nctl::String scriptsPath_ = nctl::String(MaxStringLength);
-	nctl::String texturesPath_ = nctl::String(MaxStringLength);
-
 	nctl::String filename_ = nctl::String(MaxStringLength);
 	nctl::String texFilename_ = nctl::String(MaxStringLength);
 	static const unsigned int MaxRecentFiles = 6;
@@ -191,6 +188,8 @@ class MyEventHandler :
 	void createParticleSystem(unsigned int index);
 	void cloneParticleSystem(unsigned int srcIndex, unsigned int destIndex, unsigned int numParticles);
 	void destroyParticleSystem(unsigned int index);
+
+	nctl::String joinPath(const nctl::String &first, const nctl::String &second);
 };
 
 #endif

@@ -52,14 +52,6 @@ void MyEventHandler::onPreInit(nc::AppConfiguration &config)
 	if (nc::IFile::access(configFile_.data(), nc::IFile::AccessMode::READABLE) == false)
 		configFile_ = nc::IFile::dataPath() +  "config.lua";
 
-	scriptsPath_ = "scripts/";
-	if (nc::IFile::access(scriptsPath_.data(), nc::IFile::AccessMode::READABLE) == false)
-		scriptsPath_ = nc::IFile::dataPath() + "scripts/";
-
-	texturesPath_ = "textures/";
-	if (nc::IFile::access(texturesPath_.data(), nc::IFile::AccessMode::READABLE) == false)
-		texturesPath_ = nc::IFile::dataPath() + "textures/";
-
 	LuaLoader::Config &luaConfig = loader_->config();
 	if (nc::IFile::access(configFile_.data(), nc::IFile::AccessMode::READABLE))
 	{
@@ -77,6 +69,13 @@ void MyEventHandler::onPreInit(nc::AppConfiguration &config)
 		logString_.copy(temp);
 		logString_ = nctl::move(temp);
 	}
+
+	if (nc::IFile::access(luaConfig.scriptsPath.data(), nc::IFile::AccessMode::READABLE) == false)
+		luaConfig.scriptsPath = nc::IFile::dataPath() + "scripts/";
+	if (nc::IFile::access(luaConfig.texturesPath.data(), nc::IFile::AccessMode::READABLE) == false)
+		luaConfig.texturesPath = nc::IFile::dataPath() + "textures/";
+	if (nc::IFile::access(luaConfig.backgroundsPath.data(), nc::IFile::AccessMode::READABLE) == false)
+		luaConfig.backgroundsPath = nc::IFile::dataPath() + "backgrounds/";
 
 	config.setResolution(luaConfig.width, luaConfig.height);
 	config.setFullScreen(luaConfig.fullscreen);
@@ -103,7 +102,8 @@ void MyEventHandler::onInit()
 	nc::SceneNode &rootNode = nc::theApplication().rootNode();
 	dummy_ = nctl::makeUnique<nc::SceneNode>(&rootNode, parentPosition_.x, parentPosition_.y);
 
-	nctl::String initialScript = scriptsPath_ + ScriptFile;
+	const LuaLoader::Config &luaConfig = loader_->config();
+	const nctl::String initialScript = luaConfig.scriptsPath + ScriptFile;
 	if (nc::IFile::access(initialScript.data(), nc::IFile::AccessMode::READABLE))
 		load(initialScript.data());
 
@@ -463,7 +463,8 @@ void MyEventHandler::pushRecentFile(const nctl::String &filename)
 
 bool MyEventHandler::loadBackgroundImage(const nctl::String &filename)
 {
-	nctl::String filepath(texturesPath_ + filename);
+	const LuaLoader::Config &luaConfig = loader_->config();
+	nctl::String filepath = joinPath(luaConfig.backgroundsPath, filename);
 
 	if (filename.isEmpty() == false && nc::IFile::access(filepath.data(), nc::IFile::AccessMode::READABLE))
 	{
@@ -521,7 +522,9 @@ unsigned int MyEventHandler::retrieveTexture(unsigned int particleSystemIndex)
 bool MyEventHandler::createTexture(unsigned int index)
 {
 	TextureGuiState &s = texStates_[index];
-	nctl::String filepath(texturesPath_ + s.name);
+
+	const LuaLoader::Config &luaConfig = loader_->config();
+	nctl::String filepath = joinPath(luaConfig.texturesPath, s.name);
 
 	if (s.name.isEmpty() == false && nc::IFile::access(filepath.data(), nc::IFile::AccessMode::READABLE))
 	{
@@ -657,4 +660,10 @@ void MyEventHandler::destroyParticleSystem(unsigned int index)
 	sysStates_.setSize(sysStates_.size() - 1);
 
 	logString_.formatAppend("Destroyed particle system at index #%u\n", index);
+}
+
+nctl::String MyEventHandler::joinPath(const nctl::String &first, const nctl::String &second)
+{
+	const char *pathSeparator = (first[first.length() - 1] != '/') ? "/" : "";
+	return nctl::String(first + pathSeparator + second);
 }

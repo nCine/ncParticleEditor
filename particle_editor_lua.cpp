@@ -21,7 +21,7 @@ void indent(nctl::String &string, int amount)
 }
 
 const unsigned int ProjectFileVersion = 5;
-const unsigned int ConfigFileVersion = 5;
+const unsigned int ConfigFileVersion = 6;
 
 namespace Names
 {
@@ -80,6 +80,10 @@ const char *batching = "batching";
 const char *culling = "culling";
 const char *saveFileMaxSize = "savefile_maxsize"; // version 3
 const char *logMaxSize = "log_maxsize"; // version 5
+
+const char *scriptsPath = "scripts_path"; // version 6
+const char *backgroundsPath = "backgrounds_path"; // version 6
+const char *texturesPath = "textures_path"; // version 6
 
 const char *guiLimits = "gui_limits"; // version 3
 const char *maxBackgroundImageScale = "max_background_image_scale"; // version 4
@@ -167,12 +171,23 @@ bool LuaLoader::loadConfig(const char *filename)
 	nc::LuaUtils::tryRetrieveGlobal<bool>(L, CfgNames::culling, config_.culling);
 
 	if (version >= 3)
-	{
 		nc::LuaUtils::tryRetrieveGlobal<uint32_t>(L, CfgNames::saveFileMaxSize, config_.saveFileMaxSize);
 
-		if (version >= 5)
-			nc::LuaUtils::tryRetrieveGlobal<uint32_t>(L, CfgNames::logMaxSize, config_.logMaxSize);
+	if (version >= 5)
+		nc::LuaUtils::tryRetrieveGlobal<uint32_t>(L, CfgNames::logMaxSize, config_.logMaxSize);
 
+	config_.scriptsPath = "scripts/";
+	config_.texturesPath = "textures/";
+	config_.backgroundsPath = "backgrounds/";
+	if (version >= 6)
+	{
+		config_.scriptsPath = nc::LuaUtils::retrieveGlobal<const char *>(L, CfgNames::scriptsPath);
+		config_.texturesPath = nc::LuaUtils::retrieveGlobal<const char *>(L, CfgNames::texturesPath);
+		config_.backgroundsPath = nc::LuaUtils::retrieveGlobal<const char *>(L, CfgNames::backgroundsPath);
+	}
+
+	if (version >= 3)
+	{
 		if (nc::LuaUtils::tryRetrieveGlobalTable(L, CfgNames::guiLimits))
 		{
 			nc::LuaUtils::tryRetrieveField<int32_t>(L, -1, CfgNames::maxNumParticles, config_.maxNumParticles);
@@ -221,6 +236,10 @@ bool LuaLoader::saveConfig(const char *filename)
 	indent(file, amount); file.formatAppend("%s = %s\n", CfgNames::culling, config_.culling ? "true" : "false");
 	indent(file, amount); file.formatAppend("%s = %u\n", CfgNames::saveFileMaxSize, config_.saveFileMaxSize);
 	indent(file, amount); file.formatAppend("%s = %u\n", CfgNames::logMaxSize, config_.logMaxSize);
+
+	indent(file, amount); file.formatAppend("%s = \"%s\"\n", CfgNames::scriptsPath, config_.scriptsPath.data());
+	indent(file, amount); file.formatAppend("%s = \"%s\"\n", CfgNames::texturesPath, config_.texturesPath.data());
+	indent(file, amount); file.formatAppend("%s = \"%s\"\n", CfgNames::backgroundsPath, config_.backgroundsPath.data());
 
 	indent(file, amount); file.append("\n");
 	indent(file, amount); file.formatAppend("%s =\n", CfgNames::guiLimits);

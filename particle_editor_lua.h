@@ -112,6 +112,10 @@ class LuaLoader :
 		unsigned int saveFileMaxSize = 8 * 1024;
 		unsigned int logMaxSize = 4 * 1024;
 
+		nctl::String scriptsPath = nctl::String(MaxFilenameLength);
+		nctl::String texturesPath = nctl::String(MaxFilenameLength);
+		nctl::String backgroundsPath = nctl::String(MaxFilenameLength);
+
 		float maxBackgroundImageScale = 5.0f;
 		int maxRenderingLayer = 16;
 		int maxNumParticles = 256;

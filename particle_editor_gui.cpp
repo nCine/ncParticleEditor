@@ -78,7 +78,8 @@ bool MyEventHandler::menuSaveEnabled()
 
 void MyEventHandler::menuSave()
 {
-	nctl::String filePath = scriptsPath_ + filename_;
+	const LuaLoader::Config &luaConfig = loader_->config();
+	nctl::String filePath = joinPath(luaConfig.scriptsPath, filename_);
 	save(filePath.data());
 }
 
@@ -156,7 +157,8 @@ void MyEventHandler::createGuiMenus()
 				{
 					if (ImGui::MenuItem(recentFilenames_[i].data()))
 					{
-						nctl::String filePath = scriptsPath_ + recentFilenames_[i];
+						const LuaLoader::Config &luaConfig = loader_->config();
+						nctl::String filePath = joinPath(luaConfig.scriptsPath, recentFilenames_[i]);
 						if (load(filePath.data()))
 							filename_ = recentFilenames_[i];
 						break;
@@ -225,14 +227,18 @@ void MyEventHandler::createGuiMenus()
 		if (ImGui::InputText("", filename_.data(), MaxStringLength, ImGuiInputTextFlags_EnterReturnsTrue |
 		                     ImGuiInputTextFlags_CallbackResize, inputTextCallback, &filename_) || ImGui::Button("OK"))
 		{
-			nctl::String filePath = scriptsPath_ + filename_;
+			const LuaLoader::Config &luaConfig = loader_->config();
+			nctl::String filePath = joinPath(luaConfig.scriptsPath, filename_);
 			if (nc::IFile::access(filePath.data(), nc::IFile::AccessMode::READABLE) && load(filePath.data()))
 			{
 				pushRecentFile(filename_);
 				requestCloseModal = true;
 			}
 			else
+			{
 				filename_ = "Loading error";
+				logString_.formatAppend("Could not load project file \"%s\"\n", filePath.data());
+			}
 		}
 		ImGui::SetItemDefaultFocus();
 
@@ -260,9 +266,13 @@ void MyEventHandler::createGuiMenus()
 		if (ImGui::InputText("", filename_.data(), MaxStringLength, ImGuiInputTextFlags_EnterReturnsTrue |
 		                     ImGuiInputTextFlags_CallbackResize, inputTextCallback, &filename_) || ImGui::Button("OK"))
 		{
-			nctl::String filePath = scriptsPath_ + filename_;
+			const LuaLoader::Config &luaConfig = loader_->config();
+			nctl::String filePath = joinPath(luaConfig.scriptsPath, filename_);
 			if (nc::IFile::access(filePath.data(), nc::IFile::AccessMode::READABLE) && allowOverwrite == false)
+			{
 				filename_ = "File exists!";
+				logString_.formatAppend("Could not overwrite existing file \"%s\"\n", filePath.data());
+			}
 			else
 			{
 				save(filePath.data());
@@ -1370,6 +1380,14 @@ void MyEventHandler::createGuiConfigWindow()
 		int logStringSize = cfg.logMaxSize / 1024;
 		ImGui::SliderInt("Log Size", &logStringSize, 0, 64, "%d KB");
 		cfg.logMaxSize = logStringSize * 1024;
+
+		ImGui::NewLine();
+		ImGui::InputText("Scripts Path", cfg.scriptsPath.data(), MaxStringLength, ImGuiInputTextFlags_EnterReturnsTrue |
+		                 ImGuiInputTextFlags_CallbackResize, inputTextCallback, &cfg.scriptsPath);
+		ImGui::InputText("Textures Path", cfg.texturesPath.data(), MaxStringLength, ImGuiInputTextFlags_EnterReturnsTrue |
+		                 ImGuiInputTextFlags_CallbackResize, inputTextCallback, &cfg.texturesPath);
+		ImGui::InputText("Backgrounds Path", cfg.backgroundsPath.data(), MaxStringLength, ImGuiInputTextFlags_EnterReturnsTrue |
+		                 ImGuiInputTextFlags_CallbackResize, inputTextCallback, &cfg.backgroundsPath);
 
 		loader_->sanitizeInitValues();
 
