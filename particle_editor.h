@@ -175,6 +175,7 @@ class MyEventHandler :
 	void pushRecentFile(const nctl::String &filename);
 
 	void applyConfig();
+	void applyGuiStyleConfig();
 	void clearData();
 
 	bool loadBackgroundImage(const nctl::String &filename);

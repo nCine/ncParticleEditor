@@ -428,6 +428,8 @@ void MyEventHandler::applyConfig()
 	nc::Application::RenderingSettings &settings = nc::theApplication().renderingSettings();
 	settings.batchingEnabled = cfg.batching;
 	settings.cullingEnabled = cfg.culling;
+
+	applyGuiStyleConfig();
 }
 
 void MyEventHandler::clearData()

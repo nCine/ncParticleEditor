@@ -21,7 +21,7 @@ void indent(nctl::String &string, int amount)
 }
 
 const unsigned int ProjectFileVersion = 5;
-const unsigned int ConfigFileVersion = 6;
+const unsigned int ConfigFileVersion = 7;
 
 namespace Names
 {
@@ -101,6 +101,14 @@ const char *randomPositionRange = "random_position_range"; // version 3
 const char *randomVelocityRange = "random_velocity_range"; // version 3
 const char *maxDelay = "max_delay"; // version 3
 
+const char *guiStyle = "gui_style"; // version 7
+const char *styleIndex = "style_index"; // version 7
+const char *frameRounding = "frame_rounding"; // version 7
+const char *windowBorder = "window_border"; // version 7
+const char *frameBorder = "frame_border"; // version 7
+const char *popupBorder = "popup_border"; // version 7
+const char *scaling = "scaling"; // version 7
+
 }
 
 }
@@ -150,6 +158,24 @@ void LuaLoader::sanitizeGuiLimits()
 		config_.minParticleScale = config_.maxParticleScale;
 		config_.maxParticleScale = temp;
 	}
+}
+
+void LuaLoader::sanitizeGuiStyle()
+{
+	if (config_.styleIndex < 0)
+		config_.styleIndex = 0;
+	else if (config_.styleIndex > 2)
+		config_.styleIndex = 2;
+
+	if (config_.frameRounding < 0.0f)
+		config_.frameRounding = 0.0f;
+	else if (config_.frameRounding > 12.0f)
+		config_.frameRounding = 12.0f;
+
+	if (config_.scaling < 0.5f)
+		config_.scaling = 0.5f;
+	else if (config_.scaling > 2.0f)
+		config_.scaling = 2.0f;
 }
 
 bool LuaLoader::loadConfig(const char *filename)
@@ -210,10 +236,25 @@ bool LuaLoader::loadConfig(const char *filename)
 			}
 		}
 		nc::LuaUtils::pop(L);
-
-		sanitizeInitValues();
-		sanitizeGuiLimits();
 	}
+
+	if (version >= 7)
+	{
+		if (nc::LuaUtils::tryRetrieveGlobalTable(L, CfgNames::guiStyle))
+		{
+			nc::LuaUtils::tryRetrieveField<int>(L, -1, CfgNames::styleIndex, config_.styleIndex);
+			nc::LuaUtils::tryRetrieveField<float>(L, -1, CfgNames::frameRounding, config_.frameRounding);
+			nc::LuaUtils::tryRetrieveField<bool>(L, -1, CfgNames::windowBorder, config_.windowBorder);
+			nc::LuaUtils::tryRetrieveField<bool>(L, -1, CfgNames::frameBorder, config_.frameBorder);
+			nc::LuaUtils::tryRetrieveField<bool>(L, -1, CfgNames::popupBorder, config_.popupBorder);
+			nc::LuaUtils::tryRetrieveField<float>(L, -1, CfgNames::scaling, config_.scaling);
+		}
+		nc::LuaUtils::pop(L);
+	}
+
+	sanitizeInitValues();
+	sanitizeGuiLimits();
+	sanitizeGuiStyle();
 
 	return true;;
 }
@@ -260,6 +301,21 @@ bool LuaLoader::saveConfig(const char *filename)
 	indent(file, amount); file.formatAppend("%s = %f,\n", CfgNames::randomPositionRange, config_.randomPositionRange);
 	indent(file, amount); file.formatAppend("%s = %f,\n", CfgNames::randomVelocityRange, config_.randomVelocityRange);
 	indent(file, amount); file.formatAppend("%s = %f\n", CfgNames::maxDelay, config_.maxDelay);
+
+	amount--;
+	indent(file, amount); file.append("}\n");
+
+	indent(file, amount); file.append("\n");
+	indent(file, amount); file.formatAppend("%s =\n", CfgNames::guiStyle);
+	indent(file, amount); file.append("{\n");
+	amount++;
+
+	indent(file, amount); file.formatAppend("%s = %d,\n", CfgNames::styleIndex, config_.styleIndex);
+	indent(file, amount); file.formatAppend("%s = %f,\n", CfgNames::frameRounding, config_.frameRounding);
+	indent(file, amount); file.formatAppend("%s = %s,\n", CfgNames::windowBorder, config_.windowBorder ? "true" : "false");
+	indent(file, amount); file.formatAppend("%s = %s,\n", CfgNames::frameBorder, config_.frameBorder ? "true" : "false");
+	indent(file, amount); file.formatAppend("%s = %s,\n", CfgNames::popupBorder, config_.popupBorder ? "true" : "false");
+	indent(file, amount); file.formatAppend("%s = %f\n", CfgNames::scaling, config_.scaling);
 
 	amount--;
 	indent(file, amount); file.append("}\n");

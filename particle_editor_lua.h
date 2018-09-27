@@ -130,6 +130,17 @@ class LuaLoader :
 		float randomPositionRange = 100.0f;
 		float randomVelocityRange = 200.0f;
 		float maxDelay = 5.0f;
+
+		int styleIndex = 0;
+		float frameRounding = 0.0f;
+		bool windowBorder = true;
+		bool frameBorder = true;
+		bool popupBorder = true;
+#ifdef __ANDROID__
+		float scaling = 2.0f;
+#else
+		float scaling = 1.0f;
+#endif
 	};
 
 	LuaLoader() { }
@@ -137,6 +148,7 @@ class LuaLoader :
 	inline Config &config() { return config_; }
 	void sanitizeInitValues();
 	void sanitizeGuiLimits();
+	void sanitizeGuiStyle();
 	bool loadConfig(const char *filename);
 	bool saveConfig(const char *filename);
 	bool load(const char *filename, State &state);

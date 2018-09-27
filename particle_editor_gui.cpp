@@ -98,12 +98,6 @@ void MyEventHandler::configureGui()
 {
 	ImGuiIO& io = ImGui::GetIO();
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-#ifdef __ANDROID__
-	io.FontGlobalScale = 2.0f;
-#endif
-
-	ImGuiStyle& style = ImGui::GetStyle();
-	style.FrameBorderSize = 1.0f;
 }
 
 void MyEventHandler::createGuiMainWindow()
@@ -1417,6 +1411,35 @@ void MyEventHandler::createGuiConfigWindow()
 			ImGui::TreePop();
 		}
 
+		if (ImGui::TreeNode("GUI Style"))
+		{
+			ImGui::Combo("Theme", &cfg.styleIndex, "Dark\0Light\0Classic\0");
+
+			ImGui::SliderFloat("Frame Rounding", &cfg.frameRounding, 0.0f, 12.0f, "%.0f");
+
+			ImGui::Checkbox("Window Border", &cfg.windowBorder);
+			ImGui::SameLine();
+			ImGui::Checkbox("Frame Border", &cfg.frameBorder);
+			ImGui::SameLine();
+			ImGui::Checkbox("Popup Border", &cfg.popupBorder);
+
+			ImGui::PushItemWidth(100);
+			ImGui::DragFloat("Scaling", &cfg.scaling, 0.005f, 0.5f, 2.0f, "%.1f");
+			ImGui::PopItemWidth();
+			ImGui::SameLine();
+			if (ImGui::Button("Reset"))
+			{
+			#ifdef __ANDROID__
+				cfg.scaling = 2.0f;
+			#else
+				cfg.scaling = 1.0f;
+			#endif
+			}
+
+			loader_->sanitizeGuiStyle();
+			ImGui::TreePop();
+		}
+
 		ImGui::NewLine();
 		if (ImGui::Button("Load"))
 		{
@@ -1453,4 +1476,25 @@ void MyEventHandler::createGuiLogWindow()
 
 		ImGui::End();
 	}
+}
+
+void MyEventHandler::applyGuiStyleConfig()
+{
+	const LuaLoader::Config &cfg = loader_->config();
+
+	switch (cfg.styleIndex)
+	{
+		case 0: ImGui::StyleColorsDark(); break;
+		case 1: ImGui::StyleColorsLight(); break;
+		case 2: ImGui::StyleColorsClassic(); break;
+	}
+
+	ImGuiStyle& style = ImGui::GetStyle();
+	style.FrameRounding = cfg.frameRounding;
+	// Make `GrabRounding` always the same value as `FrameRounding`
+	style.GrabRounding = style.FrameRounding;
+	style.WindowBorderSize = cfg.windowBorder ? 1.0f : 0.0f;
+	style.FrameBorderSize = cfg.frameBorder ? 1.0f : 0.0f;
+	style.PopupBorderSize = cfg.popupBorder ? 1.0f : 0.0f;
+	ImGui::GetIO().FontGlobalScale = cfg.scaling;
 }
