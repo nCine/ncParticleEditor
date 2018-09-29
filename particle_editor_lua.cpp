@@ -411,6 +411,7 @@ bool LuaLoader::load(const char *filename, State &state)
 		}
 		nc::LuaUtils::pop(L);
 
+		s.sizeStepBaseScale = 1.0f; // default if no size steps are found
 		if (nc::LuaUtils::tryRetrieveFieldTable(L, -1, Names::sizeSteps))
 		{
 			s.sizeStepBaseScale = nc::LuaUtils::retrieveField<float>(L, -1, Names::baseScale);

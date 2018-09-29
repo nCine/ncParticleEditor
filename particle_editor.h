@@ -41,7 +41,7 @@ class MyEventHandler :
 	void onKeyPressed(const nc::KeyboardEvent &event) override;
 
   private:
-	static const unsigned int MaxStringLength = 128;
+	static const unsigned int MaxStringLength = 256;
 
 	nc::Colorf background_ = nc::Colorf::Black;
 	nctl::String backgroundImageName_ = nctl::String(MaxStringLength);
@@ -127,7 +127,7 @@ class MyEventHandler :
 	nctl::UniquePtr<nc::Texture> backgroundTexture_;
 	nctl::UniquePtr<nc::Sprite> backgroundSprite_;
 	nctl::Array<nctl::UniquePtr<nc::ParticleSystem> > particleSystems_;
-	nctl::String widgetName_ = nctl::String(64);
+	nctl::String widgetName_ = nctl::String(MaxStringLength);
 
 	static const unsigned int NumPlotValues = 64;
 
@@ -146,6 +146,7 @@ class MyEventHandler :
 	void configureGui();
 	void createGuiMainWindow();
 	void createGuiMenus();
+	void createGuiPopups();
 	void createGuiBackground();
 	void createGuiTextures();
 	void createGuiManageSystems();

@@ -102,6 +102,9 @@ void MyEventHandler::configureGui()
 
 void MyEventHandler::createGuiMainWindow()
 {
+	// Keyboard shortcuts can show pop-ups even when the main window is hidden
+	createGuiPopups();
+
 	if (showMainWindow_)
 	{
 		const ImVec2 windowSize = ImVec2(400.0f, 400.0f);
@@ -196,7 +199,10 @@ void MyEventHandler::createGuiMenus()
 		ImGui::EndMenuBar();
 	}
 	ImGui::PopID();
+}
 
+void MyEventHandler::createGuiPopups()
+{
 	if (openModal)
 		ImGui::OpenPopup("Open##Modal");
 	else if (saveAsModal)

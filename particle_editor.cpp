@@ -15,6 +15,7 @@
 namespace {
 
 const char *ScriptFile = "particles.lua";
+const char *ConfigFile = "config.lua";
 
 }
 
@@ -48,9 +49,12 @@ void MyEventHandler::onPreInit(nc::AppConfiguration &config)
 	#endif
 #endif
 
-	configFile_ = "config.lua";
+	configFile_ = ConfigFile;
 	if (nc::IFile::access(configFile_.data(), nc::IFile::AccessMode::READABLE) == false)
-		configFile_ = nc::IFile::dataPath() +  "config.lua";
+	{
+		logString_.formatAppend("Config file \"%s\" is not accessible or does not exist\n", configFile_.data());
+		configFile_ = nc::IFile::dataPath() +  ConfigFile;
+	}
 
 	LuaLoader::Config &luaConfig = loader_->config();
 	if (nc::IFile::access(configFile_.data(), nc::IFile::AccessMode::READABLE))
@@ -61,7 +65,10 @@ void MyEventHandler::onPreInit(nc::AppConfiguration &config)
 			logString_.formatAppend("Could not load config file \"%s\"\n", configFile_.data());
 	}
 	else
+	{
 		logString_.formatAppend("Config file \"%s\" is not accessible or does not exist\n", configFile_.data());
+		configFile_ = ConfigFile;
+	}
 
 	if (logString_.capacity() < luaConfig.logMaxSize)
 	{
@@ -466,9 +473,13 @@ void MyEventHandler::pushRecentFile(const nctl::String &filename)
 bool MyEventHandler::loadBackgroundImage(const nctl::String &filename)
 {
 	const LuaLoader::Config &luaConfig = loader_->config();
-	nctl::String filepath = joinPath(luaConfig.backgroundsPath, filename);
 
-	if (filename.isEmpty() == false && nc::IFile::access(filepath.data(), nc::IFile::AccessMode::READABLE))
+	nctl::String filepath(MaxStringLength);
+	filepath = filename;
+	if (nc::IFile::access(filepath.data(), nc::IFile::AccessMode::READABLE) == false)
+		filepath = joinPath(luaConfig.backgroundsPath, filename);
+
+	if (nc::IFile::access(filepath.data(), nc::IFile::AccessMode::READABLE))
 	{
 		backgroundTexture_ = nctl::makeUnique<nc::Texture>(filepath.data());
 		if (backgroundSprite_ == nullptr)
@@ -526,9 +537,13 @@ bool MyEventHandler::createTexture(unsigned int index)
 	TextureGuiState &s = texStates_[index];
 
 	const LuaLoader::Config &luaConfig = loader_->config();
-	nctl::String filepath = joinPath(luaConfig.texturesPath, s.name);
 
-	if (s.name.isEmpty() == false && nc::IFile::access(filepath.data(), nc::IFile::AccessMode::READABLE))
+	nctl::String filepath(MaxStringLength);
+	filepath = s.name;
+	if (nc::IFile::access(filepath.data(), nc::IFile::AccessMode::READABLE) == false)
+		filepath = joinPath(luaConfig.texturesPath, s.name);
+
+	if (nc::IFile::access(filepath.data(), nc::IFile::AccessMode::READABLE))
 	{
 		textures_[index] = nctl::makeUnique<nc::Texture>(filepath.data());
 		s.texRect = textures_[index]->rect();

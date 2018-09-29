@@ -30,7 +30,7 @@ class LuaLoader :
 	public nc::IInputEventHandler
 {
   public:
-	static const unsigned int MaxFilenameLength = 128;
+	static const unsigned int MaxFilenameLength = 256;
 
 	struct State
 	{
