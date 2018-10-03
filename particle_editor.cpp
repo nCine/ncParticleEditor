@@ -86,6 +86,7 @@ void MyEventHandler::onPreInit(nc::AppConfiguration &config)
 
 	config.setResolution(luaConfig.width, luaConfig.height);
 	config.setFullScreen(luaConfig.fullscreen);
+	config.setResizable(luaConfig.resizable);
 	config.setVboSize(luaConfig.vboSize);
 	config.setIboSize(luaConfig.iboSize);
 

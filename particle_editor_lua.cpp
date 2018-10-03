@@ -21,7 +21,7 @@ void indent(nctl::String &string, int amount)
 }
 
 const unsigned int ProjectFileVersion = 5;
-const unsigned int ConfigFileVersion = 7;
+const unsigned int ConfigFileVersion = 8;
 
 namespace Names
 {
@@ -74,6 +74,7 @@ const char *version = "config_version"; // version 2
 const char *width = "width";
 const char *height = "height";
 const char *fullscreen = "fullscreen";
+const char *resizable = "resizable"; // version 8
 const char *vboSize = "vbo_size";
 const char *iboSize = "ibo_size";
 const char *batching = "batching";
@@ -196,6 +197,9 @@ bool LuaLoader::loadConfig(const char *filename)
 	nc::LuaUtils::tryRetrieveGlobal<bool>(L, CfgNames::batching, config_.batching);
 	nc::LuaUtils::tryRetrieveGlobal<bool>(L, CfgNames::culling, config_.culling);
 
+	if (version >= 8)
+		nc::LuaUtils::tryRetrieveGlobal<bool>(L, CfgNames::resizable, config_.resizable);
+
 	if (version >= 3)
 		nc::LuaUtils::tryRetrieveGlobal<uint32_t>(L, CfgNames::saveFileMaxSize, config_.saveFileMaxSize);
 
@@ -271,6 +275,7 @@ bool LuaLoader::saveConfig(const char *filename)
 	indent(file, amount); file.formatAppend("%s = %d\n", CfgNames::width, config_.width);
 	indent(file, amount); file.formatAppend("%s = %d\n", CfgNames::height, config_.height);
 	indent(file, amount); file.formatAppend("%s = %s\n", CfgNames::fullscreen, config_.fullscreen ? "true" : "false");
+	indent(file, amount); file.formatAppend("%s = %s\n", CfgNames::resizable, config_.resizable ? "true" : "false");
 	indent(file, amount); file.formatAppend("%s = %lu\n", CfgNames::vboSize, config_.vboSize);
 	indent(file, amount); file.formatAppend("%s = %lu\n", CfgNames::iboSize, config_.iboSize);
 	indent(file, amount); file.formatAppend("%s = %s\n", CfgNames::batching, config_.batching ? "true" : "false");

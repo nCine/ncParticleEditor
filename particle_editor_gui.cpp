@@ -1359,7 +1359,23 @@ void MyEventHandler::createGuiConfigWindow()
 
 		ImGui::SliderInt("Screen Width", &cfg.width, 0, 1920);
 		ImGui::SliderInt("Screen Height", &cfg.height, 0, 1080);
+		ImGui::Checkbox("Resizable", &cfg.resizable);
+		ImGui::SameLine();
 		ImGui::Checkbox("Fullscreen", &cfg.fullscreen);
+		ImGui::SameLine();
+		if (ImGui::Button("Apply"))
+		{
+			nc::theApplication().gfxDevice().setResolution(cfg.width, cfg.height);
+			nc::theApplication().gfxDevice().setFullScreen(cfg.fullscreen);
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Current"))
+		{
+			cfg.width = nc::theApplication().widthInt();
+			cfg.height = nc::theApplication().heightInt();
+			cfg.fullscreen = nc::theApplication().gfxDevice().isFullScreen();
+			cfg.resizable = nc::theApplication().gfxDevice().isResizable();
+		}
 
 		ImGui::NewLine();
 		int vboSize = cfg.vboSize / 1024;
