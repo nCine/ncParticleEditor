@@ -21,10 +21,10 @@ if(PACKAGE_BUILD_ANDROID)
 	set(ANDROID_MANIFEST_XML ${CMAKE_BINARY_DIR}/android/src/main/AndroidManifest.xml)
 	configure_file(${ANDROID_MANIFEST_XML_IN} ${ANDROID_MANIFEST_XML} @ONLY)
 
-	set(LOAD_LIBRARIES_JAVA_IN ${CMAKE_SOURCE_DIR}/android/src/main/java/${PACKAGE_JAVA_URL}/LoadLibraries.java.in)
+	set(LOAD_LIBRARIES_JAVA_IN ${CMAKE_SOURCE_DIR}/android/src/main/java/LoadLibraries.java.in)
 	set(LOAD_LIBRARIES_JAVA ${CMAKE_BINARY_DIR}/android/src/main/java/${PACKAGE_JAVA_URL}/LoadLibraries.java)
 	configure_file(${LOAD_LIBRARIES_JAVA_IN} ${LOAD_LIBRARIES_JAVA} @ONLY)
-	set(LOAD_LIBRARIES_TV_JAVA_IN ${CMAKE_SOURCE_DIR}/android/src/main/java/${PACKAGE_JAVA_URL}/LoadLibrariesTV.java.in)
+	set(LOAD_LIBRARIES_TV_JAVA_IN ${CMAKE_SOURCE_DIR}/android/src/main/java/LoadLibrariesTV.java.in)
 	set(LOAD_LIBRARIES_TV_JAVA ${CMAKE_BINARY_DIR}/android/src/main/java/${PACKAGE_JAVA_URL}/LoadLibrariesTV.java)
 	configure_file(${LOAD_LIBRARIES_TV_JAVA_IN} ${LOAD_LIBRARIES_TV_JAVA} @ONLY)
 
