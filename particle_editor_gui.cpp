@@ -1296,7 +1296,8 @@ void MyEventHandler::createGuiEmission()
 				if (ImGui::Button(widgetName_.data()))
 					killParticles(i);
 				ImGui::SameLine();
-				ImGui::Checkbox("Active", &sysStates_[i].active);
+				widgetName_.format("Active##%u", i);
+				ImGui::Checkbox(widgetName_.data(), &sysStates_[i].active);
 				ImGui::SameLine();
 				ImGui::Text("#%u", i);
 				ImGui::SameLine();
