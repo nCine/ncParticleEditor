@@ -1,11 +1,10 @@
 option(PACKAGE_BUILD_ANDROID "Build the Android version of the game" OFF)
-option(PACKAGE_CRASHRPT "Embed CrashRpt in debug builds" OFF)
 
 set(PACKAGE_DATA_DIR "${PARENT_SOURCE_DIR}/${PACKAGE_NAME}-data" CACHE PATH "Set the path to the game data directory")
 
 if(PACKAGE_BUILD_ANDROID)
 	set(NDK_DIR "" CACHE PATH "Set the path to the Android NDK")
-	set(PACKAGE_NDK_ARCHITECTURES armeabi-v7a CACHE STRING "Set the NDK target architectures")
+	set(PACKAGE_NDK_ARCHITECTURES arm64-v8a CACHE STRING "Set the NDK target architectures")
 	option(PACKAGE_ASSEMBLE_APK "Assemble the Android APK of the game with Gradle" OFF)
 endif()
 

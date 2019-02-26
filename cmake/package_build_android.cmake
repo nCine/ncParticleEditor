@@ -12,9 +12,8 @@ if(PACKAGE_BUILD_ANDROID)
 	endif()
 	message(STATUS "Android NDK directory: ${NDK_DIR}")
 
-	set(ANDROID_API_LEVEL 21)
-	set(ANDROID_TOOLCHAIN_VERSION clang)
-	set(ANDROID_STL_TYPE c++_static)
+	set(ANDROID_TOOLCHAIN clang)
+	set(ANDROID_STL c++_shared)
 
 	string(REPLACE "/" "." JAVA_PACKAGE "${PACKAGE_JAVA_URL}")
 	set(ANDROID_MANIFEST_XML_IN ${CMAKE_SOURCE_DIR}/android/src/main/AndroidManifest.xml.in)
@@ -62,11 +61,16 @@ if(PACKAGE_BUILD_ANDROID)
 	# Not added to Gradle arguments as it is handled by substituting `GRADLE_NDK_DIR`
 	list(APPEND ANDROID_CMAKE_ARGS -DCMAKE_ANDROID_NDK=${NDK_DIR})
 
-	set(GRADLE_BUILDTOOLS_VERSION 26.0.1)
-	set(GRADLE_COMPILESDK_VERSION 23)
-	set(GRADLE_MINSDK_VERSION 15)
-	set(GRADLE_TARGETSDK_VERSION 23)
+	set(GRADLE_BUILDTOOLS_VERSION 28.0.3)
+	set(GRADLE_COMPILESDK_VERSION 28)
+	set(GRADLE_MINSDK_VERSION 21)
+	set(GRADLE_TARGETSDK_VERSION 28)
 	set(GRADLE_VERSIONCODE 1)
+
+	set(GRADLE_LIBCPP_SHARED "false")
+	if(ANDROID_STL STREQUAL "c++_shared")
+		set(GRADLE_LIBCPP_SHARED "true")
+	endif()
 
 	set(BUILD_GRADLE_IN ${CMAKE_SOURCE_DIR}/android/build.gradle.in)
 	set(BUILD_GRADLE ${CMAKE_BINARY_DIR}/android/build.gradle)
@@ -119,6 +123,8 @@ if(PACKAGE_BUILD_ANDROID)
 		endif()
 		add_custom_command(OUTPUT ${ANDROID_BINARY_DIR}/libgame.so
 			COMMAND ${CMAKE_COMMAND} -H${CMAKE_BINARY_DIR}/android/src/main/cpp/ -B${ANDROID_BINARY_DIR}
+				-DCMAKE_TOOLCHAIN_FILE=${NDK_DIR}/build/cmake/android.toolchain.cmake
+				-DANDROID_PLATFORM=android-${GRADLE_MINSDK_VERSION} -DANDROID_ABI=${ARCHITECTURE}
 				${RESET_FLAGS_ARGS} ${ANDROID_PASSTHROUGH_ARGS} ${ANDROID_CMAKE_ARGS} ${ANDROID_ARCH_ARGS}
 			COMMAND ${CMAKE_COMMAND} --build ${ANDROID_BINARY_DIR}
 			COMMENT "Compiling the Android library for ${ARCHITECTURE}")
@@ -127,22 +133,29 @@ if(PACKAGE_BUILD_ANDROID)
 		add_dependencies(package_android package_android_${ARCHITECTURE})
 	endforeach()
 
-	if (PACKAGE_ASSEMBLE_APK)
-		if(CMAKE_BUILD_TYPE MATCHES "Release")
-			set(GRADLE_TASK assembleRelease)
-			set(APK_NAME android-release-unsigned.apk)
-		else()
-			set(GRADLE_TASK assembleDebug)
-			set(APK_NAME android-debug.apk)
-		endif()
-
+	if(PACKAGE_ASSEMBLE_APK)
 		find_program(GRADLE_EXECUTABLE gradle $ENV{GRADLE_HOME}/bin)
-		if (GRADLE_EXECUTABLE)
+		if(GRADLE_EXECUTABLE)
 			message(STATUS "Gradle executable: ${GRADLE_EXECUTABLE}")
+
+			if(CMAKE_BUILD_TYPE MATCHES "Release")
+				set(GRADLE_TASK assembleRelease)
+				set(APK_BUILDTYPE_DIR release)
+				set(APK_FILE_SUFFIX release-unsigned)
+			else()
+				set(GRADLE_TASK assembleDebug)
+				set(APK_BUILDTYPE_DIR debug)
+				set(APK_FILE_SUFFIX debug)
+			endif()
+
+			foreach(ARCHITECTURE ${PACKAGE_NDK_ARCHITECTURES})
+				list(APPEND APK_FILES ${CMAKE_BINARY_DIR}/android/build/outputs/apk/${APK_BUILDTYPE_DIR}/android-${ARCHITECTURE}-${APK_FILE_SUFFIX}.apk)
+			endforeach()
+
 			# Invoking Gradle to create the Android APK of the game
-			add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/android/build/output/apks/${APK_NAME}
+			add_custom_command(OUTPUT ${APK_FILES}
 				COMMAND ${GRADLE_EXECUTABLE} -p android ${GRADLE_TASK})
-			add_custom_target(package_gradle_apk ALL DEPENDS ${CMAKE_BINARY_DIR}/android/build/output/apks/android-debug.apk)
+			add_custom_target(package_gradle_apk ALL DEPENDS ${APK_FILES})
 			set_target_properties(package_gradle_apk PROPERTIES FOLDER "Android")
 			add_dependencies(package_gradle_apk package_android)
 		else()
