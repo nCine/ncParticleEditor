@@ -16,12 +16,20 @@ elseif(WIN32)
 		set_target_properties(copy_shaders PROPERTIES FOLDER "CustomCopyTargets")
 	endif()
 
-	if(DEFINED NCINE_BUILD_DIR OR DEFINED NCINE_INSTALL_DIR)
-		add_custom_target(copy_ncine_dll ALL
-			COMMAND ${CMAKE_COMMAND} -E copy_if_different ${NCINE_DLL} ${CMAKE_BINARY_DIR}
-			COMMENT "Copying nCine DLL..."
+	add_custom_target(copy_ncine_dll ALL
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different ${NCINE_LOCATION} ${CMAKE_BINARY_DIR}
+		COMMENT "Copying nCine DLL..."
+	)
+	set_target_properties(copy_ncine_dll PROPERTIES FOLDER "CustomCopyTargets")
+
+	if(PACKAGE_CRASHRPT)
+		add_custom_target(copy_crashrpt_files ALL
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CRASHRPT_BINARY_DIR}/bin/${CRASHRPT_ARCH}/CrashRpt${CRASHRPT_VERSION}.dll ${CMAKE_BINARY_DIR}
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CRASHRPT_BINARY_DIR}/bin/${CRASHRPT_ARCH}/CrashSender${CRASHRPT_VERSION}.exe ${CMAKE_BINARY_DIR}
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CRASHRPT_SOURCE_DIR}/bin/crashrpt_lang.ini ${CMAKE_BINARY_DIR}
+			COMMENT "Copying CrashRpt files..."
 		)
-		set_target_properties(copy_ncine_dll PROPERTIES FOLDER "CustomCopyTargets")
+		set_target_properties(copy_crashrpt_files PROPERTIES FOLDER "CustomCopyTargets")
 	endif()
 endif()
 

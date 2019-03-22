@@ -1,14 +1,13 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.13)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 get_filename_component(PARENT_SOURCE_DIR ${CMAKE_SOURCE_DIR} DIRECTORY)
+get_filename_component(PARENT_BINARY_DIR ${CMAKE_BINARY_DIR} DIRECTORY)
 
 include(package_info)
 include(package_check_info)
 
 project(${PACKAGE_NAME})
-
-set(CMAKE_CXX_STANDARD 11)
 
 include(package_options)
 
@@ -21,22 +20,9 @@ else()
 endif()
 
 include(package_get_version)
-
-list(APPEND SOURCES ${NCINE_MAIN_CPP} ${PACKAGE_SOURCES})
-if(MSVC AND PACKAGE_CRASHRPT AND CMAKE_BUILD_TYPE MATCHES "Debug")
-	set(CRASHRPT_STRINGS_FILE ${CMAKE_BINARY_DIR}/generated/CrashRptStrings.cpp)
-	file(WRITE ${CRASHRPT_STRINGS_FILE} "#include \"CrashRptWrapper.h\"\n\n")
-	file(APPEND ${CRASHRPT_STRINGS_FILE} "const char *CrashRptWrapper::appName = \"${PACKAGE_NAME}\";\n")
-	file(APPEND ${CRASHRPT_STRINGS_FILE} "const char *CrashRptWrapper::appVersion = \"${PACKAGE_VERSION}\";\n")
-	file(APPEND ${CRASHRPT_STRINGS_FILE} "const char *CrashRptWrapper::emailSubject = \"${PACKAGE_NAME} ${PACKAGE_VERSION} Error Report\";\n")
-	file(APPEND ${CRASHRPT_STRINGS_FILE} "const char *CrashRptWrapper::emailTo = \"${PACKAGE_AUTHOR_MAIL}\";\n")
-	file(COPY CrashRptWrapper.h DESTINATION generated)
-	list(APPEND SOURCES CrashRptWrapper.h CrashRptWrapper.cpp ${CRASHRPT_STRINGS_FILE})
-	set(CMAKE_INSTALL_DEBUG_LIBRARIES TRUE)
-	set(CMAKE_INSTALL_DEBUG_LIBRARIES_ONLY TRUE)
-endif()
-
 include(package_installation)
+
+add_executable(${PACKAGE_EXE_NAME} ${PACKAGE_SOURCES})
 
 if(MSVC AND EXISTS ${PACKAGE_DATA_DIR}/icons/${PACKAGE_ICON_NAME}.ico)
 	message(STATUS "Writing a resource file for executable icon")
@@ -47,28 +33,36 @@ if(MSVC AND EXISTS ${PACKAGE_DATA_DIR}/icons/${PACKAGE_ICON_NAME}.ico)
 	set(RESOURCE_RC_FILE "${GENERATED_SOURCE_DIR}/resource.rc")
 	file(WRITE ${RESOURCE_RC_FILE} "IDI_ICON1 ICON DISCARDABLE \"${PACKAGE_ICON_NAME}.ico\"")
 	file(COPY ${PACKAGE_DATA_DIR}/icons/${PACKAGE_ICON_NAME}.ico DESTINATION ${GENERATED_INCLUDE_DIR})
-	list(APPEND SOURCES ${RESOURCE_RC_FILE})
+	target_sources(${PACKAGE_EXE_NAME} PRIVATE ${RESOURCE_RC_FILE})
+endif()
+
+if(MSVC AND PACKAGE_CRASHRPT)
+	set(CRASHRPT_STRINGS_FILE ${CMAKE_BINARY_DIR}/generated/CrashRptStrings.cpp)
+	file(WRITE ${CRASHRPT_STRINGS_FILE} "#include \"CrashRptWrapper.h\"\n\n")
+	file(APPEND ${CRASHRPT_STRINGS_FILE} "const char *CrashRptWrapper::appName = \"${PACKAGE_NAME}\";\n")
+	file(APPEND ${CRASHRPT_STRINGS_FILE} "const char *CrashRptWrapper::appVersion = \"${PACKAGE_VERSION}\";\n")
+	file(APPEND ${CRASHRPT_STRINGS_FILE} "const char *CrashRptWrapper::emailSubject = \"${PACKAGE_NAME} ${PACKAGE_VERSION} Error Report\";\n")
+	file(APPEND ${CRASHRPT_STRINGS_FILE} "const char *CrashRptWrapper::emailTo = \"${PACKAGE_AUTHOR_MAIL}\";\n")
+	file(COPY CrashRptWrapper.h DESTINATION generated)
+	# Source files can't vary by configuration with the Visual Studio generator, they are added even in release
+	target_sources(${PACKAGE_EXE_NAME} PRIVATE CrashRptWrapper.h CrashRptWrapper.cpp ${CRASHRPT_STRINGS_FILE})
+	set(CMAKE_INSTALL_DEBUG_LIBRARIES TRUE)
+	set(CMAKE_INSTALL_DEBUG_LIBRARIES_ONLY TRUE)
 endif()
 
 if(NOT DEFAULT_DATA_DIR_DIST) # Don't set the startup project if it wouldn't find the data directory
 	set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PACKAGE_EXE_NAME})
 endif()
-add_executable(${PACKAGE_EXE_NAME} ${SOURCES})
-target_include_directories(${PACKAGE_EXE_NAME} PUBLIC ${NCINE_INCLUDE_DIR})
+
 if(MSVC AND EXISTS ${PACKAGE_DATA_DIR}/icons/${PACKAGE_ICON_NAME}.ico)
 	target_include_directories(${PACKAGE_EXE_NAME} PRIVATE ${GENERATED_INCLUDE_DIR}) # for the executable icon
 endif()
-target_link_libraries(${PACKAGE_EXE_NAME} ${NCINE_LIBRARY})
+target_link_libraries(${PACKAGE_EXE_NAME} ncine::ncine_main ncine::ncine)
+
+target_compile_definitions(${PACKAGE_EXE_NAME} PRIVATE "$<$<CONFIG:Debug>:${PACKAGE_UPPER_NAME}_DEBUG>")
 
 if(MSVC)
-	target_compile_definitions(${PACKAGE_EXE_NAME} PRIVATE $<$<CONFIG:Debug>:"${PACKAGE_UPPER_NAME}_DEBUG">)
-elseif(CMAKE_BUILD_TYPE MATCHES "Debug")
-	target_compile_definitions(${PACKAGE_EXE_NAME} PRIVATE "${PACKAGE_UPPER_NAME}_DEBUG")
-endif()
-
-if(MSVC)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
-	target_compile_options(${PACKAGE_EXE_NAME} PRIVATE "/wd4251")
+	target_compile_options(${PACKAGE_EXE_NAME} PRIVATE /MP)
 	include(package_crashrpt)
 endif()
 
@@ -80,7 +74,9 @@ endif()
 if(DEFAULT_DATA_DIR_DIST)
 	if(MSVC OR APPLE)
 		# Relative path from tests to data on Windows and OS X, where the user can choose the installation directory
-		file(RELATIVE_PATH PACKAGE_DEFAULT_DATA_DIR ${CMAKE_INSTALL_PREFIX}/${RUNTIME_INSTALL_DESTINATION} ${CMAKE_INSTALL_PREFIX}/${DATA_INSTALL_DESTINATION})
+		file(RELATIVE_PATH PACKAGE_DEFAULT_DATA_DIR
+			${CMAKE_INSTALL_PREFIX}/${RUNTIME_INSTALL_DESTINATION}
+			${CMAKE_INSTALL_PREFIX}/${DATA_INSTALL_DESTINATION}) # Always strips trailing slash
 		set(PACKAGE_DEFAULT_DATA_DIR "${PACKAGE_DEFAULT_DATA_DIR}/")
 	else()
 		set(PACKAGE_DEFAULT_DATA_DIR "${CMAKE_INSTALL_PREFIX}/${DATA_INSTALL_DESTINATION}/")
@@ -90,12 +86,8 @@ elseif(NOT PACKAGE_DEFAULT_DATA_DIR)
 endif()
 
 if(PACKAGE_DEFAULT_DATA_DIR)
-	string(LENGTH ${PACKAGE_DEFAULT_DATA_DIR} PACKAGE_DEFAULT_DATA_DIR_LENGTH)
-	math(EXPR PACKAGE_DEFAULT_DATA_DIR_LENGTH "${PACKAGE_DEFAULT_DATA_DIR_LENGTH}-1")
-	string(SUBSTRING ${PACKAGE_DEFAULT_DATA_DIR} ${PACKAGE_DEFAULT_DATA_DIR_LENGTH} 1 PACKAGE_DEFAULT_DATA_DIR_LAST_CHAR)
-	if(NOT(PACKAGE_DEFAULT_DATA_DIR_LAST_CHAR STREQUAL "/"))
-		string(CONCAT PACKAGE_DEFAULT_DATA_DIR ${PACKAGE_DEFAULT_DATA_DIR} "/")
-	endif()
+	file(TO_CMAKE_PATH "${PACKAGE_DEFAULT_DATA_DIR}" PACKAGE_DEFAULT_DATA_DIR) # Always strips trailing slash
+	set(PACKAGE_DEFAULT_DATA_DIR "${PACKAGE_DEFAULT_DATA_DIR}/")
 
 	message(STATUS "Default data directory: ${PACKAGE_DEFAULT_DATA_DIR}")
 	target_compile_definitions(${PACKAGE_EXE_NAME} PRIVATE "PACKAGE_DEFAULT_DATA_DIR=\"${PACKAGE_DEFAULT_DATA_DIR}\"")
@@ -113,14 +105,11 @@ if(IS_DIRECTORY ${NCINE_SHADERS_DIR})
 endif()
 
 if(MSVC)
-	if(NOT NCINE_INSTALL_DIR)
-		install(FILES ${NCINE_DLL} DESTINATION ${RUNTIME_INSTALL_DESTINATION})
-	endif()
-
+	install(FILES ${NCINE_LOCATION} DESTINATION ${RUNTIME_INSTALL_DESTINATION})
 	install(DIRECTORY ${BINDIR}/ DESTINATION ${RUNTIME_INSTALL_DESTINATION} FILES_MATCHING PATTERN "*.dll")
 elseif(APPLE)
+	install(FILES ${NCINE_LOCATION} DESTINATION ${LIBRARY_INSTALL_DESTINATION})
 	install(DIRECTORY ${FRAMEWORKS_DIR}/ DESTINATION ${FRAMEWORKS_INSTALL_DESTINATION})
-	install(FILES ${NCINE_LIBRARY} DESTINATION ${LIBRARY_INSTALL_DESTINATION})
 endif()
 
 include(package_copy_targets)

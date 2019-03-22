@@ -1,13 +1,13 @@
 if(PACKAGE_BUILD_ANDROID)
-	if(NDK_DIR STREQUAL "")
-		if(DEFINED ENV{ANDROID_NDK_HOME})
-			set(NDK_DIR $ENV{ANDROID_NDK_HOME})
-		elseif(DEFINED ENV{ANDROID_NDK_ROOT})
-			set(NDK_DIR $ENV{ANDROID_NDK_ROOT})
-		elseif(DEFINED ENV{ANDROID_NDK})
-			set(NDK_DIR $ENV{ANDROID_NDK})
-		else()
-			message(FATAL_ERROR "NDK_DIR is not set")
+	if(NOT IS_DIRECTORY ${NDK_DIR})
+		unset(NDK_DIR CACHE)
+		find_path(NDK_DIR
+			NAMES ndk-build ndk-build.cmd ndk-gdb ndk-gdb.cmd ndk-stack ndk-stack.cmd ndk-which ndk-which.cmd
+			PATHS $ENV{ANDROID_NDK_HOME} $ENV{ANDROID_NDK_ROOT} $ENV{ANDROID_NDK}
+			DOC "Path to the Android NDK directory")
+
+		if(NOT IS_DIRECTORY ${NDK_DIR})
+			message(FATAL_ERROR "Cannot find the Android NDK directory")
 		endif()
 	endif()
 	message(STATUS "Android NDK directory: ${NDK_DIR}")
@@ -82,7 +82,6 @@ if(PACKAGE_BUILD_ANDROID)
 	set(GRADLE_NDK_DIR ${NDK_DIR})
 	configure_file(${GRADLE_PROPERTIES_IN} ${GRADLE_PROPERTIES} @ONLY)
 
-	file(COPY ${NCINE_ANDROID_DIR}/src/main/cpp/main.cpp DESTINATION android/src/main/cpp)
 	file(COPY ${PACKAGE_DATA_DIR}/icons/icon48.png DESTINATION android/src/main/res/mipmap-mdpi)
 	file(RENAME ${CMAKE_BINARY_DIR}/android/src/main/res/mipmap-mdpi/icon48.png ${CMAKE_BINARY_DIR}/android/src/main/res/mipmap-mdpi/ic_launcher.png)
 	file(COPY ${PACKAGE_DATA_DIR}/icons/icon72.png DESTINATION android/src/main/res/mipmap-hdpi)
@@ -100,16 +99,35 @@ if(PACKAGE_BUILD_ANDROID)
 		endforeach()
 	endif()
 
-	if(NCINE_INSTALL_DIR OR NCINE_SHARE_DIR)
-		file(COPY ${NCINE_ANDROID_DIR}/src/main/cpp/openal DESTINATION android/src/main/cpp/)
-		file(COPY ${NCINE_ANDROID_DIR}/src/main/cpp/ncine DESTINATION android/src/main/cpp/)
-	else()
-		foreach(ARCHITECTURE ${PACKAGE_NDK_ARCHITECTURES})
-			file(COPY ${NCINE_EXTERNAL_ANDROID_DIR}/openal/${ARCHITECTURE}/libopenal.so DESTINATION android/src/main/cpp/openal/${ARCHITECTURE})
-			file(COPY ${NCINE_ANDROID_DIR}/build/ncine/${ARCHITECTURE}/libncine.so DESTINATION android/src/main/cpp/ncine/${ARCHITECTURE})
+	find_path(NCINE_ANDROID_NCINE_LIB_DIR
+		NAMES libncine.so
+		PATHS ${NCINE_ANDROID_DIR}/src/main/cpp/ncine ${NCINE_ANDROID_DIR}/build/ncine/
+		PATH_SUFFIXES armeabi-v7a arm64-v8a x86_64
+	)
+	get_filename_component(NCINE_ANDROID_NCINE_LIB_DIR ${NCINE_ANDROID_NCINE_LIB_DIR} DIRECTORY)
+
+	find_path(NCINE_ANDROID_OPENAL_LIB_DIR
+		NAMES libopenal.so
+		PATHS ${NCINE_ANDROID_DIR}/src/main/cpp/openal ${NCINE_EXTERNAL_ANDROID_DIR}/openal/
+		PATH_SUFFIXES armeabi-v7a arm64-v8a x86_64
+	)
+	get_filename_component(NCINE_ANDROID_OPENAL_LIB_DIR ${NCINE_ANDROID_OPENAL_LIB_DIR} DIRECTORY)
+
+	foreach(ARCHITECTURE ${PACKAGE_NDK_ARCHITECTURES})
+		file(COPY ${NCINE_ANDROID_OPENAL_LIB_DIR}/${ARCHITECTURE}/libopenal.so DESTINATION android/src/main/cpp/openal/${ARCHITECTURE})
+		file(COPY ${NCINE_ANDROID_NCINE_LIB_DIR}/${ARCHITECTURE}/libncine.so DESTINATION android/src/main/cpp/ncine/${ARCHITECTURE})
+		file(COPY ${NCINE_ANDROID_NCINE_LIB_DIR}/${ARCHITECTURE}/libncine_main.a DESTINATION android/src/main/cpp/ncine/${ARCHITECTURE})
+	endforeach()
+
+	# Copy every header file from every include directory while preserving the directory structure
+	foreach(INCLUDE_DIR ${NCINE_INCLUDE_DIR})
+		file(GLOB_RECURSE INCLUDE_FILES ${INCLUDE_DIR}/*.h)
+		foreach(INCLUDE_FILE ${INCLUDE_FILES})
+			get_filename_component(INCLUDE_FILE_DIR ${INCLUDE_FILE} DIRECTORY)
+			file(RELATIVE_PATH REL_PATH ${INCLUDE_DIR} ${INCLUDE_FILE_DIR})
+			file(COPY ${INCLUDE_FILE} DESTINATION android/src/main/cpp/ncine/include/${REL_PATH})
 		endforeach()
-		file(COPY ${NCINE_INCLUDE_DIR} DESTINATION android/src/main/cpp/ncine)
-	endif()
+	endforeach()
 
 	add_custom_target(package_android ALL)
 	set_target_properties(package_android PROPERTIES FOLDER "Android")
