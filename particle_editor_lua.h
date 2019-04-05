@@ -1,18 +1,18 @@
 #ifndef CLASS_LUALOADER
 #define CLASS_LUALOADER
 
-#include "IAppEventHandler.h"
-#include "IInputEventHandler.h"
-#include "nctl/UniquePtr.h"
-#include "nctl/String.h"
-#include "nctl/StaticArray.h"
-#include "Vector2.h"
-#include "Vector4.h"
-#include "Rect.h"
-#include "ParticleAffectors.h"
-#include "ParticleInitializer.h"
-#include "Timer.h"
-#include "LuaStateManager.h"
+#include <ncine/IAppEventHandler.h>
+#include <ncine/IInputEventHandler.h>
+#include <nctl/UniquePtr.h>
+#include <nctl/String.h>
+#include <nctl/StaticArray.h>
+#include <ncine/Vector2.h>
+#include <ncine/Vector4.h>
+#include <ncine/Rect.h>
+#include <ncine/ParticleAffectors.h>
+#include <ncine/ParticleInitializer.h>
+#include <ncine/Timer.h>
+#include <ncine/LuaStateManager.h>
 
 namespace ncine {
 

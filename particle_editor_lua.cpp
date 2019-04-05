@@ -1,11 +1,11 @@
 #include "particle_editor_lua.h"
-#include "Colorf.h"
-#include "LuaStateManager.h"
-#include "LuaUtils.h"
-#include "LuaRectUtils.h"
-#include "LuaVector2Utils.h"
-#include "LuaColorUtils.h"
-#include "IFile.h"
+#include <ncine/Colorf.h>
+#include <ncine/LuaStateManager.h>
+#include <ncine/LuaUtils.h>
+#include <ncine/LuaRectUtils.h>
+#include <ncine/LuaVector2Utils.h>
+#include <ncine/LuaColorUtils.h>
+#include <ncine/IFile.h>
 
 ///////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS

@@ -1,4 +1,4 @@
-#include "ncine_config.h"
+#include <ncine/config.h>
 #if !NCINE_WITH_LUA
 	#error nCine must have Lua integration enabled for this application to work
 #endif
@@ -9,12 +9,12 @@
 #include "particle_editor.h"
 #include "particle_editor_lua.h"
 
-#include "Application.h"
-#include "Texture.h"
-#include "Sprite.h"
-#include "ParticleSystem.h"
-#include "IInputManager.h"
-#include "IFile.h"
+#include <ncine/Application.h>
+#include <ncine/Texture.h>
+#include <ncine/Sprite.h>
+#include <ncine/ParticleSystem.h>
+#include <ncine/IInputManager.h>
+#include <ncine/IFile.h>
 
 #ifdef WITH_CRASHRPT
 	#include "CrashRptWrapper.h"

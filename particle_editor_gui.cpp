@@ -1,15 +1,15 @@
 #define IMGUI_DISABLE_INCLUDE_IMCONFIG_H
-#include "imgui.h"
+#include <ncine/imgui.h>
 
 #include "particle_editor.h"
 #include "particle_editor_lua.h"
-#include "Application.h"
-#include "Texture.h"
-#include "Sprite.h"
-#include "ParticleSystem.h"
-#include "IFile.h"
+#include <ncine/Application.h>
+#include <ncine/Texture.h>
+#include <ncine/Sprite.h>
+#include <ncine/ParticleSystem.h>
+#include <ncine/IFile.h>
 
-#include "version.h"
+#include <ncine/version.h>
 
 namespace {
 

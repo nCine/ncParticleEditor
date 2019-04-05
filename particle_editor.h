@@ -1,17 +1,17 @@
 #ifndef CLASS_MYEVENTHANDLER
 #define CLASS_MYEVENTHANDLER
 
-#include "IAppEventHandler.h"
-#include "IInputEventHandler.h"
-#include "nctl/UniquePtr.h"
-#include "nctl/String.h"
-#include "nctl/StaticArray.h"
-#include "Vector2.h"
-#include "Colorf.h"
-#include "Rect.h"
-#include "ParticleAffectors.h"
-#include "ParticleInitializer.h"
-#include "Timer.h"
+#include <ncine/IAppEventHandler.h>
+#include <ncine/IInputEventHandler.h>
+#include <nctl/UniquePtr.h>
+#include <nctl/String.h>
+#include <nctl/StaticArray.h>
+#include <ncine/Vector2.h>
+#include <ncine/Colorf.h>
+#include <ncine/Rect.h>
+#include <ncine/ParticleAffectors.h>
+#include <ncine/ParticleInitializer.h>
+#include <ncine/Timer.h>
 
 namespace ncine {
 
