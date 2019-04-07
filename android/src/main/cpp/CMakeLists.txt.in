@@ -23,3 +23,5 @@ target_include_directories(game PRIVATE @NCPONG_INCLUDE_DIR@ ${ANDROID_NDK}/sour
 
 # Export ANativeActivity_onCreate() - https://github.com/android-ndk/ndk/issues/381
 set_property(TARGET game APPEND_STRING PROPERTY LINK_FLAGS "-u ANativeActivity_onCreate")
+
+include(package_strip_binaries)
