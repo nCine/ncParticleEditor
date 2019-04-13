@@ -21,6 +21,15 @@ add_library(game SHARED ${SOURCES})
 target_link_libraries(game PRIVATE native_app_glue ncine_main ncine)
 target_include_directories(game PRIVATE @NCPONG_INCLUDE_DIR@ ${ANDROID_NDK}/sources/android/native_app_glue)
 
+# Convert strings back to the original lists
+string(REPLACE " " ";" GENERATED_SOURCES "${GENERATED_SOURCES}")
+string(REPLACE " " ";" ANDROID_GENERATED_FLAGS "${ANDROID_GENERATED_FLAGS}")
+
+target_sources(game PRIVATE ${GENERATED_SOURCES})
+if(IS_DIRECTORY ${GENERATED_INCLUDE_DIR})
+	target_include_directories(game PRIVATE ${GENERATED_INCLUDE_DIR})
+endif()
+
 # Export ANativeActivity_onCreate() - https://github.com/android-ndk/ndk/issues/381
 set_property(TARGET game APPEND_STRING PROPERTY LINK_FLAGS "-u ANativeActivity_onCreate")
 

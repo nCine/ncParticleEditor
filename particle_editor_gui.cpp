@@ -9,6 +9,7 @@
 #include <ncine/ParticleSystem.h>
 #include <ncine/IFile.h>
 
+#include "version.h"
 #include <ncine/version.h>
 
 namespace {
@@ -210,6 +211,9 @@ void MyEventHandler::createGuiPopups()
 	else if (showAboutWindow)
 	{
 		ImGui::Begin("About", &showAboutWindow, ImGuiWindowFlags_AlwaysAutoResize);
+#ifdef WITH_GIT_VERSION
+		ImGui::Text("ncParticleEditor %s (%s)", VersionStrings::Version, VersionStrings::GitBranch);
+#endif
 		ImGui::Text("ncParticleEditor compiled on %s at %s", __DATE__, __TIME__);
 		ImGui::Separator();
 		ImGui::Text("Based on nCine %s (%s)", nc::VersionStrings::Version, nc::VersionStrings::GitBranch);

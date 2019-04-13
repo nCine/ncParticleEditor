@@ -23,18 +23,8 @@ include(package_get_version)
 include(package_installation)
 
 add_executable(${PACKAGE_EXE_NAME} ${PACKAGE_SOURCES})
-
-if(MSVC AND EXISTS ${PACKAGE_DATA_DIR}/icons/${PACKAGE_ICON_NAME}.ico)
-	message(STATUS "Writing a resource file for executable icon")
-
-	set(GENERATED_SOURCE_DIR "${CMAKE_BINARY_DIR}/generated")
-	set(GENERATED_INCLUDE_DIR "${GENERATED_SOURCE_DIR}/include")
-
-	set(RESOURCE_RC_FILE "${GENERATED_SOURCE_DIR}/resource.rc")
-	file(WRITE ${RESOURCE_RC_FILE} "IDI_ICON1 ICON DISCARDABLE \"${PACKAGE_ICON_NAME}.ico\"")
-	file(COPY ${PACKAGE_DATA_DIR}/icons/${PACKAGE_ICON_NAME}.ico DESTINATION ${GENERATED_INCLUDE_DIR})
-	target_sources(${PACKAGE_EXE_NAME} PRIVATE ${RESOURCE_RC_FILE})
-endif()
+include(package_generated_sources)
+target_sources(${PACKAGE_EXE_NAME} PRIVATE ${GENERATED_SOURCES})
 
 if(MSVC AND PACKAGE_CRASHRPT)
 	set(CRASHRPT_STRINGS_FILE ${CMAKE_BINARY_DIR}/generated/CrashRptStrings.cpp)
@@ -54,8 +44,8 @@ if(NOT DEFAULT_DATA_DIR_DIST) # Don't set the startup project if it wouldn't fin
 	set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PACKAGE_EXE_NAME})
 endif()
 
-if(MSVC AND EXISTS ${PACKAGE_DATA_DIR}/icons/${PACKAGE_ICON_NAME}.ico)
-	target_include_directories(${PACKAGE_EXE_NAME} PRIVATE ${GENERATED_INCLUDE_DIR}) # for the executable icon
+if(IS_DIRECTORY ${GENERATED_INCLUDE_DIR})
+	target_include_directories(${PACKAGE_EXE_NAME} PRIVATE ${GENERATED_INCLUDE_DIR})
 endif()
 target_link_libraries(${PACKAGE_EXE_NAME} ncine::ncine_main ncine::ncine)
 
