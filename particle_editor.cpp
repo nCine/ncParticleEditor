@@ -48,12 +48,12 @@ void MyEventHandler::onPreInit(nc::AppConfiguration &config)
 #endif
 
 #ifdef __ANDROID__
-	config.setDataPath("/sdcard/ncparticleeditor/");
+	config.dataPath() = "/sdcard/ncparticleeditor/";
 #else
 	#ifdef PACKAGE_DEFAULT_DATA_DIR
-	config.setDataPath(PACKAGE_DEFAULT_DATA_DIR);
+	config.dataPath() = PACKAGE_DEFAULT_DATA_DIR;
 	#else
-	config.setDataPath("data/");
+	config.dataPath() = "data/";
 	#endif
 #endif
 
@@ -93,17 +93,17 @@ void MyEventHandler::onPreInit(nc::AppConfiguration &config)
 		luaConfig.backgroundsPath = nc::IFile::dataPath() + "backgrounds/";
 
 	config.setResolution(luaConfig.width, luaConfig.height);
-	config.setFullScreen(luaConfig.fullscreen);
-	config.setResizable(luaConfig.resizable);
-	config.setVboSize(luaConfig.vboSize);
-	config.setIboSize(luaConfig.iboSize);
+	config.inFullscreen = luaConfig.fullscreen;
+	config.isResizable = luaConfig.resizable;
+	config.vboSize = luaConfig.vboSize;
+	config.iboSize = luaConfig.iboSize;
 
-	config.setWindowTitle("ncParticleEditor");
-	config.setWindowIconFilename("icon48.png");
+	config.windowTitle = "ncParticleEditor";
+	config.windowIconFilename = "icon48.png";
 
 #ifdef WITH_CRASHRPT
-	config.enableInfoText(false);
-	config.enableProfilerGraphs(false);
+	config.withInfoText = false;
+	config.withProfilerGraphs = false;
 #endif
 }
 
