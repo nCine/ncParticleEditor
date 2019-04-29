@@ -6,7 +6,7 @@
 
 int CrashRptWrapper::install()
 {
-CR_INSTALL_INFO info;
+	CR_INSTALL_INFO info;
 	memset(&info, 0, sizeof(CR_INSTALL_INFO));
 	info.cb = sizeof(CR_INSTALL_INFO);
 	info.pszAppName = _T(CrashRptWrapper::appName);
@@ -19,7 +19,7 @@ CR_INSTALL_INFO info;
 
 	// Install crash reporting
 	int nResult = crInstall(&info);
-	if(nResult != 0)  
+	if (nResult != 0)
 	{
 		// Something goes wrong. Get error message.
 		TCHAR szErrorMsg[512] = _T("");

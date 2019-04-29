@@ -33,10 +33,10 @@ nc::IAppEventHandler *createAppEventHandler()
 }
 
 MyEventHandler::MyEventHandler()
-	: loader_(nctl::makeUnique<LuaLoader>()),
-	  sysStates_(4), texStates_(4),
-	  textures_(4), texturesToDelete_(4),
-	  particleSystems_(4)
+    : loader_(nctl::makeUnique<LuaLoader>()),
+      sysStates_(4), texStates_(4),
+      textures_(4), texturesToDelete_(4),
+      particleSystems_(4)
 {
 	nc::IInputManager::setHandler(this);
 }
@@ -61,7 +61,7 @@ void MyEventHandler::onPreInit(nc::AppConfiguration &config)
 	if (nc::IFile::access(configFile_.data(), nc::IFile::AccessMode::READABLE) == false)
 	{
 		logString_.formatAppend("Config file \"%s\" is not accessible or does not exist\n", configFile_.data());
-		configFile_ = nc::IFile::dataPath() +  ConfigFile;
+		configFile_ = nc::IFile::dataPath() + ConfigFile;
 	}
 
 	LuaLoader::Config &luaConfig = loader_->config();
@@ -245,7 +245,7 @@ bool MyEventHandler::load(const char *filename)
 	for (int systemIndex = 0; systemIndex < loaderState.systems.size(); systemIndex++)
 	{
 		LuaLoader::State::ParticleSystem &src = loaderState.systems[systemIndex];
-		sysStates_[systemIndex] = { };
+		sysStates_[systemIndex] = {};
 		ParticleSystemGuiState &dest = sysStates_[systemIndex];
 
 		dest.name = src.name;
@@ -266,7 +266,7 @@ bool MyEventHandler::load(const char *filename)
 		if (dest.texture == nullptr)
 		{
 			texIndex_ = textures_.size();
-			texStates_[texIndex_] = { };
+			texStates_[texIndex_] = {};
 			TextureGuiState &texState = texStates_[texIndex_];
 			texState.name = src.textureName;
 			const bool result = createTexture(texIndex_);
@@ -621,7 +621,7 @@ void MyEventHandler::createParticleSystem(unsigned int index)
 
 void MyEventHandler::cloneParticleSystem(unsigned int srcIndex, unsigned int destIndex, unsigned int numParticles)
 {
-	const ParticleSystemGuiState &src  = sysStates_[srcIndex];
+	const ParticleSystemGuiState &src = sysStates_[srcIndex];
 	ParticleSystemGuiState &dest = sysStates_[destIndex];
 
 	dest.name = src.name;

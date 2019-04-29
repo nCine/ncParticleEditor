@@ -17,9 +17,9 @@ namespace {
 const float PlotHeight = 50.0f;
 const char *amountItems[] = { "Constant", "Min/Max" };
 const char *lifeItems[] = { "Constant", "Min/Max" };
-const char *positionItems[] = { "Constant", "Min/Max", "Radius"};
+const char *positionItems[] = { "Constant", "Min/Max", "Radius" };
 const char *velocityItems[] = { "Constant", "Min/Max", "Scale" };
-const char *rotationItems[] = { "Emitter", "Constant", "Min/Max"};
+const char *rotationItems[] = { "Emitter", "Constant", "Min/Max" };
 
 static bool requestCloseModal = false;
 static bool openModal = false;
@@ -97,7 +97,7 @@ void MyEventHandler::closeModalsAndAbout()
 
 void MyEventHandler::configureGui()
 {
-	ImGuiIO& io = ImGui::GetIO();
+	ImGuiIO &io = ImGui::GetIO();
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 }
 
@@ -228,8 +228,8 @@ void MyEventHandler::createGuiPopups()
 
 		if (!ImGui::IsAnyItemActive())
 			ImGui::SetKeyboardFocusHere();
-		if (ImGui::InputText("", filename_.data(), MaxStringLength, ImGuiInputTextFlags_EnterReturnsTrue |
-		                     ImGuiInputTextFlags_CallbackResize, inputTextCallback, &filename_) || ImGui::Button("OK"))
+		if (ImGui::InputText("", filename_.data(), MaxStringLength, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackResize,
+		                     inputTextCallback, &filename_) || ImGui::Button("OK"))
 		{
 			const LuaLoader::Config &luaConfig = loader_->config();
 			nctl::String filePath = joinPath(luaConfig.scriptsPath, filename_);
@@ -267,8 +267,8 @@ void MyEventHandler::createGuiPopups()
 
 		if (!ImGui::IsAnyItemActive())
 			ImGui::SetKeyboardFocusHere();
-		if (ImGui::InputText("", filename_.data(), MaxStringLength, ImGuiInputTextFlags_EnterReturnsTrue |
-		                     ImGuiInputTextFlags_CallbackResize, inputTextCallback, &filename_) || ImGui::Button("OK"))
+		if (ImGui::InputText("", filename_.data(), MaxStringLength, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackResize,
+		                     inputTextCallback, &filename_) || ImGui::Button("OK"))
 		{
 			const LuaLoader::Config &luaConfig = loader_->config();
 			nctl::String filePath = joinPath(luaConfig.scriptsPath, filename_);
@@ -340,12 +340,16 @@ void MyEventHandler::createGuiBackground()
 			ImGui::SliderInt("Image Layer", &backgroundImageLayer_, 0, cfg.maxRenderingLayer);
 			ImGui::ColorEdit4("Image Color", backgroundImageColor_.data(), ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf);
 
-			int minX = backgroundImageRect_.x; int maxX = minX + backgroundImageRect_.w;
-			int minY = backgroundImageRect_.y; int maxY = minY + backgroundImageRect_.h;
+			int minX = backgroundImageRect_.x;
+			int maxX = minX + backgroundImageRect_.w;
+			int minY = backgroundImageRect_.y;
+			int maxY = minY + backgroundImageRect_.h;
 			ImGui::DragIntRange2("Image Rect X", &minX, &maxX, 1.0f, 0, backgroundTexture_->width());
 			ImGui::DragIntRange2("Image Rect Y", &minY, &maxY, 1.0f, 0, backgroundTexture_->height());
-			backgroundImageRect_.x = minX; backgroundImageRect_.w = maxX - minX;
-			backgroundImageRect_.y = minY; backgroundImageRect_.h = maxY - minY;
+			backgroundImageRect_.x = minX;
+			backgroundImageRect_.w = maxX - minX;
+			backgroundImageRect_.y = minY;
+			backgroundImageRect_.h = maxY - minY;
 			ImGui::SameLine();
 			if (ImGui::Button("Reset##Rect"))
 				backgroundImageRect_ = nc::Recti(0, 0, backgroundTexture_->width(), backgroundTexture_->height());
@@ -414,54 +418,60 @@ void MyEventHandler::createGuiTextures()
 		else if (texIndex_ > textures_.size() - 1)
 			texIndex_ = textures_.size() - 1;
 
-	if (textures_.size() > 0)
-	{
-		ImGui::SameLine();
-		if (ImGui::Button("Assign") && particleSystems_.isEmpty() == false)
+		if (textures_.size() > 0)
 		{
-			sysStates_[systemIndex_].texture = textures_[texIndex_].get();
-			sysStates_[systemIndex_].texRect = texStates_[texIndex_].texRect;
-			particleSystems_[systemIndex_]->setTexture(textures_[texIndex_].get());
-			particleSystems_[systemIndex_]->setTexRect(texStates_[texIndex_].texRect);
+			ImGui::SameLine();
+			if (ImGui::Button("Assign") && particleSystems_.isEmpty() == false)
+			{
+				sysStates_[systemIndex_].texture = textures_[texIndex_].get();
+				sysStates_[systemIndex_].texRect = texStates_[texIndex_].texRect;
+				particleSystems_[systemIndex_]->setTexture(textures_[texIndex_].get());
+				particleSystems_[systemIndex_]->setTexRect(texStates_[texIndex_].texRect);
+			}
+			ImGui::SameLine();
+			showHelpMarker("Also applies current texture rectangle");
+			ImGui::SameLine();
+			if (ImGui::Button("Retrieve") && particleSystems_.isEmpty() == false)
+			{
+				texIndex_ = retrieveTexture(systemIndex_);
+				texStates_[texIndex_].texRect = sysStates_[systemIndex_].texRect;
+			}
+
+			nc::Texture &tex = *textures_[texIndex_];
+			TextureGuiState &t = texStates_[texIndex_];
+
+			const float texWidth = static_cast<float>(tex.width());
+			const float texHeight = static_cast<float>(tex.height());
+			if (t.showRect)
+			{
+				ImGui::Image(tex.imguiTexId(), ImVec2(t.texRect.w, t.texRect.h),
+				             ImVec2(t.texRect.x / texWidth, t.texRect.y / texHeight),
+				             ImVec2((t.texRect.x + t.texRect.w) / texWidth, (t.texRect.y + t.texRect.h) / texHeight));
+			}
+			else
+				ImGui::Image(tex.imguiTexId(), ImVec2(texWidth, texHeight));
+
+			int minX = t.texRect.x;
+			int maxX = minX + t.texRect.w;
+			ImGui::DragIntRange2("Rect X", &minX, &maxX, 1.0f, 0, tex.width());
+			ImGui::SameLine();
+			ImGui::Checkbox("Show##Rect", &t.showRect);
+			int minY = t.texRect.y;
+			int maxY = minY + t.texRect.h;
+			ImGui::DragIntRange2("Rect Y", &minY, &maxY, 1.0f, 0, tex.height());
+			t.texRect.x = minX;
+			t.texRect.w = maxX - minX;
+			t.texRect.y = minY;
+			t.texRect.h = maxY - minY;
+			ImGui::SameLine();
+			if (ImGui::Button("Reset##Rect"))
+				t.texRect = nc::Recti(0, 0, tex.width(), tex.height());
+
+			ImGui::Text("Name: %s", texStates_[texIndex_].name.data());
+			ImGui::Text("Width: %d", tex.width());
+			ImGui::SameLine();
+			ImGui::Text("Height: %d", tex.height());
 		}
-		ImGui::SameLine(); showHelpMarker("Also applies current texture rectangle");
-		ImGui::SameLine();
-		if (ImGui::Button("Retrieve") && particleSystems_.isEmpty() == false)
-		{
-			texIndex_ = retrieveTexture(systemIndex_);
-			texStates_[texIndex_].texRect = sysStates_[systemIndex_].texRect;
-		}
-
-		nc::Texture &tex = *textures_[texIndex_];
-		TextureGuiState &t = texStates_[texIndex_];
-
-		const float texWidth = static_cast<float>(tex.width());
-		const float texHeight = static_cast<float>(tex.height());
-		if (t.showRect)
-		{
-			ImGui::Image(tex.imguiTexId(), ImVec2(t.texRect.w, t.texRect.h),
-						 ImVec2(t.texRect.x / texWidth, t.texRect.y / texHeight),
-						 ImVec2((t.texRect.x + t.texRect.w) / texWidth, (t.texRect.y + t.texRect.h) / texHeight));
-		}
-		else
-			ImGui::Image(tex.imguiTexId(), ImVec2(texWidth, texHeight));
-
-		int minX = t.texRect.x; int maxX = minX + t.texRect.w;
-		ImGui::DragIntRange2("Rect X", &minX, &maxX, 1.0f, 0, tex.width());
-		ImGui::SameLine(); ImGui::Checkbox("Show##Rect", &t.showRect);
-		int minY = t.texRect.y; int maxY = minY + t.texRect.h;
-		ImGui::DragIntRange2("Rect Y", &minY, &maxY, 1.0f, 0, tex.height());
-		t.texRect.x = minX; t.texRect.w = maxX - minX;
-		t.texRect.y = minY; t.texRect.h = maxY - minY;
-		ImGui::SameLine();
-		if (ImGui::Button("Reset##Rect"))
-			t.texRect = nc::Recti(0, 0, tex.width(), tex.height());
-
-		ImGui::Text("Name: %s", texStates_[texIndex_].name.data());
-		ImGui::Text("Width: %d", tex.width());
-		ImGui::SameLine();
-		ImGui::Text("Height: %d", tex.height());
-	}
 	}
 	ImGui::PopID();
 }
@@ -544,7 +554,8 @@ void MyEventHandler::createGuiParticleSystem()
 			destroyParticleSystem(tempSystemIndex);
 			particleSystem = particleSystems_[systemIndex_].get();
 		}
-		ImGui::SameLine(); showHelpMarker("Applies the new number by creating a temporary clone and thus preserving the system state");
+		ImGui::SameLine();
+		showHelpMarker("Applies the new number by creating a temporary clone and thus preserving the system state");
 
 		ImGui::SliderFloat("Rel Pos X", &s.position.x, -cfg.systemPositionRange, cfg.systemPositionRange);
 		ImGui::SameLine();
@@ -694,7 +705,7 @@ void MyEventHandler::createGuiSizeAffector()
 	ImGui::PushID("SizeAffector");
 	if (ImGui::CollapsingHeader(widgetName_.data()))
 	{
-		ImGui::SliderFloat("Base Scale", &s.baseScale , cfg.minParticleScale, cfg.maxParticleScale);
+		ImGui::SliderFloat("Base Scale", &s.baseScale, cfg.minParticleScale, cfg.maxParticleScale);
 		s.sizeAffector->setBaseScale(s.baseScale);
 		ImGui::Separator();
 
@@ -714,7 +725,7 @@ void MyEventHandler::createGuiSizeAffector()
 					step.age = s.sizeAffector->steps()[stepId - 1].age;
 
 				widgetName_.format("Scale##%d", stepId);
-				ImGui::SliderFloat(widgetName_.data(), &step.scale , cfg.minParticleScale, cfg.maxParticleScale);
+				ImGui::SliderFloat(widgetName_.data(), &step.scale, cfg.minParticleScale, cfg.maxParticleScale);
 				widgetName_.format("Age##%d", stepId);
 				ImGui::SliderFloat(widgetName_.data(), &step.age, 0.0f, 1.0f);
 				ImGui::TreePop();
@@ -727,7 +738,7 @@ void MyEventHandler::createGuiSizeAffector()
 		if (ImGui::TreeNodeEx("New Step", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			widgetName_.format("Scale##%d", stepId);
-			ImGui::SliderFloat(widgetName_.data(), &s.sizeValue , cfg.minParticleScale, cfg.maxParticleScale);
+			ImGui::SliderFloat(widgetName_.data(), &s.sizeValue, cfg.minParticleScale, cfg.maxParticleScale);
 			widgetName_.format("Age##%d", stepId);
 			ImGui::SliderFloat(widgetName_.data(), &s.sizeAge, 0.0f, 1.0f);
 
@@ -815,7 +826,7 @@ void MyEventHandler::createGuiRotationAffector()
 					step.age = s.rotationAffector->steps()[stepId - 1].age;
 
 				widgetName_.format("Angle##%d", stepId);
-				ImGui::SliderFloat(widgetName_.data(), &step.angle , cfg.minParticleAngle, cfg.maxParticleAngle);
+				ImGui::SliderFloat(widgetName_.data(), &step.angle, cfg.minParticleAngle, cfg.maxParticleAngle);
 				widgetName_.format("Age##%d", stepId);
 				ImGui::SliderFloat(widgetName_.data(), &step.age, 0.0f, 1.0f);
 				ImGui::TreePop();
@@ -828,7 +839,7 @@ void MyEventHandler::createGuiRotationAffector()
 		if (ImGui::TreeNodeEx("New Step", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			widgetName_.format("Angle##%d", stepId);
-			ImGui::SliderFloat(widgetName_.data(), &s.rotValue , cfg.minParticleAngle, cfg.maxParticleAngle);
+			ImGui::SliderFloat(widgetName_.data(), &s.rotValue, cfg.minParticleAngle, cfg.maxParticleAngle);
 			widgetName_.format("Age##%d", stepId);
 			ImGui::SliderFloat(widgetName_.data(), &s.rotAge, 0.0f, 1.0f);
 
@@ -1115,7 +1126,7 @@ void MyEventHandler::createGuiEmission()
 	nc::ParticleSystem *particleSystem = particleSystems_[systemIndex_].get();
 	ParticleSystemGuiState &s = sysStates_[systemIndex_];
 
-	const float columnWidth =  ImGui::GetContentRegionAvailWidth() * 0.75f;
+	const float columnWidth = ImGui::GetContentRegionAvailWidth() * 0.75f;
 	ImGui::PushID("Emission");
 	if (ImGui::CollapsingHeader("Emission"))
 	{
@@ -1182,8 +1193,7 @@ void MyEventHandler::createGuiEmission()
 		{
 			float centerX = (s.init.rndPositionX.x + s.init.rndPositionX.y) * 0.5f;
 			float centerY = (s.init.rndPositionY.x + s.init.rndPositionY.y) * 0.5f;
-			float radius = ((s.init.rndPositionX.y - s.init.rndPositionX.x) +
-			               (s.init.rndPositionY.y - s.init.rndPositionY.x)) * 0.25f;
+			float radius = ((s.init.rndPositionX.y - s.init.rndPositionX.x) + (s.init.rndPositionY.y - s.init.rndPositionY.x)) * 0.25f;
 
 			ImGui::SliderFloat("Position X", &centerX, -cfg.randomPositionRange, cfg.randomPositionRange);
 			ImGui::SliderFloat("Position Y", &centerY, -cfg.randomPositionRange, cfg.randomPositionRange);
@@ -1222,8 +1232,7 @@ void MyEventHandler::createGuiEmission()
 		}
 		else if (s.velocityCurrentItem == 2)
 		{
-			float maxScale = ((s.init.rndVelocityX.y / s.init.rndVelocityX.x) +
-			              (s.init.rndVelocityY.y / s.init.rndVelocityY.x)) * 0.5f;
+			float maxScale = ((s.init.rndVelocityX.y / s.init.rndVelocityX.x) + (s.init.rndVelocityY.y / s.init.rndVelocityY.x)) * 0.5f;
 			float velX = s.init.rndVelocityX.x;
 			float velY = s.init.rndVelocityY.x;
 			nc::Vector2f scale(1.0f, maxScale);
@@ -1403,12 +1412,12 @@ void MyEventHandler::createGuiConfigWindow()
 		cfg.logMaxSize = logStringSize * 1024;
 
 		ImGui::NewLine();
-		ImGui::InputText("Scripts Path", cfg.scriptsPath.data(), MaxStringLength, ImGuiInputTextFlags_EnterReturnsTrue |
-		                 ImGuiInputTextFlags_CallbackResize, inputTextCallback, &cfg.scriptsPath);
-		ImGui::InputText("Textures Path", cfg.texturesPath.data(), MaxStringLength, ImGuiInputTextFlags_EnterReturnsTrue |
-		                 ImGuiInputTextFlags_CallbackResize, inputTextCallback, &cfg.texturesPath);
-		ImGui::InputText("Backgrounds Path", cfg.backgroundsPath.data(), MaxStringLength, ImGuiInputTextFlags_EnterReturnsTrue |
-		                 ImGuiInputTextFlags_CallbackResize, inputTextCallback, &cfg.backgroundsPath);
+		ImGui::InputText("Scripts Path", cfg.scriptsPath.data(), MaxStringLength,
+		                 ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackResize, inputTextCallback, &cfg.scriptsPath);
+		ImGui::InputText("Textures Path", cfg.texturesPath.data(), MaxStringLength,
+		                 ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackResize, inputTextCallback, &cfg.texturesPath);
+		ImGui::InputText("Backgrounds Path", cfg.backgroundsPath.data(), MaxStringLength,
+		                 ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackResize, inputTextCallback, &cfg.backgroundsPath);
 
 		loader_->sanitizeInitValues();
 
@@ -1456,11 +1465,11 @@ void MyEventHandler::createGuiConfigWindow()
 			ImGui::SameLine();
 			if (ImGui::Button("Reset"))
 			{
-			#ifdef __ANDROID__
+#ifdef __ANDROID__
 				cfg.scaling = 2.0f;
-			#else
+#else
 				cfg.scaling = 1.0f;
-			#endif
+#endif
 			}
 
 			loader_->sanitizeGuiStyle();
@@ -1516,7 +1525,7 @@ void MyEventHandler::applyGuiStyleConfig()
 		case 2: ImGui::StyleColorsClassic(); break;
 	}
 
-	ImGuiStyle& style = ImGui::GetStyle();
+	ImGuiStyle &style = ImGui::GetStyle();
 	style.FrameRounding = cfg.frameRounding;
 	// Make `GrabRounding` always the same value as `FrameRounding`
 	style.GrabRounding = style.FrameRounding;

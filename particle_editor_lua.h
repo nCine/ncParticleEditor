@@ -26,8 +26,8 @@ namespace nc = ncine;
 
 /// The particle editor loader/saver
 class LuaLoader :
-	public nc::IAppEventHandler,
-	public nc::IInputEventHandler
+    public nc::IAppEventHandler,
+    public nc::IInputEventHandler
 {
   public:
 	static const unsigned int MaxFilenameLength = 256;
@@ -144,7 +144,7 @@ class LuaLoader :
 #endif
 	};
 
-	LuaLoader() { }
+	LuaLoader() {}
 	inline const Config &config() const { return config_; }
 	inline Config &config() { return config_; }
 	void sanitizeInitValues();

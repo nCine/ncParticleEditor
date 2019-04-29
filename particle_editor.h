@@ -28,8 +28,8 @@ namespace nc = ncine;
 
 /// My nCine event handler
 class MyEventHandler :
-	public nc::IAppEventHandler,
-	public nc::IInputEventHandler
+    public nc::IAppEventHandler,
+    public nc::IInputEventHandler
 {
   public:
 	MyEventHandler();
@@ -121,12 +121,12 @@ class MyEventHandler :
 	nctl::Array<TextureGuiState> texStates_;
 
 	nctl::UniquePtr<nc::SceneNode> dummy_;
-	nctl::Array<nctl::UniquePtr<nc::Texture> > textures_;
-	nctl::Array<nctl::UniquePtr<nc::Texture> > texturesToDelete_;
+	nctl::Array<nctl::UniquePtr<nc::Texture>> textures_;
+	nctl::Array<nctl::UniquePtr<nc::Texture>> texturesToDelete_;
 	nctl::Array<nc::Rectf> rects_;
 	nctl::UniquePtr<nc::Texture> backgroundTexture_;
 	nctl::UniquePtr<nc::Sprite> backgroundSprite_;
-	nctl::Array<nctl::UniquePtr<nc::ParticleSystem> > particleSystems_;
+	nctl::Array<nctl::UniquePtr<nc::ParticleSystem>> particleSystems_;
 	nctl::String widgetName_ = nctl::String(MaxStringLength);
 
 	static const unsigned int NumPlotValues = 64;

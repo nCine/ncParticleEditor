@@ -13,102 +13,103 @@
 
 namespace {
 
-void indent(nctl::String &string, int amount)
+nctl::String &indent(nctl::String &string, int amount)
 {
 	FATAL_ASSERT(amount >= 0);
 	for (int i = 0; i < amount; i++)
 		string.append("\t");
+
+	return string;
 }
 
 const unsigned int ProjectFileVersion = 5;
 const unsigned int ConfigFileVersion = 8;
 
-namespace Names
-{
+namespace Names {
 
-const char *version = "project_version"; // version 3
+	const char *version = "project_version"; // version 3
 
-const char *normalizedAbsPosition = "normalized_absolute_position"; // version 2
-const char *particleSystems = "particle_systems";
-const char *backgroundProperties = "background_properties"; // version 4
-const char *backgroundColor = "background_color"; // version 4
-const char *backgroundImage = "background_image"; // version 4
-const char *backgroundImageNormalizedPosition = "background_image_normalized_position"; // version 4
-const char *backgroundImageScale = "background_image_scale"; // version 4
-const char *backgroundImageLayer = "background_image_layer"; // version 4
-const char *backgroundImageColor = "background_image_color"; // version 5
-const char *backgroundImageRect = "background_image_rect"; // version 5
+	const char *normalizedAbsPosition = "normalized_absolute_position"; // version 2
+	const char *particleSystems = "particle_systems";
+	const char *backgroundProperties = "background_properties"; // version 4
+	const char *backgroundColor = "background_color"; // version 4
+	const char *backgroundImage = "background_image"; // version 4
+	const char *backgroundImageNormalizedPosition = "background_image_normalized_position"; // version 4
+	const char *backgroundImageScale = "background_image_scale"; // version 4
+	const char *backgroundImageLayer = "background_image_layer"; // version 4
+	const char *backgroundImageColor = "background_image_color"; // version 5
+	const char *backgroundImageRect = "background_image_rect"; // version 5
 
-const char *name = "name"; // version 3
-const char *numParticles = "num_particles";
-const char *texture = "texture";
-const char *texRext = "texture_rect";
-const char *relativePosition = "relative_position";
-const char *layer = "layer";
-const char *inLocalSpace = "local_space";
-const char *active = "active";
+	const char *name = "name"; // version 3
+	const char *numParticles = "num_particles";
+	const char *texture = "texture";
+	const char *texRext = "texture_rect";
+	const char *relativePosition = "relative_position";
+	const char *layer = "layer";
+	const char *inLocalSpace = "local_space";
+	const char *active = "active";
 
-const char *colorSteps = "color_steps";
-const char *sizeSteps = "size_steps";
-const char *baseScale = "base_scale";
-const char *rotationSteps = "rotation_steps";
-const char *positionSteps = "position_steps";
-const char *velocitySteps = "velocity_steps";
+	const char *colorSteps = "color_steps";
+	const char *sizeSteps = "size_steps";
+	const char *baseScale = "base_scale";
+	const char *rotationSteps = "rotation_steps";
+	const char *positionSteps = "position_steps";
+	const char *velocitySteps = "velocity_steps";
 
-const char *emission = "emission";
-const char *amount = "amount";
-const char *life = "life";
-const char *positionX = "position_x";
-const char *positionY = "position_y";
-const char *velocityX = "velocity_x";
-const char *velocityY = "velocity_y";
-const char *rotation = "rotation";
-const char *emitterRotation = "emitter_rotation";
-const char *delay = "delay";
+	const char *emission = "emission";
+	const char *amount = "amount";
+	const char *life = "life";
+	const char *positionX = "position_x";
+	const char *positionY = "position_y";
+	const char *velocityX = "velocity_x";
+	const char *velocityY = "velocity_y";
+	const char *rotation = "rotation";
+	const char *emitterRotation = "emitter_rotation";
+	const char *delay = "delay";
+
 }
 
-namespace CfgNames
-{
+namespace CfgNames {
 
-const char *version = "config_version"; // version 2
-const char *width = "width";
-const char *height = "height";
-const char *fullscreen = "fullscreen";
-const char *resizable = "resizable"; // version 8
-const char *vboSize = "vbo_size";
-const char *iboSize = "ibo_size";
-const char *batching = "batching";
-const char *culling = "culling";
-const char *saveFileMaxSize = "savefile_maxsize"; // version 3
-const char *logMaxSize = "log_maxsize"; // version 5
+	const char *version = "config_version"; // version 2
+	const char *width = "width";
+	const char *height = "height";
+	const char *fullscreen = "fullscreen";
+	const char *resizable = "resizable"; // version 8
+	const char *vboSize = "vbo_size";
+	const char *iboSize = "ibo_size";
+	const char *batching = "batching";
+	const char *culling = "culling";
+	const char *saveFileMaxSize = "savefile_maxsize"; // version 3
+	const char *logMaxSize = "log_maxsize"; // version 5
 
-const char *scriptsPath = "scripts_path"; // version 6
-const char *backgroundsPath = "backgrounds_path"; // version 6
-const char *texturesPath = "textures_path"; // version 6
+	const char *scriptsPath = "scripts_path"; // version 6
+	const char *backgroundsPath = "backgrounds_path"; // version 6
+	const char *texturesPath = "textures_path"; // version 6
 
-const char *guiLimits = "gui_limits"; // version 3
-const char *maxBackgroundImageScale = "max_background_image_scale"; // version 4
-const char *maxRenderingLayer = "max_rendering_layer"; // version 4
-const char *maxNumParticles = "max_num_particles"; // version 3
-const char *systemPositionRange = "system_position_range"; // version 3
-const char *minParticleScale = "min_particle_scale"; // version 3
-const char *maxParticleScale = "max_particle_scale"; // version 3
-const char *minParticleAngle = "min_particle_angle"; // version 3
-const char *maxParticleAngle = "max_particle_angle"; // version 3
-const char *positionRange = "position_range"; // version 3
-const char *velocityRange = "velocity_range"; // version 3
-const char *maxRandomLife = "max_random_life"; // version 3
-const char *randomPositionRange = "random_position_range"; // version 3
-const char *randomVelocityRange = "random_velocity_range"; // version 3
-const char *maxDelay = "max_delay"; // version 3
+	const char *guiLimits = "gui_limits"; // version 3
+	const char *maxBackgroundImageScale = "max_background_image_scale"; // version 4
+	const char *maxRenderingLayer = "max_rendering_layer"; // version 4
+	const char *maxNumParticles = "max_num_particles"; // version 3
+	const char *systemPositionRange = "system_position_range"; // version 3
+	const char *minParticleScale = "min_particle_scale"; // version 3
+	const char *maxParticleScale = "max_particle_scale"; // version 3
+	const char *minParticleAngle = "min_particle_angle"; // version 3
+	const char *maxParticleAngle = "max_particle_angle"; // version 3
+	const char *positionRange = "position_range"; // version 3
+	const char *velocityRange = "velocity_range"; // version 3
+	const char *maxRandomLife = "max_random_life"; // version 3
+	const char *randomPositionRange = "random_position_range"; // version 3
+	const char *randomVelocityRange = "random_velocity_range"; // version 3
+	const char *maxDelay = "max_delay"; // version 3
 
-const char *guiStyle = "gui_style"; // version 7
-const char *styleIndex = "style_index"; // version 7
-const char *frameRounding = "frame_rounding"; // version 7
-const char *windowBorder = "window_border"; // version 7
-const char *frameBorder = "frame_border"; // version 7
-const char *popupBorder = "popup_border"; // version 7
-const char *scaling = "scaling"; // version 7
+	const char *guiStyle = "gui_style"; // version 7
+	const char *styleIndex = "style_index"; // version 7
+	const char *frameRounding = "frame_rounding"; // version 7
+	const char *windowBorder = "window_border"; // version 7
+	const char *frameBorder = "frame_border"; // version 7
+	const char *popupBorder = "popup_border"; // version 7
+	const char *scaling = "scaling"; // version 7
 
 }
 
@@ -260,7 +261,7 @@ bool LuaLoader::loadConfig(const char *filename)
 	sanitizeGuiLimits();
 	sanitizeGuiStyle();
 
-	return true;;
+	return true;
 }
 
 bool LuaLoader::saveConfig(const char *filename)
@@ -271,59 +272,59 @@ bool LuaLoader::saveConfig(const char *filename)
 	nctl::String file(4096);
 	int amount = 0;
 
-	indent(file, amount); file.formatAppend("%s = %u\n", CfgNames::version, ConfigFileVersion);
-	indent(file, amount); file.formatAppend("%s = %d\n", CfgNames::width, config_.width);
-	indent(file, amount); file.formatAppend("%s = %d\n", CfgNames::height, config_.height);
-	indent(file, amount); file.formatAppend("%s = %s\n", CfgNames::fullscreen, config_.fullscreen ? "true" : "false");
-	indent(file, amount); file.formatAppend("%s = %s\n", CfgNames::resizable, config_.resizable ? "true" : "false");
-	indent(file, amount); file.formatAppend("%s = %lu\n", CfgNames::vboSize, config_.vboSize);
-	indent(file, amount); file.formatAppend("%s = %lu\n", CfgNames::iboSize, config_.iboSize);
-	indent(file, amount); file.formatAppend("%s = %s\n", CfgNames::batching, config_.batching ? "true" : "false");
-	indent(file, amount); file.formatAppend("%s = %s\n", CfgNames::culling, config_.culling ? "true" : "false");
-	indent(file, amount); file.formatAppend("%s = %u\n", CfgNames::saveFileMaxSize, config_.saveFileMaxSize);
-	indent(file, amount); file.formatAppend("%s = %u\n", CfgNames::logMaxSize, config_.logMaxSize);
+	indent(file, amount).formatAppend("%s = %u\n", CfgNames::version, ConfigFileVersion);
+	indent(file, amount).formatAppend("%s = %d\n", CfgNames::width, config_.width);
+	indent(file, amount).formatAppend("%s = %d\n", CfgNames::height, config_.height);
+	indent(file, amount).formatAppend("%s = %s\n", CfgNames::fullscreen, config_.fullscreen ? "true" : "false");
+	indent(file, amount).formatAppend("%s = %s\n", CfgNames::resizable, config_.resizable ? "true" : "false");
+	indent(file, amount).formatAppend("%s = %lu\n", CfgNames::vboSize, config_.vboSize);
+	indent(file, amount).formatAppend("%s = %lu\n", CfgNames::iboSize, config_.iboSize);
+	indent(file, amount).formatAppend("%s = %s\n", CfgNames::batching, config_.batching ? "true" : "false");
+	indent(file, amount).formatAppend("%s = %s\n", CfgNames::culling, config_.culling ? "true" : "false");
+	indent(file, amount).formatAppend("%s = %u\n", CfgNames::saveFileMaxSize, config_.saveFileMaxSize);
+	indent(file, amount).formatAppend("%s = %u\n", CfgNames::logMaxSize, config_.logMaxSize);
 
-	indent(file, amount); file.formatAppend("%s = \"%s\"\n", CfgNames::scriptsPath, config_.scriptsPath.data());
-	indent(file, amount); file.formatAppend("%s = \"%s\"\n", CfgNames::texturesPath, config_.texturesPath.data());
-	indent(file, amount); file.formatAppend("%s = \"%s\"\n", CfgNames::backgroundsPath, config_.backgroundsPath.data());
+	indent(file, amount).formatAppend("%s = \"%s\"\n", CfgNames::scriptsPath, config_.scriptsPath.data());
+	indent(file, amount).formatAppend("%s = \"%s\"\n", CfgNames::texturesPath, config_.texturesPath.data());
+	indent(file, amount).formatAppend("%s = \"%s\"\n", CfgNames::backgroundsPath, config_.backgroundsPath.data());
 
-	indent(file, amount); file.append("\n");
-	indent(file, amount); file.formatAppend("%s =\n", CfgNames::guiLimits);
-	indent(file, amount); file.append("{\n");
+	indent(file, amount).append("\n");
+	indent(file, amount).formatAppend("%s =\n", CfgNames::guiLimits);
+	indent(file, amount).append("{\n");
 	amount++;
 
-	indent(file, amount); file.formatAppend("%s = %f,\n", CfgNames::maxBackgroundImageScale, config_.maxBackgroundImageScale);
-	indent(file, amount); file.formatAppend("%s = %d,\n", CfgNames::maxRenderingLayer, config_.maxRenderingLayer);
-	indent(file, amount); file.formatAppend("%s = %d,\n", CfgNames::maxNumParticles, config_.maxNumParticles);
-	indent(file, amount); file.formatAppend("%s = %f,\n", CfgNames::systemPositionRange, config_.systemPositionRange);
-	indent(file, amount); file.formatAppend("%s = %f,\n", CfgNames::minParticleScale, config_.minParticleScale);
-	indent(file, amount); file.formatAppend("%s = %f,\n", CfgNames::maxParticleScale, config_.maxParticleScale);
-	indent(file, amount); file.formatAppend("%s = %f,\n", CfgNames::minParticleAngle, config_.minParticleAngle);
-	indent(file, amount); file.formatAppend("%s = %f,\n", CfgNames::maxParticleAngle, config_.maxParticleAngle);
-	indent(file, amount); file.formatAppend("%s = %f,\n", CfgNames::positionRange, config_.positionRange);
-	indent(file, amount); file.formatAppend("%s = %f,\n", CfgNames::velocityRange, config_.velocityRange);
-	indent(file, amount); file.formatAppend("%s = %f,\n", CfgNames::maxRandomLife, config_.maxRandomLife);
-	indent(file, amount); file.formatAppend("%s = %f,\n", CfgNames::randomPositionRange, config_.randomPositionRange);
-	indent(file, amount); file.formatAppend("%s = %f,\n", CfgNames::randomVelocityRange, config_.randomVelocityRange);
-	indent(file, amount); file.formatAppend("%s = %f\n", CfgNames::maxDelay, config_.maxDelay);
+	indent(file, amount).formatAppend("%s = %f,\n", CfgNames::maxBackgroundImageScale, config_.maxBackgroundImageScale);
+	indent(file, amount).formatAppend("%s = %d,\n", CfgNames::maxRenderingLayer, config_.maxRenderingLayer);
+	indent(file, amount).formatAppend("%s = %d,\n", CfgNames::maxNumParticles, config_.maxNumParticles);
+	indent(file, amount).formatAppend("%s = %f,\n", CfgNames::systemPositionRange, config_.systemPositionRange);
+	indent(file, amount).formatAppend("%s = %f,\n", CfgNames::minParticleScale, config_.minParticleScale);
+	indent(file, amount).formatAppend("%s = %f,\n", CfgNames::maxParticleScale, config_.maxParticleScale);
+	indent(file, amount).formatAppend("%s = %f,\n", CfgNames::minParticleAngle, config_.minParticleAngle);
+	indent(file, amount).formatAppend("%s = %f,\n", CfgNames::maxParticleAngle, config_.maxParticleAngle);
+	indent(file, amount).formatAppend("%s = %f,\n", CfgNames::positionRange, config_.positionRange);
+	indent(file, amount).formatAppend("%s = %f,\n", CfgNames::velocityRange, config_.velocityRange);
+	indent(file, amount).formatAppend("%s = %f,\n", CfgNames::maxRandomLife, config_.maxRandomLife);
+	indent(file, amount).formatAppend("%s = %f,\n", CfgNames::randomPositionRange, config_.randomPositionRange);
+	indent(file, amount).formatAppend("%s = %f,\n", CfgNames::randomVelocityRange, config_.randomVelocityRange);
+	indent(file, amount).formatAppend("%s = %f\n", CfgNames::maxDelay, config_.maxDelay);
 
 	amount--;
-	indent(file, amount); file.append("}\n");
+	indent(file, amount).append("}\n");
 
-	indent(file, amount); file.append("\n");
-	indent(file, amount); file.formatAppend("%s =\n", CfgNames::guiStyle);
-	indent(file, amount); file.append("{\n");
+	indent(file, amount).append("\n");
+	indent(file, amount).formatAppend("%s =\n", CfgNames::guiStyle);
+	indent(file, amount).append("{\n");
 	amount++;
 
-	indent(file, amount); file.formatAppend("%s = %d,\n", CfgNames::styleIndex, config_.styleIndex);
-	indent(file, amount); file.formatAppend("%s = %f,\n", CfgNames::frameRounding, config_.frameRounding);
-	indent(file, amount); file.formatAppend("%s = %s,\n", CfgNames::windowBorder, config_.windowBorder ? "true" : "false");
-	indent(file, amount); file.formatAppend("%s = %s,\n", CfgNames::frameBorder, config_.frameBorder ? "true" : "false");
-	indent(file, amount); file.formatAppend("%s = %s,\n", CfgNames::popupBorder, config_.popupBorder ? "true" : "false");
-	indent(file, amount); file.formatAppend("%s = %f\n", CfgNames::scaling, config_.scaling);
+	indent(file, amount).formatAppend("%s = %d,\n", CfgNames::styleIndex, config_.styleIndex);
+	indent(file, amount).formatAppend("%s = %f,\n", CfgNames::frameRounding, config_.frameRounding);
+	indent(file, amount).formatAppend("%s = %s,\n", CfgNames::windowBorder, config_.windowBorder ? "true" : "false");
+	indent(file, amount).formatAppend("%s = %s,\n", CfgNames::frameBorder, config_.frameBorder ? "true" : "false");
+	indent(file, amount).formatAppend("%s = %s,\n", CfgNames::popupBorder, config_.popupBorder ? "true" : "false");
+	indent(file, amount).formatAppend("%s = %f\n", CfgNames::scaling, config_.scaling);
 
 	amount--;
-	indent(file, amount); file.append("}\n");
+	indent(file, amount).append("}\n");
 
 	nctl::UniquePtr<nc::IFile> fileHandle = nc::IFile::createFileHandle(filename);
 	fileHandle->open(nc::IFile::OpenMode::WRITE | nc::IFile::OpenMode::BINARY);
@@ -531,56 +532,56 @@ void LuaLoader::save(const char *filename, const State &state)
 	nctl::String file(config_.saveFileMaxSize);
 	int amount = 0;
 
-	indent(file, amount); file.formatAppend("%s = %u\n", Names::version, ProjectFileVersion);
-	indent(file, amount); file.formatAppend("%s = {x = %f, y = %f}\n", Names::normalizedAbsPosition, state.normalizedAbsPosition.x, state.normalizedAbsPosition.y);
+	indent(file, amount).formatAppend("%s = %u\n", Names::version, ProjectFileVersion);
+	indent(file, amount).formatAppend("%s = {x = %f, y = %f}\n", Names::normalizedAbsPosition, state.normalizedAbsPosition.x, state.normalizedAbsPosition.y);
 	file.append("\n");
 
-	indent(file, amount); file.formatAppend("%s =\n", Names::backgroundProperties);
-	indent(file, amount); file.append("{\n");
+	indent(file, amount).formatAppend("%s =\n", Names::backgroundProperties);
+	indent(file, amount).append("{\n");
 	amount++;
 
 	const nc::Colorf &bgColor = state.background.color;
-	indent(file, amount); file.formatAppend("%s = {r = %f, g = %f, b = %f, a = %f},\n", Names::backgroundColor, bgColor.r(), bgColor.g(), bgColor.b(), 1.0f);
-	indent(file, amount); file.formatAppend("%s = \"%s\",\n", Names::backgroundImage, state.background.imageName.data());
-	indent(file, amount); file.formatAppend("%s = {x = %f, y = %f},\n", Names::backgroundImageNormalizedPosition,
-	                                        state.background.imageNormalizedPosition.x, state.background.imageNormalizedPosition.y);
-	indent(file, amount); file.formatAppend("%s = %f,\n", Names::backgroundImageScale, state.background.imageScale);
-	indent(file, amount); file.formatAppend("%s = %d,\n", Names::backgroundImageLayer, state.background.imageLayer);
+	indent(file, amount).formatAppend("%s = {r = %f, g = %f, b = %f, a = %f},\n", Names::backgroundColor, bgColor.r(), bgColor.g(), bgColor.b(), 1.0f);
+	indent(file, amount).formatAppend("%s = \"%s\",\n", Names::backgroundImage, state.background.imageName.data());
+	indent(file, amount).formatAppend("%s = {x = %f, y = %f},\n", Names::backgroundImageNormalizedPosition,
+	                                  state.background.imageNormalizedPosition.x, state.background.imageNormalizedPosition.y);
+	indent(file, amount).formatAppend("%s = %f,\n", Names::backgroundImageScale, state.background.imageScale);
+	indent(file, amount).formatAppend("%s = %d,\n", Names::backgroundImageLayer, state.background.imageLayer);
 	const nc::Colorf &imgColor = state.background.imageColor;
-	indent(file, amount); file.formatAppend("%s = {r = %f, g = %f, b = %f, a = %f},\n", Names::backgroundImageColor, imgColor.r(), imgColor.g(), imgColor.b(), imgColor.a());
-	indent(file, amount); file.formatAppend("%s = {x = %d, y = %d, w = %d, h = %d}\n", Names::backgroundImageRect,
-	                                        state.background.imageRect.x, state.background.imageRect.y, state.background.imageRect.w, state.background.imageRect.h);
+	indent(file, amount).formatAppend("%s = {r = %f, g = %f, b = %f, a = %f},\n", Names::backgroundImageColor, imgColor.r(), imgColor.g(), imgColor.b(), imgColor.a());
+	indent(file, amount).formatAppend("%s = {x = %d, y = %d, w = %d, h = %d}\n", Names::backgroundImageRect,
+	                                  state.background.imageRect.x, state.background.imageRect.y, state.background.imageRect.w, state.background.imageRect.h);
 
 	amount--;
-	indent(file, amount); file.append("}\n");
+	indent(file, amount).append("}\n");
 	file.append("\n");
 
-	indent(file, amount); file.formatAppend("%s =\n", Names::particleSystems);
-	indent(file, amount); file.append("{\n");
+	indent(file, amount).formatAppend("%s =\n", Names::particleSystems);
+	indent(file, amount).append("{\n");
 	amount++;
 	const unsigned int numSystems = state.systems.size();
 	for (unsigned int index = 0; index < numSystems; index++)
 	{
 		const State::ParticleSystem &sysState = state.systems[index];
 		const bool isLastSystem = (index == numSystems - 1);
-		indent(file, amount); file.append("{\n");
+		indent(file, amount).append("{\n");
 
 		amount++;
-		indent(file, amount); file.formatAppend("%s = \"%s\",\n", Names::name, sysState.name.data());
-		indent(file, amount); file.formatAppend("%s = %d,\n", Names::numParticles, sysState.numParticles);
-		indent(file, amount); file.formatAppend("%s = \"%s\",\n", Names::texture, sysState.textureName.data());
-		indent(file, amount); file.formatAppend("%s = {x = %d, y = %d, w = %d, h = %d},\n", Names::texRext,
-		                                        sysState.texRect.x, sysState.texRect.y, sysState.texRect.w, sysState.texRect.h);
-		indent(file, amount); file.formatAppend("%s = {x = %f, y = %f},\n", Names::relativePosition, sysState.position.x, sysState.position.y);
-		indent(file, amount); file.formatAppend("%s = %d,\n", Names::layer, sysState.layer);
-		indent(file, amount); file.formatAppend("%s = %s,\n", Names::inLocalSpace, sysState.inLocalSpace ? "true" : "false");
-		indent(file, amount); file.formatAppend("%s = %s,\n", Names::active, sysState.active ? "true" : "false");
+		indent(file, amount).formatAppend("%s = \"%s\",\n", Names::name, sysState.name.data());
+		indent(file, amount).formatAppend("%s = %d,\n", Names::numParticles, sysState.numParticles);
+		indent(file, amount).formatAppend("%s = \"%s\",\n", Names::texture, sysState.textureName.data());
+		indent(file, amount).formatAppend("%s = {x = %d, y = %d, w = %d, h = %d},\n", Names::texRext,
+		                                  sysState.texRect.x, sysState.texRect.y, sysState.texRect.w, sysState.texRect.h);
+		indent(file, amount).formatAppend("%s = {x = %f, y = %f},\n", Names::relativePosition, sysState.position.x, sysState.position.y);
+		indent(file, amount).formatAppend("%s = %d,\n", Names::layer, sysState.layer);
+		indent(file, amount).formatAppend("%s = %s,\n", Names::inLocalSpace, sysState.inLocalSpace ? "true" : "false");
+		indent(file, amount).formatAppend("%s = %s,\n", Names::active, sysState.active ? "true" : "false");
 		file.append("\n");
 
 		if (sysState.colorSteps.isEmpty() == false)
 		{
-			indent(file, amount); file.formatAppend("%s =\n", Names::colorSteps);
-			indent(file, amount); file.append("{\n");
+			indent(file, amount).formatAppend("%s =\n", Names::colorSteps);
+			indent(file, amount).append("{\n");
 			amount++;
 			for (unsigned int i = 0; i < sysState.colorSteps.size(); i++)
 			{
@@ -591,16 +592,16 @@ void LuaLoader::save(const char *filename, const State &state)
 				                  step.age, step.color.r(), step.color.g(), step.color.b(), step.color.a(), isLastStep ? "" : ",");
 			}
 			amount--;
-			indent(file, amount); file.append("},\n");
+			indent(file, amount).append("},\n");
 			file.append("\n");
 		}
 
 		if (sysState.sizeSteps.isEmpty() == false)
 		{
-			indent(file, amount); file.formatAppend("%s =\n", Names::sizeSteps);
-			indent(file, amount); file.append("{\n");
+			indent(file, amount).formatAppend("%s =\n", Names::sizeSteps);
+			indent(file, amount).append("{\n");
 			amount++;
-			indent(file, amount); file.formatAppend("%s = %f,\n", Names::baseScale, sysState.sizeStepBaseScale);
+			indent(file, amount).formatAppend("%s = %f,\n", Names::baseScale, sysState.sizeStepBaseScale);
 			for (unsigned int i = 0; i < sysState.sizeSteps.size(); i++)
 			{
 				const State::SizeStep &step = sysState.sizeSteps[i];
@@ -609,14 +610,14 @@ void LuaLoader::save(const char *filename, const State &state)
 				file.formatAppend("{%f, %f}%s\n", step.age, step.scale, isLastStep ? "" : ",");
 			}
 			amount--;
-			indent(file, amount); file.append("},\n");
+			indent(file, amount).append("},\n");
 			file.append("\n");
 		}
 
 		if (sysState.rotationSteps.isEmpty() == false)
 		{
-			indent(file, amount); file.formatAppend("%s =\n", Names::rotationSteps);
-			indent(file, amount); file.append("{\n");
+			indent(file, amount).formatAppend("%s =\n", Names::rotationSteps);
+			indent(file, amount).append("{\n");
 			amount++;
 			for (unsigned int i = 0; i < sysState.rotationSteps.size(); i++)
 			{
@@ -626,14 +627,14 @@ void LuaLoader::save(const char *filename, const State &state)
 				file.formatAppend("{%f, %f}%s\n", step.age, step.angle, isLastStep ? "" : ",");
 			}
 			amount--;
-			indent(file, amount); file.append("},\n");
+			indent(file, amount).append("},\n");
 			file.append("\n");
 		}
 
 		if (sysState.positionSteps.isEmpty() == false)
 		{
-			indent(file, amount); file.formatAppend("%s =\n", Names::positionSteps);
-			indent(file, amount); file.append("{\n");
+			indent(file, amount).formatAppend("%s =\n", Names::positionSteps);
+			indent(file, amount).append("{\n");
 			amount++;
 			for (unsigned int i = 0; i < sysState.positionSteps.size(); i++)
 			{
@@ -643,14 +644,14 @@ void LuaLoader::save(const char *filename, const State &state)
 				file.formatAppend("{%f, {x = %f, y = %f}}%s\n", step.age, step.position.x, step.position.y, isLastStep ? "" : ",");
 			}
 			amount--;
-			indent(file, amount); file.append("},\n");
+			indent(file, amount).append("},\n");
 			file.append("\n");
 		}
 
 		if (sysState.velocitySteps.isEmpty() == false)
 		{
-			indent(file, amount); file.formatAppend("%s =\n", Names::velocitySteps);
-			indent(file, amount); file.append("{\n");
+			indent(file, amount).formatAppend("%s =\n", Names::velocitySteps);
+			indent(file, amount).append("{\n");
 			amount++;
 			for (unsigned int i = 0; i < sysState.velocitySteps.size(); i++)
 			{
@@ -660,30 +661,30 @@ void LuaLoader::save(const char *filename, const State &state)
 				file.formatAppend("{%f, {x = %f, y = %f}}%s\n", step.age, step.velocity.x, step.velocity.y, isLastStep ? "" : ",");
 			}
 			amount--;
-			indent(file, amount); file.append("},\n");
+			indent(file, amount).append("},\n");
 			file.append("\n");
 		}
 
-		indent(file, amount); file.formatAppend("%s =\n", Names::emission);
-		indent(file, amount); file.append("{\n");
+		indent(file, amount).formatAppend("%s =\n", Names::emission);
+		indent(file, amount).append("{\n");
 		amount++;
-		indent(file, amount); file.formatAppend("%s = {%d, %d},\n", Names::amount, sysState.init.rndAmount.x, sysState.init.rndAmount.y);
-		indent(file, amount); file.formatAppend("%s = {%f, %f},\n", Names::life, sysState.init.rndLife.x, sysState.init.rndLife.y);
-		indent(file, amount); file.formatAppend("%s = {%f, %f},\n", Names::positionX, sysState.init.rndPositionX.x, sysState.init.rndPositionX.y);
-		indent(file, amount); file.formatAppend("%s = {%f, %f},\n", Names::positionY, sysState.init.rndPositionY.x, sysState.init.rndPositionY.y);
-		indent(file, amount); file.formatAppend("%s = {%f, %f},\n", Names::velocityX, sysState.init.rndVelocityX.x, sysState.init.rndVelocityX.y);
-		indent(file, amount); file.formatAppend("%s = {%f, %f},\n", Names::velocityY, sysState.init.rndVelocityY.x, sysState.init.rndVelocityY.y);
-		indent(file, amount); file.formatAppend("%s = {%f, %f},\n", Names::rotation, sysState.init.rndRotation.x, sysState.init.rndRotation.y);
-		indent(file, amount); file.formatAppend("%s = %s,\n", Names::emitterRotation, sysState.init.emitterRotation ? "true" : "false");
-		indent(file, amount); file.formatAppend("%s = %f\n", Names::delay, sysState.emitDelay);
+		indent(file, amount).formatAppend("%s = {%d, %d},\n", Names::amount, sysState.init.rndAmount.x, sysState.init.rndAmount.y);
+		indent(file, amount).formatAppend("%s = {%f, %f},\n", Names::life, sysState.init.rndLife.x, sysState.init.rndLife.y);
+		indent(file, amount).formatAppend("%s = {%f, %f},\n", Names::positionX, sysState.init.rndPositionX.x, sysState.init.rndPositionX.y);
+		indent(file, amount).formatAppend("%s = {%f, %f},\n", Names::positionY, sysState.init.rndPositionY.x, sysState.init.rndPositionY.y);
+		indent(file, amount).formatAppend("%s = {%f, %f},\n", Names::velocityX, sysState.init.rndVelocityX.x, sysState.init.rndVelocityX.y);
+		indent(file, amount).formatAppend("%s = {%f, %f},\n", Names::velocityY, sysState.init.rndVelocityY.x, sysState.init.rndVelocityY.y);
+		indent(file, amount).formatAppend("%s = {%f, %f},\n", Names::rotation, sysState.init.rndRotation.x, sysState.init.rndRotation.y);
+		indent(file, amount).formatAppend("%s = %s,\n", Names::emitterRotation, sysState.init.emitterRotation ? "true" : "false");
+		indent(file, amount).formatAppend("%s = %f\n", Names::delay, sysState.emitDelay);
 		amount--;
-		indent(file, amount); file.append("}\n");
+		indent(file, amount).append("}\n");
 
 		amount--;
-		indent(file, amount); file.formatAppend("}%s\n", isLastSystem ? "" : ",\n");
+		indent(file, amount).formatAppend("}%s\n", isLastSystem ? "" : ",\n");
 	}
 	amount--;
-	indent(file, amount); file.append("}\n");
+	indent(file, amount).append("}\n");
 
 	nctl::UniquePtr<nc::IFile> fileHandle = nc::IFile::createFileHandle(filename);
 	fileHandle->open(nc::IFile::OpenMode::WRITE | nc::IFile::OpenMode::BINARY);
@@ -698,7 +699,7 @@ void LuaLoader::save(const char *filename, const State &state)
 void LuaLoader::createNewState()
 {
 	luaState_ = nctl::makeUnique<nc::LuaStateManager>(
-	            nc::LuaStateManager::ApiType::NONE,
-	            nc::LuaStateManager::StatisticsTracking::DISABLED,
-	            nc::LuaStateManager::StandardLibraries::NOT_LOADED);
+	    nc::LuaStateManager::ApiType::NONE,
+	    nc::LuaStateManager::StatisticsTracking::DISABLED,
+	    nc::LuaStateManager::StandardLibraries::NOT_LOADED);
 }
