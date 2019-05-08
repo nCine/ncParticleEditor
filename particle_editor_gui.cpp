@@ -408,9 +408,8 @@ void MyEventHandler::createGuiTextures()
 			}
 		}
 		ImGui::SameLine();
-		ImGui::PushItemWidth(80);
+		ImGui::SetNextItemWidth(80);
 		ImGui::InputInt("Index", &texIndex_, 1, 10, textures_.isEmpty() ? ImGuiInputTextFlags_ReadOnly : 0);
-		ImGui::PopItemWidth();
 		if (textures_.isEmpty())
 			texIndex_ = 0;
 		else if (texIndex_ < 0)
@@ -510,9 +509,8 @@ void MyEventHandler::createGuiManageSystems()
 		}
 
 		ImGui::SameLine();
-		ImGui::PushItemWidth(80);
+		ImGui::SetNextItemWidth(80);
 		ImGui::InputInt("Index", &systemIndex_, 1, 10, particleSystems_.isEmpty() ? ImGuiInputTextFlags_ReadOnly : 0);
-		ImGui::PopItemWidth();
 		if (particleSystems_.isEmpty())
 			systemIndex_ = 0;
 		if (systemIndex_ < 0)
@@ -1126,7 +1124,7 @@ void MyEventHandler::createGuiEmission()
 	nc::ParticleSystem *particleSystem = particleSystems_[systemIndex_].get();
 	ParticleSystemGuiState &s = sysStates_[systemIndex_];
 
-	const float columnWidth = ImGui::GetContentRegionAvailWidth() * 0.75f;
+	const float columnWidth = ImGui::GetContentRegionAvail().x * 0.75f;
 	ImGui::PushID("Emission");
 	if (ImGui::CollapsingHeader("Emission"))
 	{
@@ -1164,9 +1162,8 @@ void MyEventHandler::createGuiEmission()
 			ImGui::DragFloatRange2("Life", &s.init.rndLife.x, &s.init.rndLife.y, 0.01f, 0.0f, cfg.maxRandomLife, "Min: %.2fs", "Max: %.2fs");
 
 		ImGui::NextColumn();
-		ImGui::PushItemWidth(80);
+		ImGui::SetNextItemWidth(80);
 		ImGui::Combo("##LifeCombo", &s.lifeCurrentItem, lifeItems, IM_ARRAYSIZE(lifeItems));
-		ImGui::PopItemWidth();
 		ImGui::Columns(1);
 		ImGui::PopID();
 
@@ -1459,9 +1456,8 @@ void MyEventHandler::createGuiConfigWindow()
 			ImGui::SameLine();
 			ImGui::Checkbox("Popup Border", &cfg.popupBorder);
 
-			ImGui::PushItemWidth(100);
+			ImGui::SetNextItemWidth(100);
 			ImGui::DragFloat("Scaling", &cfg.scaling, 0.005f, 0.5f, 2.0f, "%.1f");
-			ImGui::PopItemWidth();
 			ImGui::SameLine();
 			if (ImGui::Button("Reset"))
 			{
