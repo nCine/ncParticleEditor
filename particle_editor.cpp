@@ -95,8 +95,10 @@ void MyEventHandler::onPreInit(nc::AppConfiguration &config)
 	config.setResolution(luaConfig.width, luaConfig.height);
 	config.inFullscreen = luaConfig.fullscreen;
 	config.isResizable = luaConfig.resizable;
+	config.useBufferMapping = luaConfig.useBufferMapping;
 	config.vboSize = luaConfig.vboSize;
 	config.iboSize = luaConfig.iboSize;
+	config.withVSync = luaConfig.withVSync;
 
 	config.windowTitle = "ncParticleEditor";
 	config.windowIconFilename = "icon48.png";

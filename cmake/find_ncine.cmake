@@ -49,7 +49,7 @@ if(PACKAGE_BUILD_ANDROID)
 	endif()
 
 	set(NCINE_EXTERNAL_ANDROID_DIR "" CACHE PATH "Path to the nCine external Android libraries directory")
-	if(NOT IS_DIRECTORY NCINE_EXTERNAL_ANDROID_DIR)
+	if(NOT IS_DIRECTORY ${NCINE_EXTERNAL_ANDROID_DIR})
 		unset(NCINE_EXTERNAL_ANDROID_DIR CACHE)
 		get_filename_component(PARENT_DIR ${CMAKE_SOURCE_DIR} DIRECTORY)
 		find_path(NCINE_EXTERNAL_ANDROID_DIR
@@ -62,6 +62,12 @@ if(PACKAGE_BUILD_ANDROID)
 			get_filename_component(NCINE_EXTERNAL_ANDROID_DIR ${NCINE_EXTERNAL_ANDROID_DIR} DIRECTORY)
 			get_filename_component(NCINE_EXTERNAL_ANDROID_DIR ${NCINE_EXTERNAL_ANDROID_DIR} DIRECTORY)
 		endif()
+	endif()
+
+	if(IS_DIRECTORY ${NCINE_EXTERNAL_ANDROID_DIR})
+		message(STATUS "nCine external Android libraries directory: ${NCINE_EXTERNAL_ANDROID_DIR}")
+	else()
+		message(STATUS "nCine external Android libraries directory not found at: ${NCINE_EXTERNAL_ANDROID_DIR}")
 	endif()
 endif()
 

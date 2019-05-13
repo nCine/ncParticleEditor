@@ -1389,6 +1389,9 @@ void MyEventHandler::createGuiConfigWindow()
 		}
 
 		ImGui::NewLine();
+		ImGui::Checkbox("Buffer Mapping", &cfg.useBufferMapping);
+		ImGui::SameLine();
+		ImGui::Checkbox("Vertical Sync", &cfg.withVSync);
 		int vboSize = cfg.vboSize / 1024;
 		ImGui::SliderInt("VBO Size", &vboSize, 0, 1024, "%d KB");
 		cfg.vboSize = vboSize * 1024;

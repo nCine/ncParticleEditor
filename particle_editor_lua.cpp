@@ -23,7 +23,7 @@ nctl::String &indent(nctl::String &string, int amount)
 }
 
 const unsigned int ProjectFileVersion = 5;
-const unsigned int ConfigFileVersion = 8;
+const unsigned int ConfigFileVersion = 9;
 
 namespace Names {
 
@@ -76,8 +76,10 @@ namespace CfgNames {
 	const char *height = "height";
 	const char *fullscreen = "fullscreen";
 	const char *resizable = "resizable"; // version 8
+	const char *useBufferMapping = "buffer_mapping"; // version 9
 	const char *vboSize = "vbo_size";
 	const char *iboSize = "ibo_size";
+	const char *withVSync = "vsync"; // version 9
 	const char *batching = "batching";
 	const char *culling = "culling";
 	const char *saveFileMaxSize = "savefile_maxsize"; // version 3
@@ -198,6 +200,12 @@ bool LuaLoader::loadConfig(const char *filename)
 	nc::LuaUtils::tryRetrieveGlobal<bool>(L, CfgNames::batching, config_.batching);
 	nc::LuaUtils::tryRetrieveGlobal<bool>(L, CfgNames::culling, config_.culling);
 
+	if (version >= 9)
+	{
+		nc::LuaUtils::tryRetrieveGlobal<bool>(L, CfgNames::useBufferMapping, config_.useBufferMapping);
+		nc::LuaUtils::tryRetrieveGlobal<bool>(L, CfgNames::withVSync, config_.withVSync);
+	}
+
 	if (version >= 8)
 		nc::LuaUtils::tryRetrieveGlobal<bool>(L, CfgNames::resizable, config_.resizable);
 
@@ -277,8 +285,10 @@ bool LuaLoader::saveConfig(const char *filename)
 	indent(file, amount).formatAppend("%s = %d\n", CfgNames::height, config_.height);
 	indent(file, amount).formatAppend("%s = %s\n", CfgNames::fullscreen, config_.fullscreen ? "true" : "false");
 	indent(file, amount).formatAppend("%s = %s\n", CfgNames::resizable, config_.resizable ? "true" : "false");
+	indent(file, amount).formatAppend("%s = %s\n", CfgNames::useBufferMapping, config_.useBufferMapping ? "true" : "false");
 	indent(file, amount).formatAppend("%s = %lu\n", CfgNames::vboSize, config_.vboSize);
 	indent(file, amount).formatAppend("%s = %lu\n", CfgNames::iboSize, config_.iboSize);
+	indent(file, amount).formatAppend("%s = %s\n", CfgNames::withVSync, config_.withVSync ? "true" : "false");
 	indent(file, amount).formatAppend("%s = %s\n", CfgNames::batching, config_.batching ? "true" : "false");
 	indent(file, amount).formatAppend("%s = %s\n", CfgNames::culling, config_.culling ? "true" : "false");
 	indent(file, amount).formatAppend("%s = %u\n", CfgNames::saveFileMaxSize, config_.saveFileMaxSize);

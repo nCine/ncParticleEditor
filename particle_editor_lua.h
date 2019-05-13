@@ -106,8 +106,10 @@ class LuaLoader :
 		int height = 720;
 		bool fullscreen = false;
 		bool resizable = false;
+		bool useBufferMapping = false;
 		unsigned long vboSize = 256 * 1024;
 		unsigned long iboSize = 32 * 1024;
+		bool withVSync = true;
 		bool batching = true;
 		bool culling = true;
 		unsigned int saveFileMaxSize = 8 * 1024;
