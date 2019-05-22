@@ -1368,6 +1368,13 @@ void MyEventHandler::createGuiConfigWindow()
 
 		LuaLoader::Config &cfg = loader_->config();
 
+#ifdef __ANDROID__
+		ImGui::Text("Screen Width: %d", nc::theApplication().widthInt());
+		ImGui::Text("Screen Height: %d", nc::theApplication().heightInt());
+		ImGui::Text("Resizable: false");
+		ImGui::SameLine();
+		ImGui::Text("Fullscreen: true");
+#else
 		ImGui::SliderInt("Screen Width", &cfg.width, 0, 1920);
 		ImGui::SliderInt("Screen Height", &cfg.height, 0, 1080);
 		ImGui::Checkbox("Resizable", &cfg.resizable);
@@ -1387,6 +1394,7 @@ void MyEventHandler::createGuiConfigWindow()
 			cfg.fullscreen = nc::theApplication().gfxDevice().isFullScreen();
 			cfg.resizable = nc::theApplication().gfxDevice().isResizable();
 		}
+#endif
 
 		ImGui::NewLine();
 		ImGui::Checkbox("Buffer Mapping", &cfg.useBufferMapping);

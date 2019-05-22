@@ -12,6 +12,9 @@ project(${PACKAGE_NAME})
 include(package_options)
 
 include(find_ncine)
+if(NOT NCINE_DYNAMIC_LIBRARY)
+	include(package_imported_targets)
+endif()
 
 if(NOT IS_DIRECTORY ${PACKAGE_DATA_DIR})
 	message(WARNING "${PACKAGE_NAME} data directory not found at: ${PACKAGE_DATA_DIR}")

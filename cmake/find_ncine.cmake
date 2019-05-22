@@ -24,7 +24,7 @@ if(NOT DEFINED NCINE_CONFIGURATION)
 endif()
 
 message(STATUS "nCine library: ${NCINE_LOCATION}")
-if(WIN32)
+if(WIN32 AND NCINE_DYNAMIC_LIBRARY)
 	get_target_property(NCINE_IMPLIB ncine::ncine IMPORTED_IMPLIB_${NCINE_CONFIGURATION})
 	message(STATUS "nCine import library: ${NCINE_IMPLIB}")
 endif()

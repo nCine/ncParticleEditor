@@ -16,11 +16,13 @@ elseif(WIN32)
 		set_target_properties(copy_shaders PROPERTIES FOLDER "CustomCopyTargets")
 	endif()
 
-	add_custom_target(copy_ncine_dll ALL
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different ${NCINE_LOCATION} ${CMAKE_BINARY_DIR}
-		COMMENT "Copying nCine DLL..."
-	)
-	set_target_properties(copy_ncine_dll PROPERTIES FOLDER "CustomCopyTargets")
+	if(NCINE_DYNAMIC_LIBRARY)
+		add_custom_target(copy_ncine_dll ALL
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different ${NCINE_LOCATION} ${CMAKE_BINARY_DIR}
+			COMMENT "Copying nCine DLL..."
+		)
+		set_target_properties(copy_ncine_dll PROPERTIES FOLDER "CustomCopyTargets")
+	endif()
 
 	if(PACKAGE_CRASHRPT)
 		add_custom_target(copy_crashrpt_files ALL
