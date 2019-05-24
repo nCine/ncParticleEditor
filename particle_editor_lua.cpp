@@ -23,7 +23,7 @@ nctl::String &indent(nctl::String &string, int amount)
 }
 
 const unsigned int ProjectFileVersion = 5;
-const unsigned int ConfigFileVersion = 9;
+const unsigned int ConfigFileVersion = 10;
 
 namespace Names {
 
@@ -76,6 +76,7 @@ namespace CfgNames {
 	const char *height = "height";
 	const char *fullscreen = "fullscreen";
 	const char *resizable = "resizable"; // version 8
+	const char *frameLimit = "frame_limit"; // version 10
 	const char *useBufferMapping = "buffer_mapping"; // version 9
 	const char *vboSize = "vbo_size";
 	const char *iboSize = "ibo_size";
@@ -123,6 +124,9 @@ void LuaLoader::sanitizeInitValues()
 		config_.width = 640;
 	if (config_.height < 480)
 		config_.height = 480;
+
+	if (config_.frameLimit > 240)
+		config_.frameLimit = 240;
 
 	if (config_.vboSize < 256 * 1024)
 		config_.vboSize = 256 * 1024;
@@ -199,6 +203,9 @@ bool LuaLoader::loadConfig(const char *filename)
 	nc::LuaUtils::tryRetrieveGlobal<unsigned long>(L, CfgNames::iboSize, config_.iboSize);
 	nc::LuaUtils::tryRetrieveGlobal<bool>(L, CfgNames::batching, config_.batching);
 	nc::LuaUtils::tryRetrieveGlobal<bool>(L, CfgNames::culling, config_.culling);
+
+	if (version >= 10)
+		nc::LuaUtils::tryRetrieveGlobal<uint32_t>(L, CfgNames::frameLimit, config_.frameLimit);
 
 	if (version >= 9)
 	{
@@ -285,6 +292,7 @@ bool LuaLoader::saveConfig(const char *filename)
 	indent(file, amount).formatAppend("%s = %d\n", CfgNames::height, config_.height);
 	indent(file, amount).formatAppend("%s = %s\n", CfgNames::fullscreen, config_.fullscreen ? "true" : "false");
 	indent(file, amount).formatAppend("%s = %s\n", CfgNames::resizable, config_.resizable ? "true" : "false");
+	indent(file, amount).formatAppend("%s = %u\n", CfgNames::frameLimit, config_.frameLimit);
 	indent(file, amount).formatAppend("%s = %s\n", CfgNames::useBufferMapping, config_.useBufferMapping ? "true" : "false");
 	indent(file, amount).formatAppend("%s = %lu\n", CfgNames::vboSize, config_.vboSize);
 	indent(file, amount).formatAppend("%s = %lu\n", CfgNames::iboSize, config_.iboSize);

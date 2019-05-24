@@ -106,6 +106,7 @@ class LuaLoader :
 		int height = 720;
 		bool fullscreen = false;
 		bool resizable = false;
+		unsigned int frameLimit = 0;
 		bool useBufferMapping = false;
 		unsigned long vboSize = 256 * 1024;
 		unsigned long iboSize = 32 * 1024;
