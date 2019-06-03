@@ -29,20 +29,6 @@ add_executable(${PACKAGE_EXE_NAME} ${PACKAGE_SOURCES})
 include(package_generated_sources)
 target_sources(${PACKAGE_EXE_NAME} PRIVATE ${GENERATED_SOURCES})
 
-if(MSVC AND PACKAGE_CRASHRPT)
-	set(CRASHRPT_STRINGS_FILE ${CMAKE_BINARY_DIR}/generated/CrashRptStrings.cpp)
-	file(WRITE ${CRASHRPT_STRINGS_FILE} "#include \"CrashRptWrapper.h\"\n\n")
-	file(APPEND ${CRASHRPT_STRINGS_FILE} "const char *CrashRptWrapper::appName = \"${PACKAGE_NAME}\";\n")
-	file(APPEND ${CRASHRPT_STRINGS_FILE} "const char *CrashRptWrapper::appVersion = \"${PACKAGE_VERSION}\";\n")
-	file(APPEND ${CRASHRPT_STRINGS_FILE} "const char *CrashRptWrapper::emailSubject = \"${PACKAGE_NAME} ${PACKAGE_VERSION} Error Report\";\n")
-	file(APPEND ${CRASHRPT_STRINGS_FILE} "const char *CrashRptWrapper::emailTo = \"${PACKAGE_AUTHOR_MAIL}\";\n")
-	file(COPY CrashRptWrapper.h DESTINATION generated)
-	# Source files can't vary by configuration with the Visual Studio generator, they are added even in release
-	target_sources(${PACKAGE_EXE_NAME} PRIVATE CrashRptWrapper.h CrashRptWrapper.cpp ${CRASHRPT_STRINGS_FILE})
-	set(CMAKE_INSTALL_DEBUG_LIBRARIES TRUE)
-	set(CMAKE_INSTALL_DEBUG_LIBRARIES_ONLY TRUE)
-endif()
-
 if(NOT DEFAULT_DATA_DIR_DIST) # Don't set the startup project if it wouldn't find the data directory
 	set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PACKAGE_EXE_NAME})
 endif()

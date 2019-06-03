@@ -1375,8 +1375,8 @@ void MyEventHandler::createGuiConfigWindow()
 		ImGui::SameLine();
 		ImGui::Text("Fullscreen: true");
 #else
-		ImGui::SliderInt("Screen Width", &cfg.width, 0, 1920);
-		ImGui::SliderInt("Screen Height", &cfg.height, 0, 1080);
+		ImGui::SliderInt("Screen Width", &cfg.width, 0, 3840);
+		ImGui::SliderInt("Screen Height", &cfg.height, 0, 2160);
 		ImGui::Checkbox("Resizable", &cfg.resizable);
 		ImGui::SameLine();
 		ImGui::Checkbox("Fullscreen", &cfg.fullscreen);

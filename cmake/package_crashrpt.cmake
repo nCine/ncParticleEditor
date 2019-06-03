@@ -1,8 +1,21 @@
+option(PACKAGE_CRASHRPT "Enable CrashRpt integration on Windows with MSVC" OFF)
 set(CRASHRPT_VERSION "1403" CACHE STRING "Set the CrashRpt version string")
 set(CRASHRPT_SOURCE_DIR "" CACHE PATH "Set the path to the CrashRpt sources directory")
 set(CRASHRPT_BINARY_DIR "" CACHE PATH "Set the path to the CrashRpt build directory")
 
 if(MSVC AND PACKAGE_CRASHRPT)
+	set(CRASHRPT_STRINGS_FILE ${GENERATED_SOURCE_DIR}/CrashRptStrings.cpp)
+	file(WRITE ${CRASHRPT_STRINGS_FILE} "#include \"CrashRptWrapper.h\"\n\n")
+	file(APPEND ${CRASHRPT_STRINGS_FILE} "const char *CrashRptWrapper::appName = \"${PACKAGE_NAME}\";\n")
+	file(APPEND ${CRASHRPT_STRINGS_FILE} "const char *CrashRptWrapper::appVersion = \"${PACKAGE_VERSION}\";\n")
+	file(APPEND ${CRASHRPT_STRINGS_FILE} "const char *CrashRptWrapper::emailSubject = \"${PACKAGE_NAME} ${PACKAGE_VERSION} Error Report\";\n")
+	file(APPEND ${CRASHRPT_STRINGS_FILE} "const char *CrashRptWrapper::emailTo = \"${PACKAGE_AUTHOR_MAIL}\";\n")
+	file(COPY CrashRptWrapper.h DESTINATION ${GENERATED_SOURCE_DIR})
+	# Source files can't vary by configuration with the Visual Studio generator, they are added even in release
+	target_sources(${PACKAGE_EXE_NAME} PRIVATE CrashRptWrapper.h CrashRptWrapper.cpp ${CRASHRPT_STRINGS_FILE})
+	set(CMAKE_INSTALL_DEBUG_LIBRARIES TRUE)
+	set(CMAKE_INSTALL_DEBUG_LIBRARIES_ONLY TRUE)
+
 	if(CMAKE_SIZEOF_VOID_P EQUAL 8)
 		set(CRASHRPT_ARCH x64)
 	elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
