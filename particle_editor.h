@@ -162,6 +162,7 @@ class MyEventHandler :
 	void createGuiVelocityAffector();
 	void createGuiVelocityPlot(const ParticleSystemGuiState &s);
 	void createGuiEmission();
+	void sanitizeParticleInit(nc::ParticleInitializer &init);
 	void createGuiEmissionPlot();
 	void createGuiConfigWindow();
 	void createGuiLogWindow();

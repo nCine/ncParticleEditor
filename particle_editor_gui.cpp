@@ -1130,8 +1130,6 @@ void MyEventHandler::createGuiEmission()
 	{
 		ImGui::PushID("Amount");
 		const unsigned int numParticles = particleSystems_[systemIndex_]->numParticles();
-		if (s.init.rndAmount.y > numParticles)
-			s.init.rndAmount.y = numParticles;
 		ImGui::Columns(2);
 		ImGui::SetColumnWidth(0, columnWidth);
 		if (s.amountCurrentItem == 0)
@@ -1194,7 +1192,10 @@ void MyEventHandler::createGuiEmission()
 
 			ImGui::SliderFloat("Position X", &centerX, -cfg.randomPositionRange, cfg.randomPositionRange);
 			ImGui::SliderFloat("Position Y", &centerY, -cfg.randomPositionRange, cfg.randomPositionRange);
-			ImGui::SliderFloat("Radius", &radius, -cfg.randomPositionRange, cfg.randomPositionRange);
+			ImGui::SliderFloat("Radius", &radius, 0.0f, cfg.randomPositionRange * 2.0f);
+
+			if (radius < 0.0f)
+				radius = 0.0f;
 			s.init.setPositionAndRadius(centerX, centerY, radius);
 		}
 
@@ -1212,6 +1213,7 @@ void MyEventHandler::createGuiEmission()
 		ImGui::PushID("Velocity");
 		ImGui::Columns(2);
 		ImGui::SetColumnWidth(0, columnWidth);
+		static nc::Vector2f scale(1.0f, 1.0f);
 		if (s.velocityCurrentItem == 0)
 		{
 			s.init.rndVelocityX.x = (s.init.rndVelocityX.x + s.init.rndVelocityX.y) * 0.5f;
@@ -1229,19 +1231,31 @@ void MyEventHandler::createGuiEmission()
 		}
 		else if (s.velocityCurrentItem == 2)
 		{
-			float maxScale = ((s.init.rndVelocityX.y / s.init.rndVelocityX.x) + (s.init.rndVelocityY.y / s.init.rndVelocityY.x)) * 0.5f;
 			float velX = s.init.rndVelocityX.x;
+			if (scale.x != 0.0f)
+				velX /= scale.x;
+			else if (scale.y != 0.0f)
+				velX = s.init.rndVelocityX.y / scale.y;
+
 			float velY = s.init.rndVelocityY.x;
-			nc::Vector2f scale(1.0f, maxScale);
+			if (scale.x != 0.0f)
+				velY /= scale.x;
+			else if (scale.y != 0.0f)
+				velY = s.init.rndVelocityY.y / scale.y;
+
 			ImGui::SliderFloat("Velocity X", &velX, -cfg.randomVelocityRange, cfg.randomVelocityRange);
 			ImGui::SliderFloat("Velocity Y", &velY, -cfg.randomVelocityRange, cfg.randomVelocityRange);
 			ImGui::DragFloatRange2("Scale", &scale.x, &scale.y, 1.0f, -cfg.randomVelocityRange, cfg.randomVelocityRange, "Min: %.1f", "Max: %.1f");
+
+			if (scale.x > scale.y)
+				nctl::swap(scale.x, scale.y);
 			s.init.setVelocityAndScale(velX, velY, scale.x, scale.y);
 		}
 		ImGui::NextColumn();
 		ImGui::Combo("##VelocityCombo", &s.velocityCurrentItem, velocityItems, IM_ARRAYSIZE(velocityItems));
 		if (ImGui::Button("Reset"))
 		{
+			scale.set(1.0f, 1.0f);
 			s.init.rndVelocityX.set(0.0f, 0.0f);
 			s.init.rndVelocityY.set(0.0f, 0.0f);
 		}
@@ -1280,6 +1294,7 @@ void MyEventHandler::createGuiEmission()
 		ImGui::PopID();
 	}
 	ImGui::PopID();
+	sanitizeParticleInit(s.init);
 
 	ImGui::Separator();
 	ImGui::PushID("Emit");
@@ -1324,6 +1339,75 @@ void MyEventHandler::createGuiEmission()
 		}
 	}
 	ImGui::PopID();
+}
+
+void MyEventHandler::sanitizeParticleInit(nc::ParticleInitializer &init)
+{
+	const LuaLoader::Config &cfg = loader_->config();
+	const unsigned int numParticles = particleSystems_[systemIndex_]->numParticles();
+
+	// Sort and clamp of `rndAmount`
+	if (init.rndAmount.x > init.rndAmount.y)
+		nctl::swap(init.rndAmount.x, init.rndAmount.y);
+
+	if (init.rndAmount.x < 1)
+		init.rndAmount.x = 1;
+	if (init.rndAmount.y > numParticles)
+		init.rndAmount.y = numParticles;
+
+	// Sort and clamp of `rndLife`
+	if (init.rndLife.x > init.rndLife.y)
+		nctl::swap(init.rndLife.x, init.rndLife.y);
+
+	if (init.rndLife.x < 0.0f)
+		init.rndLife.x = 0.0f;
+	if (init.rndLife.y > cfg.maxRandomLife)
+		init.rndLife.y = cfg.maxRandomLife;
+
+	// Sort and clamp of `rndPositionX`
+	if (init.rndPositionX.x > init.rndPositionX.y)
+		nctl::swap(init.rndPositionX.x, init.rndPositionX.y);
+
+	if (init.rndPositionX.x < -cfg.randomPositionRange)
+		init.rndPositionX.x = -cfg.randomPositionRange;
+	if (init.rndPositionX.y > cfg.randomPositionRange)
+		init.rndPositionX.y = cfg.randomPositionRange;
+
+	// Sort and clamp of `rndPositionY`
+	if (init.rndPositionY.x > init.rndPositionY.y)
+		nctl::swap(init.rndPositionY.x, init.rndPositionY.y);
+
+	if (init.rndPositionY.x < -cfg.randomPositionRange)
+		init.rndPositionY.x = -cfg.randomPositionRange;
+	if (init.rndPositionY.y > cfg.randomPositionRange)
+		init.rndPositionY.y = cfg.randomPositionRange;
+
+	// Sort and clamp of `rndVelocityX`
+	if (init.rndVelocityX.x > init.rndVelocityX.y)
+		nctl::swap(init.rndVelocityX.x, init.rndVelocityX.y);
+
+	if (init.rndVelocityX.x < -cfg.randomVelocityRange)
+		init.rndVelocityX.x = -cfg.randomVelocityRange;
+	if (init.rndVelocityX.y > cfg.randomVelocityRange)
+		init.rndVelocityX.y = cfg.randomVelocityRange;
+
+	// Sort and clamp of `rndVelocityY`
+	if (init.rndVelocityY.x > init.rndVelocityY.y)
+		nctl::swap(init.rndVelocityY.x, init.rndVelocityY.y);
+
+	if (init.rndVelocityY.x < -cfg.randomVelocityRange)
+		init.rndVelocityY.x = -cfg.randomVelocityRange;
+	if (init.rndVelocityY.y > cfg.randomVelocityRange)
+		init.rndVelocityY.y = cfg.randomVelocityRange;
+
+	// Sort and clamp of `rndRotation`
+	if (init.rndRotation.x > init.rndRotation.y)
+		nctl::swap(init.rndRotation.x, init.rndRotation.y);
+
+	if (init.rndRotation.x < 0.0)
+		init.rndRotation.x = 0.0f;
+	if (init.rndRotation.y > 180.0f)
+		init.rndRotation.y = 180.0f;
 }
 
 void MyEventHandler::createGuiEmissionPlot()
