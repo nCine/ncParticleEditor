@@ -128,6 +128,7 @@ class MyEventHandler :
 	nctl::UniquePtr<nc::Sprite> backgroundSprite_;
 	nctl::Array<nctl::UniquePtr<nc::ParticleSystem>> particleSystems_;
 	nctl::String widgetName_ = nctl::String(MaxStringLength);
+	nctl::String comboVideoModes_ = nctl::String(4096);
 
 	static const unsigned int NumPlotValues = 64;
 

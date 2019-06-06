@@ -1459,16 +1459,51 @@ void MyEventHandler::createGuiConfigWindow()
 		ImGui::SameLine();
 		ImGui::Text("Fullscreen: true");
 #else
-		ImGui::SliderInt("Screen Width", &cfg.width, 0, 3840);
-		ImGui::SliderInt("Screen Height", &cfg.height, 0, 2160);
-		ImGui::Checkbox("Resizable", &cfg.resizable);
-		ImGui::SameLine();
+		static int selectedVideoMode = -1;
+		const nc::IGfxDevice::VideoMode currentVideoMode = nc::theApplication().gfxDevice().currentVideoMode();
+		if (cfg.fullscreen == false)
+		{
+			ImGui::SliderInt("Window Width", &cfg.width, 0, currentVideoMode.width);
+			ImGui::SliderInt("Window Height", &cfg.height, 0, currentVideoMode.height);
+			ImGui::Checkbox("Resizable", &cfg.resizable);
+			ImGui::SameLine();
+			selectedVideoMode = -1;
+		}
+		else
+		{
+			unsigned int currentVideoModeIndex = 0;
+			const unsigned int numVideoModes = nc::theApplication().gfxDevice().numVideoModes();
+			comboVideoModes_.clear();
+			for (unsigned int i = 0; i < numVideoModes; i++)
+			{
+				const nc::IGfxDevice::VideoMode &mode = nc::theApplication().gfxDevice().videoMode(i);
+				comboVideoModes_.formatAppend("%ux%u, %uHz", mode.width, mode.height, mode.refreshRate);
+				comboVideoModes_.setLength(comboVideoModes_.length() + 1);
+
+				if (mode == currentVideoMode)
+					currentVideoModeIndex = i;
+			}
+			comboVideoModes_.setLength(comboVideoModes_.length() + 1);
+			// Append a second '\0' to signal the end of the combo item list
+			comboVideoModes_[comboVideoModes_.length() - 1] = '\0';
+
+			if (selectedVideoMode < 0)
+				selectedVideoMode = currentVideoModeIndex;
+
+			ImGui::Combo("Video Mode", &selectedVideoMode, comboVideoModes_.data());
+			cfg.width = nc::theApplication().gfxDevice().videoMode(selectedVideoMode).width;
+			cfg.height = nc::theApplication().gfxDevice().videoMode(selectedVideoMode).height;
+		}
+
 		ImGui::Checkbox("Fullscreen", &cfg.fullscreen);
 		ImGui::SameLine();
 		if (ImGui::Button("Apply"))
 		{
-			nc::theApplication().gfxDevice().setResolution(cfg.width, cfg.height);
 			nc::theApplication().gfxDevice().setFullScreen(cfg.fullscreen);
+			if (cfg.fullscreen == false)
+				nc::theApplication().gfxDevice().setResolution(cfg.width, cfg.height);
+			else
+				nc::theApplication().gfxDevice().setVideoMode(selectedVideoMode);
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Current"))
@@ -1477,6 +1512,7 @@ void MyEventHandler::createGuiConfigWindow()
 			cfg.height = nc::theApplication().heightInt();
 			cfg.fullscreen = nc::theApplication().gfxDevice().isFullScreen();
 			cfg.resizable = nc::theApplication().gfxDevice().isResizable();
+			selectedVideoMode = -1;
 		}
 #endif
 
