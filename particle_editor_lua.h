@@ -115,6 +115,8 @@ class LuaLoader :
 		bool culling = true;
 		unsigned int saveFileMaxSize = 8 * 1024;
 		unsigned int logMaxSize = 4 * 1024;
+		nctl::String startupScriptName = nctl::String(MaxFilenameLength);
+		bool autoEmissionOnStart = false;
 
 		nctl::String scriptsPath = nctl::String(MaxFilenameLength);
 		nctl::String texturesPath = nctl::String(MaxFilenameLength);

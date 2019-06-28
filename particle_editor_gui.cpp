@@ -1543,6 +1543,11 @@ void MyEventHandler::createGuiConfigWindow()
 		cfg.logMaxSize = logStringSize * 1024;
 
 		ImGui::NewLine();
+		ImGui::Checkbox("Auto Emission On Start", &cfg.autoEmissionOnStart);
+		ImGui::InputText("Start-up Script Name", cfg.startupScriptName.data(), MaxStringLength,
+		                 ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackResize, inputTextCallback, &cfg.startupScriptName);
+
+		ImGui::NewLine();
 		ImGui::InputText("Scripts Path", cfg.scriptsPath.data(), MaxStringLength,
 		                 ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackResize, inputTextCallback, &cfg.scriptsPath);
 		ImGui::InputText("Textures Path", cfg.texturesPath.data(), MaxStringLength,

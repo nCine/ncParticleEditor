@@ -22,7 +22,6 @@
 
 namespace {
 
-const char *ScriptFile = "particles.lua";
 const char *ConfigFile = "config.lua";
 
 }
@@ -122,9 +121,13 @@ void MyEventHandler::onInit()
 	dummy_ = nctl::makeUnique<nc::SceneNode>(&rootNode, parentPosition_.x, parentPosition_.y);
 
 	const LuaLoader::Config &luaConfig = loader_->config();
-	const nctl::String initialScript = luaConfig.scriptsPath + ScriptFile;
-	if (nc::IFile::access(initialScript.data(), nc::IFile::AccessMode::READABLE))
-		load(initialScript.data());
+	if (luaConfig.startupScriptName.isEmpty() == false)
+	{
+		const nctl::String startupScript = luaConfig.scriptsPath + luaConfig.startupScriptName;
+		if (nc::IFile::access(startupScript.data(), nc::IFile::AccessMode::READABLE))
+			load(startupScript.data());
+	}
+	autoEmission_ = luaConfig.autoEmissionOnStart;
 
 	configureGui();
 }

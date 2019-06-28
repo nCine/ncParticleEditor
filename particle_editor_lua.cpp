@@ -23,7 +23,7 @@ nctl::String &indent(nctl::String &string, int amount)
 }
 
 const unsigned int ProjectFileVersion = 5;
-const unsigned int ConfigFileVersion = 10;
+const unsigned int ConfigFileVersion = 11;
 
 namespace Names {
 
@@ -85,6 +85,8 @@ namespace CfgNames {
 	const char *culling = "culling";
 	const char *saveFileMaxSize = "savefile_maxsize"; // version 3
 	const char *logMaxSize = "log_maxsize"; // version 5
+	const char *startupScriptName = "startup_script_name"; // version 11
+	const char *autoEmissionOnStart = "auto_emission_on_start"; // version 11
 
 	const char *scriptsPath = "scripts_path"; // version 6
 	const char *backgroundsPath = "backgrounds_path"; // version 6
@@ -222,6 +224,12 @@ bool LuaLoader::loadConfig(const char *filename)
 	if (version >= 5)
 		nc::LuaUtils::tryRetrieveGlobal<uint32_t>(L, CfgNames::logMaxSize, config_.logMaxSize);
 
+	if (version >= 11)
+	{
+		config_.startupScriptName = nc::LuaUtils::retrieveGlobal<const char *>(L, CfgNames::startupScriptName);
+		nc::LuaUtils::tryRetrieveGlobal<bool>(L, CfgNames::autoEmissionOnStart, config_.autoEmissionOnStart);
+	}
+
 	config_.scriptsPath = "scripts/";
 	config_.texturesPath = "textures/";
 	config_.backgroundsPath = "backgrounds/";
@@ -301,6 +309,8 @@ bool LuaLoader::saveConfig(const char *filename)
 	indent(file, amount).formatAppend("%s = %s\n", CfgNames::culling, config_.culling ? "true" : "false");
 	indent(file, amount).formatAppend("%s = %u\n", CfgNames::saveFileMaxSize, config_.saveFileMaxSize);
 	indent(file, amount).formatAppend("%s = %u\n", CfgNames::logMaxSize, config_.logMaxSize);
+	indent(file, amount).formatAppend("%s = \"%s\"\n", CfgNames::startupScriptName, config_.startupScriptName.data());
+	indent(file, amount).formatAppend("%s = %s\n", CfgNames::autoEmissionOnStart, config_.autoEmissionOnStart ? "true" : "false");
 
 	indent(file, amount).formatAppend("%s = \"%s\"\n", CfgNames::scriptsPath, config_.scriptsPath.data());
 	indent(file, amount).formatAppend("%s = \"%s\"\n", CfgNames::texturesPath, config_.texturesPath.data());
