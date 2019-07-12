@@ -5,6 +5,8 @@ set(PACKAGE_DATA_DIR "${PARENT_SOURCE_DIR}/${PACKAGE_NAME}-data" CACHE PATH "Set
 
 if(MSVC OR APPLE)
 	set(NCINE_EXTERNAL_DIR "${PARENT_SOURCE_DIR}/nCine-external" CACHE PATH "Set the path to the nCine MSVC libraries or macOS frameworks directory")
+elseif(EMSCRIPTEN)
+	set(NCINE_EXTERNAL_DIR "${PARENT_SOURCE_DIR}/nCine-external-emscripten" CACHE PATH "Set the path to the nCine Emscripten libraries")
 endif()
 
 if(PACKAGE_BUILD_ANDROID)
@@ -25,4 +27,9 @@ if(PACKAGE_OPTIONS_PRESETS STREQUAL BinDist)
 	set(DEFAULT_DATA_DIR_DIST ON)
 	set(PACKAGE_BUILD_ANDROID OFF)
 	set(PACKAGE_STRIP_BINARIES ON)
+
+	if(EMSCRIPTEN)
+		set(PACKAGE_BUILD_ANDROID OFF)
+		set(PACKAGE_STRIP_BINARIES OFF)
+	endif()
 endif()

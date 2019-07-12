@@ -102,7 +102,8 @@ jobs:
       cd ..
       rm -rf nCine-libraries-artifacts
 
-      export NCINE_BRANCH=`echo $NCINE_BRANCH | sed 's/BRANCHNAME/'"master"'/'`
+      # `develop` branch of ncParticleEditor needs nCine `develop` branch
+      export NCINE_BRANCH=`echo $NCINE_BRANCH | sed 's/BRANCHNAME/'"develop"'/'`
       export NCINE_BRANCH=`echo $NCINE_BRANCH | sed 's/OS/'"$OS"'/'`
       export NCINE_BRANCH=`echo $NCINE_BRANCH | sed 's/COMPILER/'"$CC"'/'`
       git clone https://github.com/nCine/nCine-artifacts.git
@@ -271,7 +272,8 @@ jobs:
       cd ..
       rm -rf nCine-libraries-artifacts
 
-      export NCINE_BRANCH=`echo $NCINE_BRANCH | sed 's/BRANCHNAME/'"master"'/'`
+      # `develop` branch of ncParticleEditor needs nCine `develop` branch
+      export NCINE_BRANCH=`echo $NCINE_BRANCH | sed 's/BRANCHNAME/'"develop"'/'`
       export NCINE_BRANCH=`echo $NCINE_BRANCH | sed 's/OS/'"$OS"'/'`
       export NCINE_BRANCH=`echo $NCINE_BRANCH | sed 's/COMPILER/'"$CC"'/'`
       git clone https://github.com/nCine/nCine-artifacts.git
@@ -330,6 +332,139 @@ jobs:
 
     displayName: 'Push Artifacts'
     condition: succeeded()
+    env:
+      MAPPED_GH_TOKEN: $(GH_TOKEN)
+
+- job: Emscripten
+  displayName: Emscripten
+
+  strategy:
+    matrix:
+      Emscripten Debug:
+        imageName: 'ubuntu-16.04'
+        OS: emscripten
+        CC: emcc
+        BuildType: Debug
+
+      Emscripten Release:
+        imageName: 'ubuntu-16.04'
+        OS: emscripten
+        CC: emcc
+        BuildType: Release
+
+      Emscripten BinDist:
+        imageName: 'ubuntu-16.04'
+        OS: emscripten
+        CC: emcc
+        BuildType: BinDist
+
+  pool:
+    vmImage: $(imageName)
+
+  steps:
+  - script: |
+      curl -fsSL https://cmake.org/files/v3.14/cmake-3.14.5-Linux-x86_64.sh -o cmakeinstall.sh && \
+      chmod +x cmakeinstall.sh && \
+      sudo ./cmakeinstall.sh --prefix=/usr/local --exclude-subdir && \
+      rm cmakeinstall.sh
+
+    displayName: 'Install Latest CMake on Linux'
+    condition: eq( variables['Agent.OS'], 'Linux' )
+
+  - script: |
+      cd ..
+      git clone https://github.com/emscripten-core/emsdk.git
+      cd emsdk
+      ./emsdk install latest
+      ./emsdk activate latest
+
+    displayName: 'Install Emscripten SDK'
+
+  - script: |
+      git fetch --unshallow || true
+
+    displayName: 'Unshallow Git Repository for Versioning'
+    condition: eq( variables['BuildType'], 'BinDist' )
+
+  - script: |
+      export LIBRARIES_BRANCH=`echo $LIBRARIES_BRANCH | sed 's/OS/'"$OS"'/'`
+      export LIBRARIES_BRANCH=`echo $LIBRARIES_BRANCH | sed 's/COMPILER/'"$CC"'/'`
+
+      cd ..
+      git clone https://github.com/nCine/nCine-libraries-artifacts.git
+      cd nCine-libraries-artifacts
+      git checkout $LIBRARIES_BRANCH
+      LIBRARIES_FILE=$(ls -t | head -n 1) && tar xpzf $LIBRARIES_FILE
+      mv nCine-external-emscripten ..
+
+      cd ..
+      rm -rf nCine-libraries-artifacts
+
+      # Only the nCine `develop` branch has Emscripten support at the moment
+      export NCINE_BRANCH=`echo $NCINE_BRANCH | sed 's/BRANCHNAME/'"develop"'/'`
+      export NCINE_BRANCH=`echo $NCINE_BRANCH | sed 's/OS/'"$OS"'/'`
+      export NCINE_BRANCH=`echo $NCINE_BRANCH | sed 's/COMPILER/'"$CC"'/'`
+      git clone https://github.com/nCine/nCine-artifacts.git
+      cd nCine-artifacts
+      git checkout $NCINE_BRANCH
+
+      NCINE_FILE=$(ls -t | head -n 1)
+      tar xpzf $NCINE_FILE
+      mv nCine-*-Emscripten ../nCine
+
+      cd ..
+      rm -rf nCine-artifacts
+
+      git clone https://github.com/nCine/ncParticleEditor-data.git
+
+    displayName: 'Download nCine-libraries and nCine Artifacts and ncParticleEditor-data'
+
+  - script: |
+      source ../emsdk/emsdk_env.sh
+      export NCINE_DIRECTORY=$(pwd)/../nCine/cmake
+
+      if [[ "$(BuildType)" == "BinDist" ]]; then
+        emcmake cmake -B ../ncParticleEditor-build-$(BuildType) -D PACKAGE_OPTIONS_PRESETS=$(BuildType) -D nCine_DIR=$NCINE_DIRECTORY
+      else
+        emcmake cmake -B ../ncParticleEditor-build-$(BuildType) -D CMAKE_BUILD_TYPE=$(BuildType) -D nCine_DIR=$NCINE_DIRECTORY
+      fi
+
+    displayName: 'CMake Configuration'
+
+  - script: |
+      source ../emsdk/emsdk_env.sh
+
+      make -j2 -C ../ncParticleEditor-build-$(BuildType)
+
+    displayName: 'Make'
+
+  - script: |
+      make package -C ../ncParticleEditor-build-$(BuildType)
+
+    displayName: 'Package'
+    condition: eq( variables['BuildType'], 'BinDist' )
+
+  - script: |
+      git config --global user.email "pipelines@azure.com"
+      git config --global user.name "Azure Pipelines"
+
+      cd ..
+      export DEPLOY_BRANCH=`echo $DEPLOY_BRANCH | sed 's/BRANCHNAME/'"$(Build.SourceBranchName)"'/'`
+      export DEPLOY_BRANCH=`echo $DEPLOY_BRANCH | sed 's/OS/'"$OS"'/'`
+      export DEPLOY_BRANCH=`echo $DEPLOY_BRANCH | sed 's/COMPILER/'"$CC"'/'`
+      git clone https://$MAPPED_GH_TOKEN@github.com/nCine/ncParticleEditor-artifacts.git >/dev/null 2>&1
+      cd ncParticleEditor-artifacts
+
+      git checkout $DEPLOY_BRANCH || git checkout --orphan $DEPLOY_BRANCH
+      git reset
+      git rm *
+      mv -f ../ncParticleEditor-build-$(BuildType)/*.tar.gz .
+      git add *.tar.gz
+      git commit --amend -m "$(DEPLOY_MESSAGE)" || git commit -m "$(DEPLOY_MESSAGE)"
+      git push --force || git push --set-upstream origin $DEPLOY_BRANCH
+
+    displayName: 'Push Artifacts'
+    condition: and( eq( variables['BuildType'], 'BinDist' ), succeeded() )
     env:
       MAPPED_GH_TOKEN: $(GH_TOKEN)
 
@@ -489,14 +624,16 @@ jobs:
 
       if ($env:Compiler -ne "mingw64")
       {
-        $env:NCINE_BRANCH = $env:NCINE_BRANCH -replace "BRANCHNAME","master" -replace "OS","windows" -replace "COMPILER",$env:vsversion
+        # `develop` branch of ncParticleEditor needs nCine `develop` branch
+        $env:NCINE_BRANCH = $env:NCINE_BRANCH -replace "BRANCHNAME","develop" -replace "OS","windows" -replace "COMPILER",$env:vsversion
         git checkout $env:NCINE_BRANCH
         $env:NCINE_FILE = Get-ChildItem -Path $(pwd) -Filter *.zip -Name -File | Select-Object -First 1
         7z x $env:NCINE_FILE
       }
       else
       {
-        $env:NCINE_BRANCH = $env:NCINE_BRANCH -replace "BRANCHNAME","master" -replace "OS","mingw64" -replace "COMPILER",$env:CC
+        # `develop` branch of ncParticleEditor needs nCine `develop` branch
+        $env:NCINE_BRANCH = $env:NCINE_BRANCH -replace "BRANCHNAME","develop" -replace "OS","mingw64" -replace "COMPILER",$env:CC
         git checkout $env:NCINE_BRANCH
         $env:NCINE_FILE = Get-ChildItem -Path $(pwd) -Name -File | Select-Object -First 1
         7z x $env:NCINE_FILE

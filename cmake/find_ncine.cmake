@@ -112,4 +112,19 @@ elseif(APPLE)
 	else()
 		message(FATAL_ERROR "nCine frameworks directory not found at: ${FRAMEWORKS_DIR}")
 	endif()
+elseif(EMSCRIPTEN)
+	find_path(EMSCRIPTEN_LIBDIR
+		NAMES libwebp.a liblua.a
+		PATHS ${NCINE_LOCATION_DIR} ${NCINE_EXTERNAL_DIR} ${PARENT_SOURCE_DIR}/nCine-external-emscripten ${PARENT_BINARY_DIR}/nCine-external-emscripten
+		PATH_SUFFIXES lib
+		DOC "Path to the nCine external Emscripten libraries directory"
+		NO_DEFAULT_PATH # To avoid finding MSYS/MinGW libraries
+		NO_CMAKE_FIND_ROOT_PATH) # To avoid using the cross-compiler root
+
+	get_filename_component(EXTERNAL_EMSCRIPTEN_DIR ${EMSCRIPTEN_LIBDIR} DIRECTORY)
+	if(IS_DIRECTORY ${EMSCRIPTEN_LIBDIR} AND IS_DIRECTORY ${EXTERNAL_EMSCRIPTEN_DIR})
+		message(STATUS "nCine external Emscripten directory: ${EXTERNAL_EMSCRIPTEN_DIR}")
+	else()
+		message(FATAL_ERROR "nCine external Emscripten directory not found at: ${EXTERNAL_EMSCRIPTEN_DIR}")
+	endif()
 endif()

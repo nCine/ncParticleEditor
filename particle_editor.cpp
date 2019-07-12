@@ -46,8 +46,10 @@ void MyEventHandler::onPreInit(nc::AppConfiguration &config)
 	CrashRptWrapper::install();
 #endif
 
-#ifdef __ANDROID__
+#if defined(__ANDROID__)
 	config.dataPath() = "/sdcard/ncparticleeditor/";
+#elif defined(__EMSCRIPTEN__)
+	config.dataPath() = "/";
 #else
 	#ifdef PACKAGE_DEFAULT_DATA_DIR
 	config.dataPath() = PACKAGE_DEFAULT_DATA_DIR;
