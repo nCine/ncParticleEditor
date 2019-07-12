@@ -36,7 +36,7 @@ elseif(WIN32)
 endif()
 
 if(MSVC)
-	file(GLOB MSVC_DLL_FILES ${BINDIR}/*.dll)
+	file(GLOB MSVC_DLL_FILES ${MSVC_BINDIR}/*.dll)
 
 	add_custom_target(copy_dlls ALL
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different ${MSVC_DLL_FILES} ${CMAKE_BINARY_DIR}
