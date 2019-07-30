@@ -31,6 +31,7 @@ if(PACKAGE_BUILD_ANDROID)
 	set(STRINGS_XML ${CMAKE_BINARY_DIR}/android/src/main/res/values/strings.xml)
 	configure_file(${STRINGS_XML_IN} ${STRINGS_XML} @ONLY)
 
+	set(ANDROID_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/${PACKAGE_INCLUDE_DIR}")
 	foreach(SOURCE ${PACKAGE_SOURCES})
 		list(APPEND ANDROID_PACKAGE_SOURCES "\t${CMAKE_SOURCE_DIR}/${SOURCE}")
 	endforeach()

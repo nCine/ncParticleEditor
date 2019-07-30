@@ -1,11 +1,12 @@
 variables:
+  package_name: ncParticleEditor
   libraries_branch: libraries-OS-COMPILER
   ncine_branch: nCine-BRANCHNAME-OS-COMPILER
   deploy_message:
     "Push artifact from Azure Pipelines build $(Build.BuildNumber) with id $(Build.BuildId)
 
-     - ncParticleEditor artifact from branch '$(Build.SourceBranchName)' with commit id $(Build.SourceVersion)"
-  deploy_branch: ncParticleEditor-BRANCHNAME-OS-COMPILER
+     - $(package_name) artifact from branch '$(Build.SourceBranchName)' with commit id $(Build.SourceVersion)"
+  deploy_branch: $(package_name)-BRANCHNAME-OS-COMPILER
   ndk_version: r20
 
 jobs:
@@ -125,9 +126,9 @@ jobs:
       cd ..
       rm -rf nCine-artifacts
 
-      git clone https://github.com/nCine/ncParticleEditor-data.git
+      git clone https://github.com/nCine/$(package_name)-data.git
 
-    displayName: 'Download nCine-libraries and nCine Artifacts and ncParticleEditor-data'
+    displayName: 'Download nCine-libraries and nCine Artifacts and $(package_name)-data'
 
   - script: |
       if [ "$(Agent.OS)" == "Linux" ]; then
@@ -137,9 +138,9 @@ jobs:
       fi
 
       if [[ "$(BuildType)" == "BinDist" ]]; then
-        cmake -B ../ncParticleEditor-build-$(BuildType) -D PACKAGE_OPTIONS_PRESETS=$(BuildType) -D nCine_DIR=$NCINE_DIRECTORY
+        cmake -B ../$(package_name)-build-$(BuildType) -D PACKAGE_OPTIONS_PRESETS=$(BuildType) -D nCine_DIR=$NCINE_DIRECTORY
       else
-        cmake -B ../ncParticleEditor-build-$(BuildType) -D CMAKE_BUILD_TYPE=$(BuildType) -D nCine_DIR=$NCINE_DIRECTORY
+        cmake -B ../$(package_name)-build-$(BuildType) -D CMAKE_BUILD_TYPE=$(BuildType) -D nCine_DIR=$NCINE_DIRECTORY
       fi
 
     displayName: 'CMake Configuration'
@@ -149,12 +150,12 @@ jobs:
         export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/../nCine-external/lib
       fi
 
-      make -j2 -C ../ncParticleEditor-build-$(BuildType)
+      make -j2 -C ../$(package_name)-build-$(BuildType)
 
     displayName: 'Make'
 
   - script: |
-      make package -C ../ncParticleEditor-build-$(BuildType)
+      make package -C ../$(package_name)-build-$(BuildType)
 
     displayName: 'Package'
     condition: eq( variables['BuildType'], 'BinDist' )
@@ -176,13 +177,13 @@ jobs:
       export DEPLOY_BRANCH=`echo $DEPLOY_BRANCH | sed 's/BRANCHNAME/'"$(Build.SourceBranchName)"'/'`
       export DEPLOY_BRANCH=`echo $DEPLOY_BRANCH | sed 's/OS/'"$OS"'/'`
       export DEPLOY_BRANCH=`echo $DEPLOY_BRANCH | sed 's/COMPILER/'"$CC"'/'`
-      git clone https://$MAPPED_GH_TOKEN@github.com/nCine/ncParticleEditor-artifacts.git >/dev/null 2>&1
-      cd ncParticleEditor-artifacts
+      git clone https://$MAPPED_GH_TOKEN@github.com/nCine/$(package_name)-artifacts.git >/dev/null 2>&1
+      cd $(package_name)-artifacts
 
       git checkout $DEPLOY_BRANCH || git checkout --orphan $DEPLOY_BRANCH
       git reset
       git rm *
-      mv -f ../ncParticleEditor-build-$(BuildType)/*.$PACKAGE_EXT .
+      mv -f ../$(package_name)-build-$(BuildType)/*.$PACKAGE_EXT .
       git add *.$PACKAGE_EXT
       git commit --amend -m "$(DEPLOY_MESSAGE)" || git commit -m "$(DEPLOY_MESSAGE)"
       git push --force || git push --set-upstream origin $DEPLOY_BRANCH
@@ -287,9 +288,9 @@ jobs:
       cd ..
       rm -rf nCine-artifacts
 
-      git clone https://github.com/nCine/ncParticleEditor-data.git
+      git clone https://github.com/nCine/$(package_name)-data.git
 
-    displayName: 'Download nCine-libraries and nCine Artifacts and ncParticleEditor-data'
+    displayName: 'Download nCine-libraries and nCine Artifacts and $(package_name)-data'
 
   - script: |
       export NDK_URL=https://dl.google.com/android/repository/android-ndk-$NDK_VERSION-linux-x86_64.zip
@@ -303,12 +304,12 @@ jobs:
   - script: |
       export ANDROID_NDK_HOME=$(pwd)/../android-ndk-$NDK_VERSION
 
-      cmake -B ../ncParticleEditor-build-$(BuildType) -D CMAKE_BUILD_TYPE=$(BuildType) -D PACKAGE_NDK_ARCHITECTURES=$(Arch) -D PACKAGE_BUILD_ANDROID=ON -D PACKAGE_ASSEMBLE_APK=ON -D nCine_DIR=$(pwd)/../nCine/lib/cmake/nCine
+      cmake -B ../$(package_name)-build-$(BuildType) -D CMAKE_BUILD_TYPE=$(BuildType) -D PACKAGE_NDK_ARCHITECTURES=$(Arch) -D PACKAGE_BUILD_ANDROID=ON -D PACKAGE_ASSEMBLE_APK=ON -D nCine_DIR=$(pwd)/../nCine/lib/cmake/nCine
 
     displayName: 'CMake Configuration'
 
   - script: |
-      cd ../ncParticleEditor-build-$(BuildType)/android
+      cd ../$(package_name)-build-$(BuildType)/android
       gradle assemble$(BuildType)
 
     displayName: 'Gradle Assemble'
@@ -318,14 +319,14 @@ jobs:
       git config --global user.name "Azure Pipelines"
 
       cd ..
-      export DEPLOY_BRANCH=ncParticleEditor-$(Build.SourceBranchName)-android-$(Arch)-$(BuildType)
-      git clone https://$MAPPED_GH_TOKEN@github.com/nCine/ncParticleEditor-artifacts.git >/dev/null 2>&1
-      cd ncParticleEditor-artifacts
+      export DEPLOY_BRANCH=$(package_name)-$(Build.SourceBranchName)-android-$(Arch)-$(BuildType)
+      git clone https://$MAPPED_GH_TOKEN@github.com/nCine/$(package_name)-artifacts.git >/dev/null 2>&1
+      cd $(package_name)-artifacts
 
       git checkout $DEPLOY_BRANCH || git checkout --orphan $DEPLOY_BRANCH
       git reset
       git rm *
-      mv -f ../ncParticleEditor-build-$(BuildType)/android/build/outputs/apk/*/*.apk .
+      mv -f ../$(package_name)-build-$(BuildType)/android/build/outputs/apk/*/*.apk .
       git add *.apk
       git commit --amend -m "$(DEPLOY_MESSAGE)" || git commit -m "$(DEPLOY_MESSAGE)"
       git push --force || git push --set-upstream origin $DEPLOY_BRANCH
@@ -415,18 +416,18 @@ jobs:
       cd ..
       rm -rf nCine-artifacts
 
-      git clone https://github.com/nCine/ncParticleEditor-data.git
+      git clone https://github.com/nCine/$(package_name)-data.git
 
-    displayName: 'Download nCine-libraries and nCine Artifacts and ncParticleEditor-data'
+    displayName: 'Download nCine-libraries and nCine Artifacts and $(package_name)-data'
 
   - script: |
       source ../emsdk/emsdk_env.sh
       export NCINE_DIRECTORY=$(pwd)/../nCine/cmake
 
       if [[ "$(BuildType)" == "BinDist" ]]; then
-        emcmake cmake -B ../ncParticleEditor-build-$(BuildType) -D PACKAGE_OPTIONS_PRESETS=$(BuildType) -D nCine_DIR=$NCINE_DIRECTORY
+        emcmake cmake -B ../$(package_name)-build-$(BuildType) -D PACKAGE_OPTIONS_PRESETS=$(BuildType) -D nCine_DIR=$NCINE_DIRECTORY
       else
-        emcmake cmake -B ../ncParticleEditor-build-$(BuildType) -D CMAKE_BUILD_TYPE=$(BuildType) -D nCine_DIR=$NCINE_DIRECTORY
+        emcmake cmake -B ../$(package_name)-build-$(BuildType) -D CMAKE_BUILD_TYPE=$(BuildType) -D nCine_DIR=$NCINE_DIRECTORY
       fi
 
     displayName: 'CMake Configuration'
@@ -434,12 +435,12 @@ jobs:
   - script: |
       source ../emsdk/emsdk_env.sh
 
-      make -j2 -C ../ncParticleEditor-build-$(BuildType)
+      make -j2 -C ../$(package_name)-build-$(BuildType)
 
     displayName: 'Make'
 
   - script: |
-      make package -C ../ncParticleEditor-build-$(BuildType)
+      make package -C ../$(package_name)-build-$(BuildType)
 
     displayName: 'Package'
     condition: eq( variables['BuildType'], 'BinDist' )
@@ -452,13 +453,13 @@ jobs:
       export DEPLOY_BRANCH=`echo $DEPLOY_BRANCH | sed 's/BRANCHNAME/'"$(Build.SourceBranchName)"'/'`
       export DEPLOY_BRANCH=`echo $DEPLOY_BRANCH | sed 's/OS/'"$OS"'/'`
       export DEPLOY_BRANCH=`echo $DEPLOY_BRANCH | sed 's/COMPILER/'"$CC"'/'`
-      git clone https://$MAPPED_GH_TOKEN@github.com/nCine/ncParticleEditor-artifacts.git >/dev/null 2>&1
-      cd ncParticleEditor-artifacts
+      git clone https://$MAPPED_GH_TOKEN@github.com/nCine/$(package_name)-artifacts.git >/dev/null 2>&1
+      cd $(package_name)-artifacts
 
       git checkout $DEPLOY_BRANCH || git checkout --orphan $DEPLOY_BRANCH
       git reset
       git rm *
-      mv -f ../ncParticleEditor-build-$(BuildType)/*.tar.gz .
+      mv -f ../$(package_name)-build-$(BuildType)/*.tar.gz .
       git add *.tar.gz
       git commit --amend -m "$(DEPLOY_MESSAGE)" || git commit -m "$(DEPLOY_MESSAGE)"
       git push --force || git push --set-upstream origin $DEPLOY_BRANCH
@@ -646,9 +647,9 @@ jobs:
       cd ..
       Remove-Item nCine-artifacts -Recurse -Force
 
-      git clone https://github.com/nCine/ncParticleEditor-data.git
+      git clone https://github.com/nCine/$(package_name)-data.git
 
-    displayName: 'Download nCine-libraries and nCine Artifacts and ncParticleEditor-data'
+    displayName: 'Download nCine-libraries and nCine Artifacts and $(package_name)-data'
 
   - powershell: |
       $env:generator = switch ("$(imageName)")
@@ -658,11 +659,9 @@ jobs:
       }
 
       if ($env:BuildType -eq "BinDist")
-        { cmake -G "$env:generator" -A x64 -B ../ncParticleEditor-build-$(BuildType) -D PACKAGE_OPTIONS_PRESETS=$(BuildType) -D nCine_DIR=$(pwd)/../nCine/cmake }
-      elseif ($env:BuildType -eq "Debug")
-        { cmake -G "$env:generator" -A x64 -B ../ncParticleEditor-build-$(BuildType) -D nCine_DIR=$(pwd)/../nCine/cmake -D PACKAGE_CRASHRPT=ON -D CRASHRPT_SOURCE_DIR=$(pwd)/../CrashRpt -D CRASHRPT_BINARY_DIR=$(pwd)/../CrashRpt-build -D CRASHRPT_VERSION=1403 }
+        { cmake -G "$env:generator" -A x64 -B ../$(package_name)-build-$(BuildType) -D PACKAGE_OPTIONS_PRESETS=$(BuildType) -D nCine_DIR=$(pwd)/../nCine/cmake }
       else
-        { cmake -G "$env:generator" -A x64 -B ../ncParticleEditor-build-$(BuildType) -D nCine_DIR=$(pwd)/../nCine/cmake }
+        { cmake -G "$env:generator" -A x64 -B ../$(package_name)-build-$(BuildType) -D nCine_DIR=$(pwd)/../nCine/cmake }
 
     displayName: 'CMake Configuration on Windows'
     condition: ne( variables['Compiler'], 'mingw64' )
@@ -672,9 +671,9 @@ jobs:
       $env:MSYSTEM = "MINGW64"
 
       if ($env:BuildType -eq "BinDist")
-        { C:\msys64\usr\bin\bash.exe -lc 'cmake -G \"MSYS Makefiles\" -B ../ncParticleEditor-build-$(BuildType) -D PACKAGE_OPTIONS_PRESETS=$(BuildType) -D nCine_DIR=$(pwd)/../nCine/lib/cmake/nCine' }
+        { C:\msys64\usr\bin\bash.exe -lc 'cmake -G \"MSYS Makefiles\" -B ../$(package_name)-build-$(BuildType) -D PACKAGE_OPTIONS_PRESETS=$(BuildType) -D nCine_DIR=$(pwd)/../nCine/lib/cmake/nCine' }
       else
-        { C:\msys64\usr\bin\bash.exe -lc 'cmake -G \"MSYS Makefiles\" -B ../ncParticleEditor-build-$(BuildType) -D CMAKE_BUILD_TYPE=$(BuildType) -D nCine_DIR=$(pwd)/../nCine/lib/cmake/nCine' }
+        { C:\msys64\usr\bin\bash.exe -lc 'cmake -G \"MSYS Makefiles\" -B ../$(package_name)-build-$(BuildType) -D CMAKE_BUILD_TYPE=$(BuildType) -D nCine_DIR=$(pwd)/../nCine/lib/cmake/nCine' }
 
     displayName: 'CMake Configuration on MinGW'
     condition: eq( variables['Compiler'], 'mingw64' )
@@ -683,9 +682,9 @@ jobs:
 
   - powershell: |
       if ($env:BuildType -eq "BinDist")
-        { cmake --build ../ncParticleEditor-build-$(BuildType) --config Release }
+        { cmake --build ../$(package_name)-build-$(BuildType) --config Release }
       else
-        { cmake --build ../ncParticleEditor-build-$(BuildType) --config $(BuildType) }
+        { cmake --build ../$(package_name)-build-$(BuildType) --config $(BuildType) }
 
     displayName: 'CMake Build on Windows'
     condition: ne( variables['Compiler'], 'mingw64' )
@@ -693,7 +692,7 @@ jobs:
   - powershell: |
       $env:PATH = "C:\msys64\x86_64\bin;C:\msys64\usr\bin;$env:PATH"
       $env:MSYSTEM = "MINGW64"
-      C:\msys64\usr\bin\bash.exe -lc 'make -j2 -C ../ncParticleEditor-build-$(BuildType)'
+      C:\msys64\usr\bin\bash.exe -lc 'make -j2 -C ../$(package_name)-build-$(BuildType)'
 
     displayName: 'Make on MinGW'
     condition: eq( variables['Compiler'], 'mingw64' )
@@ -702,9 +701,9 @@ jobs:
 
   - powershell: |
       if ($env:BuildType -eq "BinDist")
-        { cmake --build ../ncParticleEditor-build-$(BuildType) --config Release --target package }
+        { cmake --build ../$(package_name)-build-$(BuildType) --config Release --target package }
       else
-        { cmake --build ../ncParticleEditor-build-$(BuildType) --config $(BuildType) --target package }
+        { cmake --build ../$(package_name)-build-$(BuildType) --config $(BuildType) --target package }
 
     displayName: 'Package on Windows'
     condition: and( ne( variables['BuildType'], 'Release' ), ne( variables['Compiler'], 'mingw64' ) )
@@ -714,16 +713,16 @@ jobs:
       $env:MSYSTEM = "MINGW64"
       $env:CHERE_INVOKING = 1
 
-      C:\msys64\usr\bin\bash.exe -lc 'make package -C ../ncParticleEditor-build-$(BuildType)'
+      C:\msys64\usr\bin\bash.exe -lc 'make package -C ../$(package_name)-build-$(BuildType)'
 
     displayName: 'Package on MinGW'
     condition: and( eq( variables['BuildType'], 'BinDist' ), eq( variables['Compiler'], 'mingw64' ) )
 
   - powershell: |
-      $env:GIT_REDIRECT_STDERR = '2>&1'
       git config --global user.email "pipelines@azure.com"
       git config --global user.name "Azure Pipelines"
 
+      $env:GIT_REDIRECT_STDERR = '2>&1'
       $env:vsversion = switch ("$(imageName)")
       {
         "windows-2019" {"vs2019"}
@@ -740,21 +739,21 @@ jobs:
         { $env:DEPLOY_BRANCH = -join($env:DEPLOY_BRANCH, "-", $env:BuildType, "-CrashRpt") }
 
       cd ..
-      git clone https://$env:MAPPED_GH_TOKEN@github.com/nCine/ncParticleEditor-artifacts.git 2>&1>$null
-      cd ncParticleEditor-artifacts
+      git clone https://$env:MAPPED_GH_TOKEN@github.com/nCine/$(package_name)-artifacts.git 2>&1>$null
+      cd $(package_name)-artifacts
       git checkout $env:DEPLOY_BRANCH; if (-not $?) { git checkout --orphan $env:DEPLOY_BRANCH }
       git reset
       git rm *
 
       if ($env:Compiler -ne "mingw64")
       {
-        Move-Item -Path ..\ncParticleEditor-build-$(BuildType)\*.exe -Destination .
-        Move-Item -Path ..\ncParticleEditor-build-$(BuildType)\*.zip -Destination .
+        Move-Item -Path ..\$(package_name)-build-$(BuildType)\*.exe -Destination .
+        Move-Item -Path ..\$(package_name)-build-$(BuildType)\*.zip -Destination .
         git add *.exe *.zip
       }
       else
       {
-        Move-Item -Path ..\ncParticleEditor-build-$(BuildType)\*.tar.gz -Destination .
+        Move-Item -Path ..\$(package_name)-build-$(BuildType)\*.tar.gz -Destination .
         git add *.tar.gz
       }
 

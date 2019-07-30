@@ -38,4 +38,12 @@ if(MSVC AND PACKAGE_CRASHRPT)
 	install(FILES ${CRASHRPT_BINARY_DIR}/bin/${CRASHRPT_ARCH}/CrashSender${CRASHRPT_VERSION}.exe DESTINATION ${RUNTIME_INSTALL_DESTINATION})
 	install(FILES ${CRASHRPT_SOURCE_DIR}/bin/crashrpt_lang.ini DESTINATION ${RUNTIME_INSTALL_DESTINATION})
 	install(FILES ${CRASHRPT_SOURCE_DIR}/bin/dbghelp.dll DESTINATION ${RUNTIME_INSTALL_DESTINATION})
+
+	add_custom_target(copy_crashrpt_files ALL
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CRASHRPT_BINARY_DIR}/bin/${CRASHRPT_ARCH}/CrashRpt${CRASHRPT_VERSION}.dll ${CMAKE_BINARY_DIR}
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CRASHRPT_BINARY_DIR}/bin/${CRASHRPT_ARCH}/CrashSender${CRASHRPT_VERSION}.exe ${CMAKE_BINARY_DIR}
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CRASHRPT_SOURCE_DIR}/bin/crashrpt_lang.ini ${CMAKE_BINARY_DIR}
+		COMMENT "Copying CrashRpt files..."
+	)
+	set_target_properties(copy_crashrpt_files PROPERTIES FOLDER "CustomCopyTargets")
 endif()
