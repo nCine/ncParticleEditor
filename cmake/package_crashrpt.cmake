@@ -10,9 +10,9 @@ if(MSVC AND PACKAGE_CRASHRPT)
 	file(APPEND ${CRASHRPT_STRINGS_FILE} "const char *CrashRptWrapper::appVersion = \"${PACKAGE_VERSION}\";\n")
 	file(APPEND ${CRASHRPT_STRINGS_FILE} "const char *CrashRptWrapper::emailSubject = \"${PACKAGE_NAME} ${PACKAGE_VERSION} Error Report\";\n")
 	file(APPEND ${CRASHRPT_STRINGS_FILE} "const char *CrashRptWrapper::emailTo = \"${PACKAGE_AUTHOR_MAIL}\";\n")
-	file(COPY CrashRptWrapper.h DESTINATION ${GENERATED_SOURCE_DIR})
+	file(COPY src/CrashRptWrapper.h DESTINATION ${GENERATED_SOURCE_DIR})
 	# Source files can't vary by configuration with the Visual Studio generator, they are added even in release
-	target_sources(${PACKAGE_EXE_NAME} PRIVATE CrashRptWrapper.h CrashRptWrapper.cpp ${CRASHRPT_STRINGS_FILE})
+	target_sources(${PACKAGE_EXE_NAME} PRIVATE src/CrashRptWrapper.h src/CrashRptWrapper.cpp ${CRASHRPT_STRINGS_FILE})
 	set(CMAKE_INSTALL_DEBUG_LIBRARIES TRUE)
 	set(CMAKE_INSTALL_DEBUG_LIBRARIES_ONLY TRUE)
 

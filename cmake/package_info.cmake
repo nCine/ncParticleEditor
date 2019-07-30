@@ -7,9 +7,9 @@ set(PACKAGE_DESKTOP_FILE "io.github.ncine.ncparticleeditor.desktop")
 set(PACKAGE_JAVA_URL "io/github/ncine/ncparticleeditor")
 
 set(PACKAGE_SOURCES
-	particle_editor.h
-	particle_editor.cpp
-	particle_editor_gui.cpp
-	particle_editor_lua.h
-	particle_editor_lua.cpp
+	src/particle_editor.h
+	src/particle_editor.cpp
+	src/particle_editor_gui.cpp
+	src/particle_editor_lua.h
+	src/particle_editor_lua.cpp
 )
