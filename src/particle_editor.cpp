@@ -82,7 +82,7 @@ void MyEventHandler::onPreInit(nc::AppConfiguration &config)
 	if (logString_.capacity() < luaConfig.logMaxSize)
 	{
 		nctl::String temp = nctl::String(luaConfig.logMaxSize);
-		logString_.copy(temp);
+		temp.assign(logString_);
 		logString_ = nctl::move(temp);
 	}
 
@@ -93,7 +93,7 @@ void MyEventHandler::onPreInit(nc::AppConfiguration &config)
 	if (nc::IFile::access(luaConfig.backgroundsPath.data(), nc::IFile::AccessMode::READABLE) == false)
 		luaConfig.backgroundsPath = nc::IFile::dataPath() + "backgrounds/";
 
-	config.setResolution(luaConfig.width, luaConfig.height);
+	config.resolution.set(luaConfig.width, luaConfig.height);
 	config.inFullscreen = luaConfig.fullscreen;
 	config.isResizable = luaConfig.resizable;
 	config.frameLimit = luaConfig.frameLimit;
@@ -104,11 +104,6 @@ void MyEventHandler::onPreInit(nc::AppConfiguration &config)
 
 	config.windowTitle = "ncParticleEditor";
 	config.windowIconFilename = "icon48.png";
-
-#ifdef WITH_CRASHRPT
-	config.withInfoText = false;
-	config.withProfilerGraphs = false;
-#endif
 }
 
 void MyEventHandler::onInit()
