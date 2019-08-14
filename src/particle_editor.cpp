@@ -183,10 +183,10 @@ void MyEventHandler::emitParticles(unsigned int index)
 	nc::ParticleSystem *particleSystem = particleSystems_[index].get();
 	ParticleSystemGuiState &s = sysStates_[index];
 
-	if (s.active && (s.emitDelay == 0.0f || (s.emitDelay > 0.0f && s.emitTimer.interval() > s.emitDelay)))
+	if (s.active && (s.emitDelay == 0.0f || (s.emitDelay > 0.0f && s.lastEmissionTime.secondsSince() > s.emitDelay)))
 	{
 		particleSystem->emitParticles(s.init);
-		s.emitTimer.start();
+		s.lastEmissionTime = nc::TimeStamp::now();
 	}
 }
 
@@ -202,7 +202,7 @@ void MyEventHandler::killParticles(unsigned int index)
 	ParticleSystemGuiState &s = sysStates_[index];
 
 	particleSystem->killParticles();
-	s.emitTimer.start();
+	s.lastEmissionTime = nc::TimeStamp::now();
 }
 
 void MyEventHandler::killParticles()
@@ -320,7 +320,7 @@ bool MyEventHandler::load(const char *filename)
 
 		dest.init = src.init;
 		dest.emitDelay = src.emitDelay;
-		dest.emitTimer.start();
+		dest.lastEmissionTime = nc::TimeStamp::now();
 
 		if (dest.init.emitterRotation)
 			dest.rotationCurrentItem = 0;

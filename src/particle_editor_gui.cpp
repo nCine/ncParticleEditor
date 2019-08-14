@@ -1412,7 +1412,7 @@ void MyEventHandler::sanitizeParticleInit(nc::ParticleInitializer &init)
 
 void MyEventHandler::createGuiEmissionPlot()
 {
-	static nc::Timer timer;
+	static nc::TimeStamp lastUpdateTime;
 
 	static unsigned int index = 0;
 	static float values[NumPlotValues];
@@ -1420,7 +1420,7 @@ void MyEventHandler::createGuiEmissionPlot()
 	static unsigned int aliveParticles = 0;
 	static unsigned int totalParticles = 0;
 
-	if (timer.interval() > 0.1f)
+	if (lastUpdateTime.secondsSince() > 0.1f)
 	{
 		interval = nc::theApplication().interval();
 		aliveParticles = 0;
@@ -1432,7 +1432,7 @@ void MyEventHandler::createGuiEmissionPlot()
 		}
 		values[index] = aliveParticles;
 		index = (index + 1) % NumPlotValues;
-		timer.start();
+		lastUpdateTime = nc::TimeStamp::now();
 	}
 
 	ImGui::SameLine();

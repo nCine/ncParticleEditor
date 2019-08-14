@@ -11,7 +11,7 @@
 #include <ncine/Rect.h>
 #include <ncine/ParticleAffectors.h>
 #include <ncine/ParticleInitializer.h>
-#include <ncine/Timer.h>
+#include <ncine/TimeStamp.h>
 
 namespace ncine {
 
@@ -94,7 +94,7 @@ class MyEventHandler :
 		int velocityCurrentItem = 1;
 		int rotationCurrentItem = 0;
 		float emitDelay = (init.rndLife.x + init.rndLife.y) * 0.5f;
-		nc::Timer emitTimer;
+		nc::TimeStamp lastEmissionTime;
 	};
 
 	nctl::String configFile_ = nctl::String(MaxStringLength);

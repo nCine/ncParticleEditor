@@ -11,7 +11,6 @@
 #include <ncine/Rect.h>
 #include <ncine/ParticleAffectors.h>
 #include <ncine/ParticleInitializer.h>
-#include <ncine/Timer.h>
 #include <ncine/LuaStateManager.h>
 
 namespace ncine {
