@@ -103,8 +103,7 @@ jobs:
       cd ..
       rm -rf nCine-libraries-artifacts
 
-      # `develop` branch of ncParticleEditor needs nCine `develop` branch
-      export NCINE_BRANCH=`echo $NCINE_BRANCH | sed 's/BRANCHNAME/'"develop"'/'`
+      export NCINE_BRANCH=`echo $NCINE_BRANCH | sed 's/BRANCHNAME/'"master"'/'`
       export NCINE_BRANCH=`echo $NCINE_BRANCH | sed 's/OS/'"$OS"'/'`
       export NCINE_BRANCH=`echo $NCINE_BRANCH | sed 's/COMPILER/'"$CC"'/'`
       git clone https://github.com/nCine/nCine-artifacts.git
@@ -273,8 +272,7 @@ jobs:
       cd ..
       rm -rf nCine-libraries-artifacts
 
-      # `develop` branch of ncParticleEditor needs nCine `develop` branch
-      export NCINE_BRANCH=`echo $NCINE_BRANCH | sed 's/BRANCHNAME/'"develop"'/'`
+      export NCINE_BRANCH=`echo $NCINE_BRANCH | sed 's/BRANCHNAME/'"master"'/'`
       export NCINE_BRANCH=`echo $NCINE_BRANCH | sed 's/OS/'"$OS"'/'`
       export NCINE_BRANCH=`echo $NCINE_BRANCH | sed 's/COMPILER/'"$CC"'/'`
       git clone https://github.com/nCine/nCine-artifacts.git
@@ -401,8 +399,7 @@ jobs:
       cd ..
       rm -rf nCine-libraries-artifacts
 
-      # Only the nCine `develop` branch has Emscripten support at the moment
-      export NCINE_BRANCH=`echo $NCINE_BRANCH | sed 's/BRANCHNAME/'"develop"'/'`
+      export NCINE_BRANCH=`echo $NCINE_BRANCH | sed 's/BRANCHNAME/'"master"'/'`
       export NCINE_BRANCH=`echo $NCINE_BRANCH | sed 's/OS/'"$OS"'/'`
       export NCINE_BRANCH=`echo $NCINE_BRANCH | sed 's/COMPILER/'"$CC"'/'`
       git clone https://github.com/nCine/nCine-artifacts.git
@@ -625,8 +622,7 @@ jobs:
 
       if ($env:Compiler -ne "mingw64")
       {
-        # `develop` branch of ncParticleEditor needs nCine `develop` branch
-        $env:NCINE_BRANCH = $env:NCINE_BRANCH -replace "BRANCHNAME","develop" -replace "OS","windows" -replace "COMPILER",$env:vsversion
+        $env:NCINE_BRANCH = $env:NCINE_BRANCH -replace "BRANCHNAME","master" -replace "OS","windows" -replace "COMPILER",$env:vsversion
         git checkout $env:NCINE_BRANCH
         $env:NCINE_FILE = Get-ChildItem -Path $(pwd) -Filter *.zip -Name -File | Select-Object -First 1
         7z x $env:NCINE_FILE
@@ -634,8 +630,7 @@ jobs:
       }
       else
       {
-        # `develop` branch of ncParticleEditor needs nCine `develop` branch
-        $env:NCINE_BRANCH = $env:NCINE_BRANCH -replace "BRANCHNAME","develop" -replace "OS","mingw64" -replace "COMPILER",$env:CC
+        $env:NCINE_BRANCH = $env:NCINE_BRANCH -replace "BRANCHNAME","master" -replace "OS","mingw64" -replace "COMPILER",$env:CC
         git checkout $env:NCINE_BRANCH
         $env:NCINE_FILE = Get-ChildItem -Path $(pwd) -Name -File | Select-Object -First 1
         7z x $env:NCINE_FILE
