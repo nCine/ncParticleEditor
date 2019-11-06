@@ -7,6 +7,10 @@
 #include <ncine/LuaColorUtils.h>
 #include <ncine/IFile.h>
 
+#ifdef __EMSCRIPTEN__
+	#include <ncine/EmscriptenLocalFile.h>
+#endif
+
 ///////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 ///////////////////////////////////////////////////////////
@@ -189,9 +193,24 @@ void LuaLoader::sanitizeGuiStyle()
 }
 
 bool LuaLoader::loadConfig(const char *filename)
+#ifdef __EMSCRIPTEN__
+{
+	return loadConfig(filename, nullptr);
+}
+
+bool LuaLoader::loadConfig(const char *filename, const nc::EmscriptenLocalFile *localFile)
+#endif
 {
 	createNewState();
+#ifndef __EMSCRIPTEN__
 	if (luaState_->run(filename) == false)
+#else
+	const bool loaded = (localFile != nullptr)
+	                        ? luaState_->runFromMemory(localFile->data(), localFile->size(), localFile->filename())
+	                        : luaState_->run(filename);
+
+	if (loaded == false)
+#endif
 		return false;
 	lua_State *L = luaState_->state();
 
@@ -354,18 +373,39 @@ bool LuaLoader::saveConfig(const char *filename)
 	amount--;
 	indent(file, amount).append("}\n");
 
+#ifndef __EMSCRIPTEN__
 	nctl::UniquePtr<nc::IFile> fileHandle = nc::IFile::createFileHandle(filename);
 	fileHandle->open(nc::IFile::OpenMode::WRITE | nc::IFile::OpenMode::BINARY);
 	fileHandle->write(file.data(), file.length());
 	fileHandle->close();
+#else
+	nc::EmscriptenLocalFile localFileSave;
+	localFileSave.write(file.data(), file.length());
+	localFileSave.save(filename);
+#endif
 
 	return true;
 }
 
 bool LuaLoader::load(const char *filename, State &state)
+#ifdef __EMSCRIPTEN__
+{
+	return load(filename, state, nullptr);
+}
+
+bool LuaLoader::load(const char *filename, State &state, const nc::EmscriptenLocalFile *localFile)
+#endif
 {
 	createNewState();
+#ifndef __EMSCRIPTEN__
 	if (luaState_->run(filename) == false)
+#else
+	const bool loaded = (localFile != nullptr)
+	                        ? luaState_->runFromMemory(localFile->data(), localFile->size(), localFile->filename())
+	                        : luaState_->run(filename);
+
+	if (loaded == false)
+#endif
 		return false;
 	lua_State *L = luaState_->state();
 
@@ -714,10 +754,16 @@ void LuaLoader::save(const char *filename, const State &state)
 	amount--;
 	indent(file, amount).append("}\n");
 
+#ifndef __EMSCRIPTEN__
 	nctl::UniquePtr<nc::IFile> fileHandle = nc::IFile::createFileHandle(filename);
 	fileHandle->open(nc::IFile::OpenMode::WRITE | nc::IFile::OpenMode::BINARY);
 	fileHandle->write(file.data(), file.length());
 	fileHandle->close();
+#else
+	nc::EmscriptenLocalFile localFileSave;
+	localFileSave.write(file.data(), file.length());
+	localFileSave.save(filename);
+#endif
 }
 
 ///////////////////////////////////////////////////////////

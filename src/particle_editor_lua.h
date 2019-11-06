@@ -13,6 +13,10 @@
 #include <ncine/ParticleInitializer.h>
 #include <ncine/LuaStateManager.h>
 
+#ifdef __EMSCRIPTEN__
+	#include <ncine/EmscriptenLocalFile.h>
+#endif
+
 namespace ncine {
 
 class Texture;
@@ -146,14 +150,25 @@ class LuaLoader
 #endif
 	};
 
+#ifdef __EMSCRIPTEN__
+	nc::EmscriptenLocalFile localFileLoad;
+	nc::EmscriptenLocalFile localFileLoadConfig;
+#endif
+
 	inline const Config &config() const { return config_; }
 	inline Config &config() { return config_; }
 	void sanitizeInitValues();
 	void sanitizeGuiLimits();
 	void sanitizeGuiStyle();
 	bool loadConfig(const char *filename);
+#ifdef __EMSCRIPTEN__
+	bool loadConfig(const char *filename, const nc::EmscriptenLocalFile *localFile);
+#endif
 	bool saveConfig(const char *filename);
 	bool load(const char *filename, State &state);
+#ifdef __EMSCRIPTEN__
+	bool load(const char *filename, State &state, const nc::EmscriptenLocalFile *localFile);
+#endif
 	void save(const char *filename, const State &state);
 
   private:

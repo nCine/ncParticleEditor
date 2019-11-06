@@ -13,6 +13,10 @@
 #include <ncine/ParticleInitializer.h>
 #include <ncine/TimeStamp.h>
 
+#ifdef __EMSCRIPTEN__
+	#include <ncine/EmscriptenLocalFile.h>
+#endif
+
 namespace ncine {
 
 class Sprite;
@@ -174,6 +178,9 @@ class MyEventHandler :
 	void killParticles();
 
 	bool load(const char *filename);
+#ifdef __EMSCRIPTEN__
+	bool load(const char *filename, const nc::EmscriptenLocalFile *localFile);
+#endif
 	void save(const char *filename);
 	void pushRecentFile(const nctl::String &filename);
 

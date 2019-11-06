@@ -70,7 +70,12 @@ void MyEventHandler::menuNew()
 
 void MyEventHandler::menuOpen()
 {
+#ifndef __EMSCRIPTEN__
 	openModal = true;
+#else
+	if (loader_->localFileLoad.isLoading() == false)
+		loader_->localFileLoad.load(".lua");
+#endif
 }
 
 bool MyEventHandler::menuSaveEnabled()
@@ -81,9 +86,13 @@ bool MyEventHandler::menuSaveEnabled()
 
 void MyEventHandler::menuSave()
 {
+#ifndef __EMSCRIPTEN__
 	const LuaLoader::Config &luaConfig = loader_->config();
 	nctl::String filePath = joinPath(luaConfig.scriptsPath, filename_);
 	save(filePath.data());
+#else
+	save(filename_.data());
+#endif
 }
 
 void MyEventHandler::menuQuit()
@@ -300,6 +309,7 @@ void MyEventHandler::createGuiPopups()
 		if (ImGui::InputText("", filename_.data(), MaxStringLength, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackResize,
 		                     inputTextCallback, &filename_) || ImGui::Button("OK"))
 		{
+#ifndef __EMSCRIPTEN__
 			const LuaLoader::Config &luaConfig = loader_->config();
 			nctl::String filePath = joinPath(luaConfig.scriptsPath, filename_);
 			if (nc::IFile::access(filePath.data(), nc::IFile::AccessMode::READABLE) && allowOverwrite == false)
@@ -313,14 +323,20 @@ void MyEventHandler::createGuiPopups()
 				pushRecentFile(filename_);
 				requestCloseModal = true;
 			}
+#else
+			save(filename_.data());
+			requestCloseModal = true;
+#endif
 		}
 		ImGui::SetItemDefaultFocus();
 
 		ImGui::SameLine();
 		if (ImGui::Button("Cancel"))
 			requestCloseModal = true;
+#ifndef __EMSCRIPTEN__
 		ImGui::SameLine();
 		ImGui::Checkbox("Allow Overwrite", &allowOverwrite);
+#endif
 
 		if (requestCloseModal)
 		{
@@ -1674,8 +1690,13 @@ void MyEventHandler::createGuiConfigWindow()
 		ImGui::NewLine();
 		if (ImGui::Button("Load"))
 		{
+#ifndef __EMSCRIPTEN__
 			loader_->loadConfig(configFile_.data());
 			logString_.formatAppend("Loaded config file \"%s\"\n", configFile_.data());
+#else
+			if (loader_->localFileLoadConfig.isLoading() == false)
+				loader_->localFileLoadConfig.load(".lua");
+#endif
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Save"))
@@ -1683,6 +1704,14 @@ void MyEventHandler::createGuiConfigWindow()
 			loader_->saveConfig(configFile_.data());
 			logString_.formatAppend("Saved config file \"%s\"\n", configFile_.data());
 		}
+#ifdef __EMSCRIPTEN__
+		ImGui::SameLine();
+		if (ImGui::Button("Reset"))
+		{
+			loader_->loadConfig(configFile_.data());
+			logString_.formatAppend("Loaded config file \"%s\"\n", configFile_.data());
+		}
+#endif
 
 		ImGui::End();
 	}

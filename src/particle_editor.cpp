@@ -131,6 +131,20 @@ void MyEventHandler::onInit()
 	autoEmission_ = luaConfig.autoEmissionOnStart;
 
 	configureGui();
+
+#ifdef __EMSCRIPTEN__
+	loader_->localFileLoad.setLoadedCallback([](const nc::EmscriptenLocalFile &localFile, void *userData) {
+		MyEventHandler *eventHandler = reinterpret_cast<MyEventHandler *>(userData);
+		if (localFile.size() > 0)
+			eventHandler->load(localFile.filename(), &localFile);
+	}, this);
+
+	loader_->localFileLoadConfig.setLoadedCallback([](const nc::EmscriptenLocalFile &localFile, void *userData) {
+		LuaLoader *loader = reinterpret_cast<LuaLoader *>(userData);
+		if (localFile.size() > 0)
+			loader->loadConfig(localFile.filename(), &localFile);
+	}, loader_.get());
+#endif
 }
 
 void MyEventHandler::onFrameStart()
@@ -216,9 +230,20 @@ void MyEventHandler::killParticles()
 }
 
 bool MyEventHandler::load(const char *filename)
+#ifdef __EMSCRIPTEN__
+{
+	return load(filename, nullptr);
+}
+
+bool MyEventHandler::load(const char *filename, const nc::EmscriptenLocalFile *localFile)
+#endif
 {
 	LuaLoader::State loaderState;
+#ifndef __EMSCRIPTEN__
 	if (loader_->load(filename, loaderState) == false)
+#else
+	if (loader_->load(filename, loaderState, localFile) == false)
+#endif
 	{
 		logString_.formatAppend("Could not load project file \"%s\"\n", filename);
 		return false;
