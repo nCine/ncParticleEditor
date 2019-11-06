@@ -122,7 +122,11 @@ void MyEventHandler::onInit()
 	{
 		const nctl::String startupScript = luaConfig.scriptsPath + luaConfig.startupScriptName;
 		if (nc::IFile::access(startupScript.data(), nc::IFile::AccessMode::READABLE))
+		{
 			load(startupScript.data());
+			filename_ = luaConfig.startupScriptName;
+			pushRecentFile(filename_);
+		}
 	}
 	autoEmission_ = luaConfig.autoEmissionOnStart;
 

@@ -11,6 +11,8 @@
 
 #include "version.h"
 #include <ncine/version.h>
+#include "texture_strings.h"
+#include "script_strings.h"
 
 namespace {
 
@@ -162,6 +164,34 @@ void MyEventHandler::createGuiMenus()
 						break;
 					}
 					i = (i + 1) % MaxRecentFiles;
+				}
+
+				ImGui::Separator();
+				if (ImGui::MenuItem("Clear recents"))
+				{
+					recentFileIndexStart_ = 0;
+					recentFileIndexEnd_ = 0;
+					recentFilenames_.clear();
+				}
+
+				ImGui::EndMenu();
+			}
+
+			const bool openBundledEnabled = ScriptStrings::Count > 0;
+			if (ImGui::BeginMenu("Open Bundled", openBundledEnabled))
+			{
+				for (unsigned int i = 0; i < ScriptStrings::Count; i++)
+				{
+					if (ImGui::MenuItem(ScriptStrings::Names[i]))
+					{
+						const LuaLoader::Config &luaConfig = loader_->config();
+						nctl::String filePath = joinPath(luaConfig.scriptsPath, ScriptStrings::Names[i]);
+						if (load(filePath.data()))
+						{
+							filename_ = ScriptStrings::Names[i];
+							pushRecentFile(filename_);
+						}
+					}
 				}
 				ImGui::EndMenu();
 			}
@@ -321,7 +351,7 @@ void MyEventHandler::createGuiBackground()
 		ImGui::InputText("Image to load", backgroundImageName_.data(), MaxStringLength,
 		                 ImGuiInputTextFlags_CallbackResize, inputTextCallback, &backgroundImageName_);
 
-		if (ImGui::Button("New"))
+		if (ImGui::Button("Load") && backgroundImageName_.isEmpty() == false)
 		{
 			if (loadBackgroundImage(backgroundImageName_))
 				backgroundImageRect_ = backgroundTexture_->rect();
@@ -369,9 +399,15 @@ void MyEventHandler::createGuiTextures()
 	ImGui::PushID("Textures");
 	if (ImGui::CollapsingHeader(widgetName_.data()))
 	{
-		ImGui::InputText("File to load", texFilename_.data(), MaxStringLength,
+		if (TextureStrings::Count > 0)
+		{
+			static int currentComboTexture = 0;
+			if (ImGui::Combo("Bundled textures", &currentComboTexture, TextureStrings::Names, TextureStrings::Count))
+				texFilename_ = TextureStrings::Names[currentComboTexture];
+		}
+		ImGui::InputText("Image to load", texFilename_.data(), MaxStringLength,
 		                 ImGuiInputTextFlags_CallbackResize, inputTextCallback, &texFilename_);
-		if (ImGui::Button("New"))
+		if (ImGui::Button("Load") && texFilename_.isEmpty() == false)
 		{
 			texIndex_ = textures_.size();
 			texStates_[texIndex_].name = texFilename_;
@@ -479,7 +515,12 @@ void MyEventHandler::createGuiManageSystems()
 {
 	widgetName_.format("Manage Systems");
 	if (particleSystems_.isEmpty() == false)
-		widgetName_.formatAppend(" (%s: #%u of %u)", sysStates_[systemIndex_].name.data(), systemIndex_, particleSystems_.size());
+	{
+		if (sysStates_[systemIndex_].name.isEmpty() == false)
+			widgetName_.formatAppend(" (%s: #%u of %u)", sysStates_[systemIndex_].name.data(), systemIndex_, particleSystems_.size());
+		else
+			widgetName_.formatAppend(" (#%u of %u)", systemIndex_, particleSystems_.size());
+	}
 	widgetName_.append("###ManageSystems");
 	ImGui::PushID("ManageSystems");
 	if (ImGui::CollapsingHeader(widgetName_.data()))
@@ -540,7 +581,8 @@ void MyEventHandler::createGuiParticleSystem()
 	ParticleSystemGuiState &s = sysStates_[systemIndex_];
 
 	ImGui::PushID("ParticleSystem");
-	if (ImGui::CollapsingHeader("Particle System"))
+	widgetName_.format("Particle System (%d particles)", s.numParticles);
+	if (ImGui::CollapsingHeader(widgetName_.data()))
 	{
 		ImGui::SliderInt("Particles", &s.numParticles, 1, cfg.maxNumParticles);
 		ImGui::SameLine();
