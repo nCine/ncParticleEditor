@@ -9,10 +9,18 @@ set(PACKAGE_REVERSE_DNS "io.github.ncine.ncparticleeditor")
 set(PACKAGE_SOURCES
 	src/particle_editor.h
 	src/particle_editor.cpp
+	src/particle_editor_gui_labels.h
 	src/particle_editor_gui.cpp
 	src/particle_editor_lua.h
 	src/particle_editor_lua.cpp
 )
+
+function(callback_before_target)
+	option(CUSTOM_WITH_FONTAWESOME "Download FontAwesome and include it in ImGui atlas" OFF)
+	if(PACKAGE_OPTIONS_PRESETS STREQUAL BinDist)
+		set(CUSTOM_WITH_FONTAWESOME ON CACHE BOOL "Download FontAwesome and include it in ImGui atlas" FORCE)
+	endif()
+endfunction()
 
 function(callback_after_target)
 	if(MSVC)
@@ -22,6 +30,9 @@ function(callback_after_target)
 
 	generate_textures_list()
 	generate_scripts_list()
+
+	include(custom_fontawesome)
+	include(custom_iconfontcppheaders)
 endfunction()
 
 function(generate_textures_list)

@@ -2,6 +2,7 @@
 #include <ncine/imgui.h>
 
 #include "particle_editor.h"
+#include "particle_editor_gui_labels.h"
 #include "particle_editor_lua.h"
 #include <ncine/Application.h>
 #include <ncine/Texture.h>
@@ -31,7 +32,7 @@ static bool allowOverwrite = false;
 
 void showHelpMarker(const char *description)
 {
-	ImGui::TextDisabled("(?)");
+	ImGui::TextDisabled("%s", Labels::HELP_MARKER);
 	if (ImGui::IsItemHovered())
 	{
 		ImGui::BeginTooltip();
@@ -110,6 +111,15 @@ void MyEventHandler::configureGui()
 {
 	ImGuiIO &io = ImGui::GetIO();
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+
+#ifdef WITH_FONTAWESOME
+	// Merge icons from Font Awesome into the default font
+	static const ImWchar icons_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
+	ImFontConfig icons_config;
+	icons_config.MergeMode = true;
+	icons_config.PixelSnapH = true;
+	io.Fonts->AddFontFromFileTTF((nc::IFile::dataPath() + "fonts/" FONT_ICON_FILE_NAME_FAS).data(), 12.0f, &icons_config, icons_ranges);
+#endif
 }
 
 void MyEventHandler::createGuiMainWindow()
@@ -152,14 +162,14 @@ void MyEventHandler::createGuiMenus()
 	{
 		if (ImGui::BeginMenu("File"))
 		{
-			if (ImGui::MenuItem("New", "CTRL + N", false, menuNewEnabled()))
+			if (ImGui::MenuItem(Labels::New, "CTRL + N", false, menuNewEnabled()))
 				menuNew();
 
-			if (ImGui::MenuItem("Open...", "CTRL + O"))
+			if (ImGui::MenuItem(Labels::Open, "CTRL + O"))
 				menuOpen();
 
 			const bool openRecentEnabled = recentFilenames_.size() > 0;
-			if (ImGui::BeginMenu("Open Recent", openRecentEnabled))
+			if (ImGui::BeginMenu(Labels::OpenRecent, openRecentEnabled))
 			{
 				int i = recentFileIndexStart_;
 				while (i != recentFileIndexEnd_)
@@ -176,7 +186,7 @@ void MyEventHandler::createGuiMenus()
 				}
 
 				ImGui::Separator();
-				if (ImGui::MenuItem("Clear recents"))
+				if (ImGui::MenuItem(Labels::ClearRecents))
 				{
 					recentFileIndexStart_ = 0;
 					recentFileIndexEnd_ = 0;
@@ -187,7 +197,7 @@ void MyEventHandler::createGuiMenus()
 			}
 
 			const bool openBundledEnabled = ScriptStrings::Count > 0;
-			if (ImGui::BeginMenu("Open Bundled", openBundledEnabled))
+			if (ImGui::BeginMenu(Labels::OpenBundled, openBundledEnabled))
 			{
 				for (unsigned int i = 0; i < ScriptStrings::Count; i++)
 				{
@@ -205,16 +215,16 @@ void MyEventHandler::createGuiMenus()
 				ImGui::EndMenu();
 			}
 
-			if (ImGui::MenuItem("Save", "CTRL + S", false, menuSaveEnabled()))
+			if (ImGui::MenuItem(Labels::Save, "CTRL + S", false, menuSaveEnabled()))
 				menuSave();
 
 			const bool saveAsEnabled = (particleSystems_.isEmpty() == false);
-			if (ImGui::MenuItem("Save as...", nullptr, false, saveAsEnabled))
+			if (ImGui::MenuItem(Labels::SaveAs, nullptr, false, saveAsEnabled))
 				saveAsModal = true;
 
 			ImGui::Separator();
 
-			if (ImGui::MenuItem("Quit", "CTRL + Q"))
+			if (ImGui::MenuItem(Labels::Quit, "CTRL + Q"))
 				menuQuit();
 
 			ImGui::EndMenu();
@@ -222,15 +232,15 @@ void MyEventHandler::createGuiMenus()
 
 		if (ImGui::BeginMenu("View"))
 		{
-			ImGui::MenuItem("Main", "CTRL + 1", &showMainWindow_);
-			ImGui::MenuItem("Config", "CTRL + 2", &showConfigWindow_);
-			ImGui::MenuItem("Log", "CTRL + 3", &showLogWindow_);
+			ImGui::MenuItem(Labels::Main, "CTRL + 1", &showMainWindow_);
+			ImGui::MenuItem(Labels::Config, "CTRL + 2", &showConfigWindow_);
+			ImGui::MenuItem(Labels::Log, "CTRL + 3", &showLogWindow_);
 			ImGui::EndMenu();
 		}
 
 		if (ImGui::BeginMenu("?"))
 		{
-			if (ImGui::MenuItem("About"))
+			if (ImGui::MenuItem(Labels::About))
 				showAboutWindow = true;
 
 			ImGui::EndMenu();
@@ -268,7 +278,7 @@ void MyEventHandler::createGuiPopups()
 		if (!ImGui::IsAnyItemActive())
 			ImGui::SetKeyboardFocusHere();
 		if (ImGui::InputText("", filename_.data(), MaxStringLength, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackResize,
-		                     inputTextCallback, &filename_) || ImGui::Button("OK"))
+		                     inputTextCallback, &filename_) || ImGui::Button(Labels::Ok))
 		{
 			const LuaLoader::Config &luaConfig = loader_->config();
 			nctl::String filePath = joinPath(luaConfig.scriptsPath, filename_);
@@ -279,14 +289,14 @@ void MyEventHandler::createGuiPopups()
 			}
 			else
 			{
-				filename_ = "Loading error";
+				filename_ = Labels::LoadingError;
 				logString_.formatAppend("Could not load project file \"%s\"\n", filePath.data());
 			}
 		}
 		ImGui::SetItemDefaultFocus();
 
 		ImGui::SameLine();
-		if (ImGui::Button("Cancel"))
+		if (ImGui::Button(Labels::Cancel))
 			requestCloseModal = true;
 
 		if (requestCloseModal)
@@ -307,14 +317,14 @@ void MyEventHandler::createGuiPopups()
 		if (!ImGui::IsAnyItemActive())
 			ImGui::SetKeyboardFocusHere();
 		if (ImGui::InputText("", filename_.data(), MaxStringLength, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackResize,
-		                     inputTextCallback, &filename_) || ImGui::Button("OK"))
+		                     inputTextCallback, &filename_) || ImGui::Button(Labels::Ok))
 		{
 #ifndef __EMSCRIPTEN__
 			const LuaLoader::Config &luaConfig = loader_->config();
 			nctl::String filePath = joinPath(luaConfig.scriptsPath, filename_);
 			if (nc::IFile::access(filePath.data(), nc::IFile::AccessMode::READABLE) && allowOverwrite == false)
 			{
-				filename_ = "File exists!";
+				filename_ = Labels::FileExists;
 				logString_.formatAppend("Could not overwrite existing file \"%s\"\n", filePath.data());
 			}
 			else
@@ -331,7 +341,7 @@ void MyEventHandler::createGuiPopups()
 		ImGui::SetItemDefaultFocus();
 
 		ImGui::SameLine();
-		if (ImGui::Button("Cancel"))
+		if (ImGui::Button(Labels::Cancel))
 			requestCloseModal = true;
 #ifndef __EMSCRIPTEN__
 		ImGui::SameLine();
@@ -353,7 +363,7 @@ void MyEventHandler::createGuiBackground()
 {
 	const LuaLoader::Config &cfg = loader_->config();
 
-	widgetName_.format("Background");
+	widgetName_.format(Labels::Background);
 	if (backgroundTexture_)
 		widgetName_.formatAppend(" (%s)", backgroundImageName_.data());
 	widgetName_.append("###Background");
@@ -367,15 +377,15 @@ void MyEventHandler::createGuiBackground()
 		ImGui::InputText("Image to load", backgroundImageName_.data(), MaxStringLength,
 		                 ImGuiInputTextFlags_CallbackResize, inputTextCallback, &backgroundImageName_);
 
-		if (ImGui::Button("Load") && backgroundImageName_.isEmpty() == false)
+		if (ImGui::Button(Labels::Load) && backgroundImageName_.isEmpty() == false)
 		{
 			if (loadBackgroundImage(backgroundImageName_))
 				backgroundImageRect_ = backgroundTexture_->rect();
 			else
-				backgroundImageName_ = "Loading error";
+				backgroundImageName_ = Labels::LoadingError;
 		}
 		ImGui::SameLine();
-		if (ImGui::Button("Delete"))
+		if (ImGui::Button(Labels::Delete))
 			deleteBackgroundImage();
 
 		if (backgroundTexture_)
@@ -397,7 +407,8 @@ void MyEventHandler::createGuiBackground()
 			backgroundImageRect_.y = minY;
 			backgroundImageRect_.h = maxY - minY;
 			ImGui::SameLine();
-			if (ImGui::Button("Reset##Rect"))
+			widgetName_.format("%s##Rect", Labels::Reset);
+			if (ImGui::Button(widgetName_.data()))
 				backgroundImageRect_ = nc::Recti(0, 0, backgroundTexture_->width(), backgroundTexture_->height());
 
 			applyBackgroundImageProperties();
@@ -408,7 +419,7 @@ void MyEventHandler::createGuiBackground()
 
 void MyEventHandler::createGuiTextures()
 {
-	widgetName_.format("Textures");
+	widgetName_.format(Labels::Textures);
 	if (textures_.isEmpty() == false)
 		widgetName_.formatAppend(" (%s: #%u of %u)", texStates_[texIndex_].name.data(), texIndex_, textures_.size());
 	widgetName_.append("###Textures");
@@ -423,7 +434,7 @@ void MyEventHandler::createGuiTextures()
 		}
 		ImGui::InputText("Image to load", texFilename_.data(), MaxStringLength,
 		                 ImGuiInputTextFlags_CallbackResize, inputTextCallback, &texFilename_);
-		if (ImGui::Button("Load") && texFilename_.isEmpty() == false)
+		if (ImGui::Button(Labels::Load) && texFilename_.isEmpty() == false)
 		{
 			texIndex_ = textures_.size();
 			texStates_[texIndex_].name = texFilename_;
@@ -431,7 +442,7 @@ void MyEventHandler::createGuiTextures()
 			if (createTexture(texIndex_) == false)
 			{
 				texIndex_ = textures_.size() - 1;
-				texFilename_ = "Loading error";
+				texFilename_ = Labels::LoadingError;
 			}
 			else
 			{
@@ -440,7 +451,7 @@ void MyEventHandler::createGuiTextures()
 			}
 		}
 		ImGui::SameLine();
-		if (ImGui::Button("Delete") && textures_.size() > 0 && texIndex_ < textures_.size())
+		if (ImGui::Button(Labels::Delete) && textures_.size() > 0 && texIndex_ < textures_.size())
 		{
 			// Check if the texture is in use by some system
 			bool canDelete = true;
@@ -472,7 +483,7 @@ void MyEventHandler::createGuiTextures()
 		if (textures_.size() > 0)
 		{
 			ImGui::SameLine();
-			if (ImGui::Button("Assign") && particleSystems_.isEmpty() == false)
+			if (ImGui::Button(Labels::Assign) && particleSystems_.isEmpty() == false)
 			{
 				sysStates_[systemIndex_].texture = textures_[texIndex_].get();
 				sysStates_[systemIndex_].texRect = texStates_[texIndex_].texRect;
@@ -482,7 +493,7 @@ void MyEventHandler::createGuiTextures()
 			ImGui::SameLine();
 			showHelpMarker("Also applies current texture rectangle");
 			ImGui::SameLine();
-			if (ImGui::Button("Retrieve") && particleSystems_.isEmpty() == false)
+			if (ImGui::Button(Labels::Retrieve) && particleSystems_.isEmpty() == false)
 			{
 				texIndex_ = retrieveTexture(systemIndex_);
 				texStates_[texIndex_].texRect = sysStates_[systemIndex_].texRect;
@@ -515,7 +526,8 @@ void MyEventHandler::createGuiTextures()
 			t.texRect.y = minY;
 			t.texRect.h = maxY - minY;
 			ImGui::SameLine();
-			if (ImGui::Button("Reset##Rect"))
+			widgetName_.format("%s##Rect", Labels::Reset);
+			if (ImGui::Button(widgetName_.data()))
 				t.texRect = nc::Recti(0, 0, tex.width(), tex.height());
 
 			ImGui::Text("Name: %s", texStates_[texIndex_].name.data());
@@ -529,7 +541,7 @@ void MyEventHandler::createGuiTextures()
 
 void MyEventHandler::createGuiManageSystems()
 {
-	widgetName_.format("Manage Systems");
+	widgetName_.format(Labels::ManageSystems);
 	if (particleSystems_.isEmpty() == false)
 	{
 		if (sysStates_[systemIndex_].name.isEmpty() == false)
@@ -541,7 +553,7 @@ void MyEventHandler::createGuiManageSystems()
 	ImGui::PushID("ManageSystems");
 	if (ImGui::CollapsingHeader(widgetName_.data()))
 	{
-		if (ImGui::Button("New"))
+		if (ImGui::Button(Labels::New))
 		{
 			if (textures_.isEmpty() == false)
 			{
@@ -552,14 +564,14 @@ void MyEventHandler::createGuiManageSystems()
 		}
 
 		ImGui::SameLine();
-		if (ImGui::Button("Delete") && particleSystems_.size() > 0 && systemIndex_ < particleSystems_.size())
+		if (ImGui::Button(Labels::Delete) && particleSystems_.size() > 0 && systemIndex_ < particleSystems_.size())
 		{
 			destroyParticleSystem(systemIndex_);
 			systemIndex_--;
 		}
 
 		ImGui::SameLine();
-		if (ImGui::Button("Clone") && particleSystems_.size() > 0 && systemIndex_ < particleSystems_.size())
+		if (ImGui::Button(Labels::Clone) && particleSystems_.size() > 0 && systemIndex_ < particleSystems_.size())
 		{
 			int srcSystemIndex = systemIndex_;
 			systemIndex_ = particleSystems_.size();
@@ -597,13 +609,13 @@ void MyEventHandler::createGuiParticleSystem()
 	nc::ParticleSystem *particleSystem = particleSystems_[systemIndex_].get();
 	ParticleSystemGuiState &s = sysStates_[systemIndex_];
 
-	widgetName_.format("Particle System (%d particles)###ParticleSystem", s.numParticles);
+	widgetName_.format("%s (%d particles)###ParticleSystem", Labels::ParticleSystem, s.numParticles);
 	ImGui::PushID("ParticleSystem");
 	if (ImGui::CollapsingHeader(widgetName_.data()))
 	{
 		ImGui::SliderInt("Particles", &s.numParticles, 1, cfg.maxNumParticles);
 		ImGui::SameLine();
-		if (ImGui::Button("Apply") && s.numParticles != particleSystem->numParticles())
+		if (ImGui::Button(Labels::Apply) && s.numParticles != particleSystem->numParticles())
 		{
 			unsigned int tempSystemIndex = particleSystems_.size();
 			cloneParticleSystem(systemIndex_, tempSystemIndex, 1);
@@ -616,7 +628,7 @@ void MyEventHandler::createGuiParticleSystem()
 
 		ImGui::SliderFloat("Rel Pos X", &s.position.x, -cfg.systemPositionRange, cfg.systemPositionRange);
 		ImGui::SameLine();
-		if (ImGui::Button("Reset"))
+		if (ImGui::Button(Labels::Reset))
 			s.position.set(0.0f, 0.0f);
 		ImGui::SliderFloat("Rel Pos Y", &s.position.y, -cfg.systemPositionRange, cfg.systemPositionRange);
 		particleSystem->setPosition(s.position);
@@ -633,7 +645,7 @@ void MyEventHandler::createGuiColorAffector()
 	nc::ParticleSystem *particleSystem = particleSystems_[systemIndex_].get();
 	ParticleSystemGuiState &s = sysStates_[systemIndex_];
 
-	widgetName_.format("Color Affector");
+	widgetName_.format(Labels::ColorAffector);
 	if (s.colorAffector->steps().isEmpty() == false)
 		widgetName_.formatAppend(" (%u steps)", s.colorAffector->steps().size());
 	widgetName_.append("###ColorAffector");
@@ -673,7 +685,7 @@ void MyEventHandler::createGuiColorAffector()
 			widgetName_.format("Age##%d", stepId);
 			ImGui::SliderFloat(widgetName_.data(), &s.colorAge, 0.0f, 1.0f);
 
-			if (ImGui::Button("Add"))
+			if (ImGui::Button(Labels::Add))
 			{
 				for (int i = static_cast<int>(s.colorAffector->steps().size()) - 1; i >= -1; i--)
 				{
@@ -689,10 +701,10 @@ void MyEventHandler::createGuiColorAffector()
 				}
 			}
 			ImGui::SameLine();
-			if (ImGui::Button("Remove") && s.colorAffector->steps().size() > 0)
+			if (ImGui::Button(Labels::Remove) && s.colorAffector->steps().size() > 0)
 				s.colorAffector->steps().setSize(s.colorAffector->steps().size() - 1);
 			ImGui::SameLine();
-			if (ImGui::Button("Remove All") && s.colorAffector->steps().size() > 0)
+			if (ImGui::Button(Labels::RemoveAll) && s.colorAffector->steps().size() > 0)
 				s.colorAffector->steps().clear();
 			ImGui::TreePop();
 		}
@@ -755,7 +767,7 @@ void MyEventHandler::createGuiSizeAffector()
 	nc::ParticleSystem *particleSystem = particleSystems_[systemIndex_].get();
 	ParticleSystemGuiState &s = sysStates_[systemIndex_];
 
-	widgetName_.format("Size Affector");
+	widgetName_.format(Labels::SizeAffector);
 	if (s.sizeAffector->steps().isEmpty() == false)
 		widgetName_.formatAppend(" (%u steps)", s.sizeAffector->steps().size());
 	widgetName_.append("###SizeAffector");
@@ -806,7 +818,7 @@ void MyEventHandler::createGuiSizeAffector()
 			widgetName_.format("Age##%d", stepId);
 			ImGui::SliderFloat(widgetName_.data(), &s.sizeAge, 0.0f, 1.0f);
 
-			if (ImGui::Button("Add"))
+			if (ImGui::Button(Labels::Add))
 			{
 				for (int i = static_cast<int>(s.sizeAffector->steps().size()) - 1; i >= -1; i--)
 				{
@@ -822,10 +834,10 @@ void MyEventHandler::createGuiSizeAffector()
 				}
 			}
 			ImGui::SameLine();
-			if (ImGui::Button("Remove") && s.sizeAffector->steps().size() > 0)
+			if (ImGui::Button(Labels::Remove) && s.sizeAffector->steps().size() > 0)
 				s.sizeAffector->steps().setSize(s.sizeAffector->steps().size() - 1);
 			ImGui::SameLine();
-			if (ImGui::Button("Remove All") && s.sizeAffector->steps().size() > 0)
+			if (ImGui::Button(Labels::RemoveAll) && s.sizeAffector->steps().size() > 0)
 				s.sizeAffector->steps().clear();
 			ImGui::TreePop();
 		}
@@ -867,7 +879,7 @@ void MyEventHandler::createGuiRotationAffector()
 	nc::ParticleSystem *particleSystem = particleSystems_[systemIndex_].get();
 	ParticleSystemGuiState &s = sysStates_[systemIndex_];
 
-	widgetName_.format("Rotation Affector");
+	widgetName_.format(Labels::RotationAffector);
 	if (s.rotationAffector->steps().isEmpty() == false)
 		widgetName_.formatAppend(" (%u steps)", s.rotationAffector->steps().size());
 	widgetName_.append("###RotationAffector");
@@ -911,7 +923,7 @@ void MyEventHandler::createGuiRotationAffector()
 			widgetName_.format("Age##%d", stepId);
 			ImGui::SliderFloat(widgetName_.data(), &s.rotAge, 0.0f, 1.0f);
 
-			if (ImGui::Button("Add"))
+			if (ImGui::Button(Labels::Add))
 			{
 				for (int i = static_cast<int>(s.rotationAffector->steps().size()) - 1; i >= -1; i--)
 				{
@@ -927,10 +939,10 @@ void MyEventHandler::createGuiRotationAffector()
 				}
 			}
 			ImGui::SameLine();
-			if (ImGui::Button("Remove") && s.rotationAffector->steps().size() > 0)
+			if (ImGui::Button(Labels::Remove) && s.rotationAffector->steps().size() > 0)
 				s.rotationAffector->steps().setSize(s.rotationAffector->steps().size() - 1);
 			ImGui::SameLine();
-			if (ImGui::Button("Remove All") && s.rotationAffector->steps().size() > 0)
+			if (ImGui::Button(Labels::RemoveAll) && s.rotationAffector->steps().size() > 0)
 				s.rotationAffector->steps().clear();
 			ImGui::TreePop();
 		}
@@ -971,7 +983,7 @@ void MyEventHandler::createGuiPositionAffector()
 	const LuaLoader::Config &cfg = loader_->config();
 	ParticleSystemGuiState &s = sysStates_[systemIndex_];
 
-	widgetName_.format("Position Affector");
+	widgetName_.format(Labels::PositionAffector);
 	if (s.positionAffector->steps().isEmpty() == false)
 		widgetName_.formatAppend(" (%u steps)", s.positionAffector->steps().size());
 	widgetName_.append("###PositionAffector");
@@ -1019,7 +1031,7 @@ void MyEventHandler::createGuiPositionAffector()
 			widgetName_.format("Age##%d", stepId);
 			ImGui::SliderFloat(widgetName_.data(), &s.positionAge, 0.0f, 1.0f);
 
-			if (ImGui::Button("Add"))
+			if (ImGui::Button(Labels::Add))
 			{
 				for (int i = static_cast<int>(s.positionAffector->steps().size()) - 1; i >= -1; i--)
 				{
@@ -1035,10 +1047,10 @@ void MyEventHandler::createGuiPositionAffector()
 				}
 			}
 			ImGui::SameLine();
-			if (ImGui::Button("Remove") && s.positionAffector->steps().size() > 0)
+			if (ImGui::Button(Labels::Remove) && s.positionAffector->steps().size() > 0)
 				s.positionAffector->steps().setSize(s.positionAffector->steps().size() - 1);
 			ImGui::SameLine();
-			if (ImGui::Button("Remove All") && s.positionAffector->steps().size() > 0)
+			if (ImGui::Button(Labels::RemoveAll) && s.positionAffector->steps().size() > 0)
 				s.positionAffector->steps().clear();
 			ImGui::TreePop();
 		}
@@ -1086,7 +1098,7 @@ void MyEventHandler::createGuiVelocityAffector()
 	nc::ParticleSystem *particleSystem = particleSystems_[systemIndex_].get();
 	ParticleSystemGuiState &s = sysStates_[systemIndex_];
 
-	widgetName_.format("Velocity Affector");
+	widgetName_.format(Labels::VelocityAffector);
 	if (s.velocityAffector->steps().isEmpty() == false)
 		widgetName_.formatAppend(" (%u steps)", s.velocityAffector->steps().size());
 	widgetName_.append("###VelocityAffector");
@@ -1134,7 +1146,7 @@ void MyEventHandler::createGuiVelocityAffector()
 			widgetName_.format("Age##%d", stepId);
 			ImGui::SliderFloat(widgetName_.data(), &s.velocityAge, 0.0f, 1.0f);
 
-			if (ImGui::Button("Add"))
+			if (ImGui::Button(Labels::Add))
 			{
 				for (int i = static_cast<int>(s.velocityAffector->steps().size()) - 1; i >= -1; i--)
 				{
@@ -1150,10 +1162,10 @@ void MyEventHandler::createGuiVelocityAffector()
 				}
 			}
 			ImGui::SameLine();
-			if (ImGui::Button("Remove") && s.velocityAffector->steps().size() > 0)
+			if (ImGui::Button(Labels::Remove) && s.velocityAffector->steps().size() > 0)
 				s.velocityAffector->steps().setSize(s.velocityAffector->steps().size() - 1);
 			ImGui::SameLine();
-			if (ImGui::Button("Remove All") && s.velocityAffector->steps().size() > 0)
+			if (ImGui::Button(Labels::RemoveAll) && s.velocityAffector->steps().size() > 0)
 				s.velocityAffector->steps().clear();
 			ImGui::TreePop();
 		}
@@ -1202,7 +1214,7 @@ void MyEventHandler::createGuiEmission()
 
 	const float columnWidth = ImGui::GetContentRegionAvail().x * 0.75f;
 	ImGui::PushID("Emission");
-	if (ImGui::CollapsingHeader("Emission"))
+	if (ImGui::CollapsingHeader(Labels::Emission))
 	{
 		ImGui::PushID("Amount");
 		const unsigned int numParticles = particleSystems_[systemIndex_]->numParticles();
@@ -1277,7 +1289,7 @@ void MyEventHandler::createGuiEmission()
 
 		ImGui::NextColumn();
 		ImGui::Combo("##PositionCombo", &s.positionCurrentItem, positionItems, IM_ARRAYSIZE(positionItems));
-		if (ImGui::Button("Reset"))
+		if (ImGui::Button(Labels::Reset))
 		{
 			s.init.rndPositionX.set(0.0f, 0.0f);
 			s.init.rndPositionY.set(0.0f, 0.0f);
@@ -1329,7 +1341,7 @@ void MyEventHandler::createGuiEmission()
 		}
 		ImGui::NextColumn();
 		ImGui::Combo("##VelocityCombo", &s.velocityCurrentItem, velocityItems, IM_ARRAYSIZE(velocityItems));
-		if (ImGui::Button("Reset"))
+		if (ImGui::Button(Labels::Reset))
 		{
 			scale.set(1.0f, 1.0f);
 			s.init.rndVelocityX.set(0.0f, 0.0f);
@@ -1374,10 +1386,10 @@ void MyEventHandler::createGuiEmission()
 
 	ImGui::Separator();
 	ImGui::PushID("Emit");
-	if (ImGui::Button("Emit"))
+	if (ImGui::Button(Labels::Emit))
 		emitParticles();
 	ImGui::SameLine();
-	if (ImGui::Button("Kill"))
+	if (ImGui::Button(Labels::Kill))
 		killParticles();
 	ImGui::SameLine();
 	ImGui::Checkbox("Auto", &autoEmission_);
@@ -1389,11 +1401,13 @@ void MyEventHandler::createGuiEmission()
 		{
 			for (unsigned int i = 0; i < particleSystems_.size(); i++)
 			{
-				widgetName_.format("Emit##%u", i);
+				widgetName_ = Labels::Emit;
+				widgetName_.formatAppend("##%u", i);
 				if (ImGui::Button(widgetName_.data()))
 					emitParticles(i);
 				ImGui::SameLine();
-				widgetName_.format("Kill##%u", i);
+				widgetName_ = Labels::Kill;
+				widgetName_.formatAppend("##%u", i);
 				if (ImGui::Button(widgetName_.data()))
 					killParticles(i);
 				ImGui::SameLine();
@@ -1573,7 +1587,7 @@ void MyEventHandler::createGuiConfigWindow()
 
 		ImGui::Checkbox("Fullscreen", &cfg.fullscreen);
 		ImGui::SameLine();
-		if (ImGui::Button("Apply"))
+		if (ImGui::Button(Labels::Apply))
 		{
 			nc::theApplication().gfxDevice().setFullScreen(cfg.fullscreen);
 			if (cfg.fullscreen == false)
@@ -1582,7 +1596,7 @@ void MyEventHandler::createGuiConfigWindow()
 				nc::theApplication().gfxDevice().setVideoMode(selectedVideoMode);
 		}
 		ImGui::SameLine();
-		if (ImGui::Button("Current"))
+		if (ImGui::Button(Labels::Current))
 		{
 			cfg.width = nc::theApplication().widthInt();
 			cfg.height = nc::theApplication().heightInt();
@@ -1674,7 +1688,7 @@ void MyEventHandler::createGuiConfigWindow()
 			ImGui::SetNextItemWidth(100);
 			ImGui::DragFloat("Scaling", &cfg.scaling, 0.005f, 0.5f, 2.0f, "%.1f");
 			ImGui::SameLine();
-			if (ImGui::Button("Reset"))
+			if (ImGui::Button(Labels::Reset))
 			{
 #ifdef __ANDROID__
 				cfg.scaling = 2.0f;
@@ -1688,7 +1702,7 @@ void MyEventHandler::createGuiConfigWindow()
 		}
 
 		ImGui::NewLine();
-		if (ImGui::Button("Load"))
+		if (ImGui::Button(Labels::Load))
 		{
 #ifndef __EMSCRIPTEN__
 			loader_->loadConfig(configFile_.data());
@@ -1699,14 +1713,14 @@ void MyEventHandler::createGuiConfigWindow()
 #endif
 		}
 		ImGui::SameLine();
-		if (ImGui::Button("Save"))
+		if (ImGui::Button(Labels::Save))
 		{
 			loader_->saveConfig(configFile_.data());
 			logString_.formatAppend("Saved config file \"%s\"\n", configFile_.data());
 		}
 #ifdef __EMSCRIPTEN__
 		ImGui::SameLine();
-		if (ImGui::Button("Reset"))
+		if (ImGui::Button(Labels::Reset))
 		{
 			loader_->loadConfig(configFile_.data());
 			logString_.formatAppend("Loaded config file \"%s\"\n", configFile_.data());
@@ -1729,7 +1743,7 @@ void MyEventHandler::createGuiLogWindow()
 		ImGui::TextUnformatted(logString_.data());
 		ImGui::EndChild();
 		ImGui::Separator();
-		if (ImGui::Button("Clear"))
+		if (ImGui::Button(Labels::Clear))
 			logString_.clear();
 		ImGui::SameLine();
 		ImGui::Text("Length: %u / %u", logString_.length(), logString_.capacity());
