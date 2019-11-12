@@ -71,6 +71,7 @@ class LuaLoader
 			int numParticles;
 			nctl::String textureName = nctl::String(MaxFilenameLength);
 			nc::Recti texRect;
+			nc::Vector2f anchorPoint;
 			nc::Vector2f position;
 			int layer;
 			bool inLocalSpace;

@@ -18,6 +18,7 @@
 namespace {
 
 const float PlotHeight = 50.0f;
+const char *anchorPointItems[] = { "Center", "Bottom Left", "Top Left", "Bottom Right", "Top Right" };
 const char *amountItems[] = { "Constant", "Min/Max" };
 const char *lifeItems[] = { "Constant", "Min/Max" };
 const char *positionItems[] = { "Constant", "Min/Max", "Radius" };
@@ -448,6 +449,7 @@ void MyEventHandler::createGuiTextures()
 			{
 				texFilename_.clear();
 				texStates_[texIndex_].texRect = textures_[texIndex_]->rect();
+				texStates_[texIndex_].anchorPoint.set(0.5f, 0.5f);
 			}
 		}
 		ImGui::SameLine();
@@ -487,17 +489,22 @@ void MyEventHandler::createGuiTextures()
 			{
 				sysStates_[systemIndex_].texture = textures_[texIndex_].get();
 				sysStates_[systemIndex_].texRect = texStates_[texIndex_].texRect;
+				sysStates_[systemIndex_].anchorPoint = texStates_[texIndex_].anchorPoint;
 				particleSystems_[systemIndex_]->setTexture(textures_[texIndex_].get());
 				particleSystems_[systemIndex_]->setTexRect(texStates_[texIndex_].texRect);
+				particleSystems_[systemIndex_]->setAnchorPoint(texStates_[texIndex_].anchorPoint);
 			}
 			ImGui::SameLine();
-			showHelpMarker("Also applies current texture rectangle");
+			showHelpMarker("Also applies current texture rectangle and anchor point");
 			ImGui::SameLine();
 			if (ImGui::Button(Labels::Retrieve) && particleSystems_.isEmpty() == false)
 			{
 				texIndex_ = retrieveTexture(systemIndex_);
 				texStates_[texIndex_].texRect = sysStates_[systemIndex_].texRect;
+				texStates_[texIndex_].anchorPoint = sysStates_[systemIndex_].anchorPoint;
 			}
+			ImGui::SameLine();
+			showHelpMarker("Retrieves the texture used by current particle system");
 
 			nc::Texture &tex = *textures_[texIndex_];
 			TextureGuiState &t = texStates_[texIndex_];
@@ -529,6 +536,30 @@ void MyEventHandler::createGuiTextures()
 			widgetName_.format("%s##Rect", Labels::Reset);
 			if (ImGui::Button(widgetName_.data()))
 				t.texRect = nc::Recti(0, 0, tex.width(), tex.height());
+
+			ImGui::SliderFloat2("Anchor Point", t.anchorPoint.data(), 0.0f, 1.0f);
+			static int currentAnchorSelection = 0;
+			if (ImGui::Combo("Presets", &currentAnchorSelection, anchorPointItems, IM_ARRAYSIZE(anchorPointItems)))
+			{
+				switch (currentAnchorSelection)
+				{
+					case 0:
+						t.anchorPoint = nc::BaseSprite::AnchorCenter;
+						break;
+					case 1:
+						t.anchorPoint = nc::BaseSprite::AnchorBottomLeft;
+						break;
+					case 2:
+						t.anchorPoint = nc::BaseSprite::AnchorTopLeft;
+						break;
+					case 3:
+						t.anchorPoint = nc::BaseSprite::AnchorBottomRight;
+						break;
+					case 4:
+						t.anchorPoint = nc::BaseSprite::AnchorTopRight;
+						break;
+				}
+			}
 
 			ImGui::Text("Name: %s", texStates_[texIndex_].name.data());
 			ImGui::Text("Width: %d", tex.width());

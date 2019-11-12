@@ -26,7 +26,7 @@ nctl::String &indent(nctl::String &string, int amount)
 	return string;
 }
 
-const unsigned int ProjectFileVersion = 5;
+const unsigned int ProjectFileVersion = 6;
 const unsigned int ConfigFileVersion = 11;
 
 namespace Names {
@@ -48,6 +48,7 @@ namespace Names {
 	const char *numParticles = "num_particles";
 	const char *texture = "texture";
 	const char *texRext = "texture_rect";
+	const char *anchorPoint = "anchor_point"; // version 6
 	const char *relativePosition = "relative_position";
 	const char *layer = "layer";
 	const char *inLocalSpace = "local_space";
@@ -455,6 +456,9 @@ bool LuaLoader::load(const char *filename, State &state, const nc::EmscriptenLoc
 		s.numParticles = nc::LuaUtils::retrieveField<int32_t>(L, -1, Names::numParticles);
 		s.textureName = nc::LuaUtils::retrieveField<const char *>(L, -1, Names::texture);
 		s.texRect = nc::LuaRectiUtils::retrieveTableField(L, -1, Names::texRext);
+		s.anchorPoint.set(0.5f, 0.5f);
+		if (version >= 6)
+			s.anchorPoint = nc::LuaVector2fUtils::retrieveTableField(L, -1, Names::anchorPoint);
 		s.position = nc::LuaVector2fUtils::retrieveTableField(L, -1, Names::relativePosition);
 		s.inLocalSpace = nc::LuaUtils::retrieveField<bool>(L, -1, Names::inLocalSpace);
 		s.active = nc::LuaUtils::retrieveField<bool>(L, -1, Names::active);
@@ -640,6 +644,7 @@ void LuaLoader::save(const char *filename, const State &state)
 		indent(file, amount).formatAppend("%s = \"%s\",\n", Names::texture, sysState.textureName.data());
 		indent(file, amount).formatAppend("%s = {x = %d, y = %d, w = %d, h = %d},\n", Names::texRext,
 		                                  sysState.texRect.x, sysState.texRect.y, sysState.texRect.w, sysState.texRect.h);
+		indent(file, amount).formatAppend("%s = {x = %f, y = %f},\n", Names::anchorPoint, sysState.anchorPoint.x, sysState.anchorPoint.y);
 		indent(file, amount).formatAppend("%s = {x = %f, y = %f},\n", Names::relativePosition, sysState.position.x, sysState.position.y);
 		indent(file, amount).formatAppend("%s = %d,\n", Names::layer, sysState.layer);
 		indent(file, amount).formatAppend("%s = %s,\n", Names::inLocalSpace, sysState.inLocalSpace ? "true" : "false");

@@ -69,6 +69,7 @@ class MyEventHandler :
 
 		nc::Texture *texture = nullptr;
 		nc::Recti texRect;
+		nc::Vector2f anchorPoint = nc::Vector2f(0.5f, 0.5f);
 
 		nc::ColorAffector *colorAffector = nullptr;
 		nc::Colorf colorValue = nc::Colorf(1.0f, 1.0f, 1.0f, 1.0f);
@@ -115,6 +116,7 @@ class MyEventHandler :
 		nctl::String name = nctl::String(MaxStringLength);
 		nc::Recti texRect;
 		bool showRect = false;
+		nc::Vector2f anchorPoint = nc::Vector2f(0.5f, 0.5f);
 	};
 
 	nctl::String logString_ = nctl::String(4096);
