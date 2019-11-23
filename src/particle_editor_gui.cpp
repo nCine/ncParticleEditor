@@ -530,6 +530,7 @@ void MyEventHandler::createGuiManageSystems()
 			if (textures_.isEmpty() == false)
 			{
 				systemIndex_ = particleSystems_.size();
+				sysStates_[systemIndex_] = {};
 				createParticleSystem(systemIndex_);
 			}
 		}
@@ -580,8 +581,8 @@ void MyEventHandler::createGuiParticleSystem()
 	nc::ParticleSystem *particleSystem = particleSystems_[systemIndex_].get();
 	ParticleSystemGuiState &s = sysStates_[systemIndex_];
 
+	widgetName_.format("Particle System (%d particles)###ParticleSystem", s.numParticles);
 	ImGui::PushID("ParticleSystem");
-	widgetName_.format("Particle System (%d particles)", s.numParticles);
 	if (ImGui::CollapsingHeader(widgetName_.data()))
 	{
 		ImGui::SliderInt("Particles", &s.numParticles, 1, cfg.maxNumParticles);
@@ -746,6 +747,9 @@ void MyEventHandler::createGuiSizeAffector()
 	if (ImGui::CollapsingHeader(widgetName_.data()))
 	{
 		ImGui::SliderFloat("Base Scale", &s.baseScale, cfg.minParticleScale, cfg.maxParticleScale);
+		ImGui::SameLine();
+		if (ImGui::Button("Reset"))
+			s.baseScale = 1.0f;
 		s.sizeAffector->setBaseScale(s.baseScale);
 		ImGui::Separator();
 
@@ -779,6 +783,10 @@ void MyEventHandler::createGuiSizeAffector()
 		{
 			widgetName_.format("Scale##%d", stepId);
 			ImGui::SliderFloat(widgetName_.data(), &s.sizeValue, cfg.minParticleScale, cfg.maxParticleScale);
+			ImGui::SameLine();
+			widgetName_.format("Reset##%d", stepId);
+			if (ImGui::Button(widgetName_.data()))
+				s.sizeValue = 1.0f;
 			widgetName_.format("Age##%d", stepId);
 			ImGui::SliderFloat(widgetName_.data(), &s.sizeAge, 0.0f, 1.0f);
 
@@ -880,6 +888,10 @@ void MyEventHandler::createGuiRotationAffector()
 		{
 			widgetName_.format("Angle##%d", stepId);
 			ImGui::SliderFloat(widgetName_.data(), &s.rotValue, cfg.minParticleAngle, cfg.maxParticleAngle);
+			ImGui::SameLine();
+			widgetName_.format("Reset##%d", stepId);
+			if (ImGui::Button(widgetName_.data()))
+				s.rotValue = 0.0f;
 			widgetName_.format("Age##%d", stepId);
 			ImGui::SliderFloat(widgetName_.data(), &s.rotAge, 0.0f, 1.0f);
 
@@ -941,7 +953,6 @@ void MyEventHandler::createGuiRotationPlot(const ParticleSystemGuiState &s)
 void MyEventHandler::createGuiPositionAffector()
 {
 	const LuaLoader::Config &cfg = loader_->config();
-	nc::ParticleSystem *particleSystem = particleSystems_[systemIndex_].get();
 	ParticleSystemGuiState &s = sysStates_[systemIndex_];
 
 	widgetName_.format("Position Affector");
@@ -983,6 +994,10 @@ void MyEventHandler::createGuiPositionAffector()
 		{
 			widgetName_.format("Position X##%d", stepId);
 			ImGui::SliderFloat(widgetName_.data(), &s.positionValue.x, -cfg.positionRange, cfg.positionRange);
+			ImGui::SameLine();
+			widgetName_.format("Reset##%d", stepId);
+			if (ImGui::Button(widgetName_.data()))
+				s.positionValue.set(0.0f, 0.0f);
 			widgetName_.format("Position Y##%d", stepId);
 			ImGui::SliderFloat(widgetName_.data(), &s.positionValue.y, -cfg.positionRange, cfg.positionRange);
 			widgetName_.format("Age##%d", stepId);
@@ -1094,6 +1109,10 @@ void MyEventHandler::createGuiVelocityAffector()
 		{
 			widgetName_.format("Velocity X##%d", stepId);
 			ImGui::SliderFloat(widgetName_.data(), &s.velocityValue.x, -cfg.velocityRange, cfg.velocityRange);
+			ImGui::SameLine();
+			widgetName_.format("Reset##%d", stepId);
+			if (ImGui::Button(widgetName_.data()))
+				s.velocityValue.set(0.0f, 0.0f);
 			widgetName_.format("Velocity Y##%d", stepId);
 			ImGui::SliderFloat(widgetName_.data(), &s.velocityValue.y, -cfg.velocityRange, cfg.velocityRange);
 			widgetName_.format("Age##%d", stepId);
@@ -1163,7 +1182,6 @@ void MyEventHandler::createGuiVelocityPlot(const ParticleSystemGuiState &s)
 void MyEventHandler::createGuiEmission()
 {
 	const LuaLoader::Config &cfg = loader_->config();
-	nc::ParticleSystem *particleSystem = particleSystems_[systemIndex_].get();
 	ParticleSystemGuiState &s = sysStates_[systemIndex_];
 
 	const float columnWidth = ImGui::GetContentRegionAvail().x * 0.75f;

@@ -526,7 +526,7 @@ bool MyEventHandler::applyBackgroundImageProperties()
 	{
 		backgroundSprite_->setPosition(backgroundImagePosition_);
 		backgroundSprite_->setScale(backgroundImageScale_);
-		backgroundSprite_->setLayer(backgroundImageLayer_);
+		backgroundSprite_->setLayer(static_cast<unsigned short>(backgroundImageLayer_));
 		backgroundSprite_->setColor(backgroundImageColor_);
 		backgroundSprite_->setTexRect(backgroundImageRect_);
 	}
@@ -600,7 +600,7 @@ void MyEventHandler::createParticleSystem(unsigned int index)
 	s.texRect = texStates_[texIndex_].texRect;
 	particleSystems_[index] = nctl::makeUnique<nc::ParticleSystem>(dummy_.get(), unsigned(s.numParticles), s.texture, s.texRect);
 	particleSystems_[index]->setPosition(s.position);
-	particleSystems_[index]->setLayer(static_cast<unsigned int>(s.layer));
+	particleSystems_[index]->setLayer(static_cast<unsigned short>(s.layer));
 	particleSystems_[index]->setInLocalSpace(s.inLocalSpace);
 
 	nctl::UniquePtr<nc::ColorAffector> colAffector = nctl::makeUnique<nc::ColorAffector>();
@@ -628,8 +628,9 @@ void MyEventHandler::createParticleSystem(unsigned int index)
 
 void MyEventHandler::cloneParticleSystem(unsigned int srcIndex, unsigned int destIndex, unsigned int numParticles)
 {
-	const ParticleSystemGuiState &src = sysStates_[srcIndex];
+	// Get the destination first to let the array extend to a new capacity before getting the source
 	ParticleSystemGuiState &dest = sysStates_[destIndex];
+	const ParticleSystemGuiState &src = sysStates_[srcIndex];
 
 	dest.name = src.name;
 	dest.active = src.active;
@@ -640,7 +641,7 @@ void MyEventHandler::cloneParticleSystem(unsigned int srcIndex, unsigned int des
 	dest.position = src.position;
 	particleSystems_[destIndex]->setPosition(dest.position);
 	dest.layer = src.layer;
-	particleSystems_[destIndex]->setLayer(static_cast<unsigned int>(dest.layer));
+	particleSystems_[destIndex]->setLayer(static_cast<unsigned short>(dest.layer));
 	dest.inLocalSpace = src.inLocalSpace;
 	particleSystems_[destIndex]->setInLocalSpace(dest.inLocalSpace);
 
