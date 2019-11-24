@@ -43,6 +43,7 @@
 #define TEXT_CLEAR "Clear"
 #define TEXT_APPLY "Apply"
 #define TEXT_CURRENT "Current"
+#define TEXT_LOCK "Lock"
 
 #define TEXT_EMIT "Emit"
 #define TEXT_KILL "Kill"
@@ -93,6 +94,7 @@ namespace Labels {
 	static const char *Clear = TEXT_CLEAR;
 	static const char *Apply = TEXT_APPLY;
 	static const char *Current = TEXT_CURRENT;
+	static const char *Lock = TEXT_LOCK;
 
 	static const char *Emit = TEXT_EMIT;
 	static const char *Kill = TEXT_KILL;
@@ -145,6 +147,7 @@ namespace Labels {
 	static const char *Clear = ICON_FA_BACKSPACE FA5_SPACING TEXT_CLEAR;
 	static const char *Apply = ICON_FA_CHECK_CIRCLE FA5_SPACING TEXT_APPLY;
 	static const char *Current = ICON_FA_SYNC FA5_SPACING TEXT_CURRENT;
+	static const char *Lock = ICON_FA_LOCK;
 
 	static const char *Emit = ICON_FA_FIRE FA5_SPACING TEXT_EMIT;
 	static const char *Kill = ICON_FA_SKULL FA5_SPACING TEXT_KILL;

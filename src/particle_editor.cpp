@@ -260,9 +260,12 @@ bool MyEventHandler::load(const char *filename, const nc::EmscriptenLocalFile *l
 	backgroundImageName_ = loaderState.background.imageName;
 	backgroundImagePosition_ = loaderState.background.imageNormalizedPosition * nc::Vector2f(nc::theApplication().width(), nc::theApplication().height());
 	backgroundImageScale_ = loaderState.background.imageScale;
+	backgroundImageScaleLock_ = (loaderState.background.imageScale.x == loaderState.background.imageScale.y);
 	backgroundImageLayer_ = loaderState.background.imageLayer;
 	backgroundImageColor_ = loaderState.background.imageColor;
 	backgroundImageRect_ = loaderState.background.imageRect;
+	backgroundImageFlippedX = loaderState.background.imageFlippedX;
+	backgroundImageFlippedY = loaderState.background.imageFlippedY;
 	if (backgroundImageName_.isEmpty() == false)
 	{
 		loadBackgroundImage(backgroundImageName_);
@@ -284,6 +287,8 @@ bool MyEventHandler::load(const char *filename, const nc::EmscriptenLocalFile *l
 		dest.numParticles = src.numParticles;
 		dest.texRect = src.texRect;
 		dest.anchorPoint = src.anchorPoint;
+		dest.flippedX = src.flippedX;
+		dest.flippedY = src.flippedY;
 
 		for (unsigned int texIndex = 0; texIndex < texStates_.size(); texIndex++)
 		{
@@ -294,6 +299,8 @@ bool MyEventHandler::load(const char *filename, const nc::EmscriptenLocalFile *l
 				texState.name = src.textureName;
 				texState.texRect = dest.texRect;
 				texState.anchorPoint = dest.anchorPoint;
+				texState.flippedX = dest.flippedX;
+				texState.flippedY = dest.flippedY;
 				break;
 			}
 		}
@@ -308,6 +315,8 @@ bool MyEventHandler::load(const char *filename, const nc::EmscriptenLocalFile *l
 				return false;
 			texState.texRect = dest.texRect;
 			texState.anchorPoint = dest.anchorPoint;
+			texState.flippedX = dest.flippedX;
+			texState.flippedY = dest.flippedY;
 			dest.texture = textures_[texIndex_].get();
 		}
 
@@ -325,6 +334,7 @@ bool MyEventHandler::load(const char *filename, const nc::EmscriptenLocalFile *l
 		}
 
 		dest.baseScale = src.sizeStepBaseScale;
+		dest.baseScaleLock = (dest.baseScale.x == dest.baseScale.y);
 		dest.sizeAffector->setBaseScale(src.sizeStepBaseScale);
 		for (unsigned int i = 0; i < src.sizeSteps.size(); i++)
 		{
@@ -374,6 +384,8 @@ void MyEventHandler::save(const char *filename)
 	loaderState.background.imageLayer = backgroundImageLayer_;
 	loaderState.background.imageColor = backgroundImageColor_;
 	loaderState.background.imageRect = backgroundImageRect_;
+	loaderState.background.imageFlippedX = backgroundImageFlippedX;
+	loaderState.background.imageFlippedY = backgroundImageFlippedY;
 
 	loaderState.normalizedAbsPosition.x = parentPosition_.x / nc::theApplication().width();
 	loaderState.normalizedAbsPosition.y = parentPosition_.y / nc::theApplication().height();
@@ -399,6 +411,8 @@ void MyEventHandler::save(const char *filename)
 		dest.textureName = *textureName;
 		dest.texRect = src.texRect;
 		dest.anchorPoint = src.anchorPoint;
+		dest.flippedX = src.flippedX;
+		dest.flippedY = src.flippedY;
 		dest.position = src.position;
 		dest.layer = src.layer;
 		dest.inLocalSpace = src.inLocalSpace;
@@ -558,6 +572,8 @@ bool MyEventHandler::applyBackgroundImageProperties()
 		backgroundSprite_->setLayer(static_cast<unsigned short>(backgroundImageLayer_));
 		backgroundSprite_->setColor(backgroundImageColor_);
 		backgroundSprite_->setTexRect(backgroundImageRect_);
+		backgroundSprite_->setFlippedX(backgroundImageFlippedX);
+		backgroundSprite_->setFlippedY(backgroundImageFlippedY);
 	}
 
 	return (backgroundSprite_ != nullptr);
@@ -628,17 +644,21 @@ void MyEventHandler::createParticleSystem(unsigned int index)
 	s.texture = textures_[texIndex_].get();
 	s.texRect = texStates_[texIndex_].texRect;
 	s.anchorPoint = texStates_[texIndex_].anchorPoint;
+	s.flippedX = texStates_[texIndex_].flippedX;
+	s.flippedY = texStates_[texIndex_].flippedY;
 	particleSystems_[index] = nctl::makeUnique<nc::ParticleSystem>(dummy_.get(), unsigned(s.numParticles), s.texture, s.texRect);
 	particleSystems_[index]->setPosition(s.position);
 	particleSystems_[index]->setLayer(static_cast<unsigned short>(s.layer));
 	particleSystems_[index]->setInLocalSpace(s.inLocalSpace);
 	particleSystems_[index]->setAnchorPoint(texStates_[texIndex_].anchorPoint);
+	particleSystems_[index]->setFlippedX(texStates_[texIndex_].flippedX);
+	particleSystems_[index]->setFlippedY(texStates_[texIndex_].flippedY);
 
 	nctl::UniquePtr<nc::ColorAffector> colAffector = nctl::makeUnique<nc::ColorAffector>();
 	s.colorAffector = colAffector.get();
 	particleSystems_[index]->addAffector(nctl::move(colAffector));
 
-	nctl::UniquePtr<nc::SizeAffector> sizeAffector = nctl::makeUnique<nc::SizeAffector>(1.0f);
+	nctl::UniquePtr<nc::SizeAffector> sizeAffector = nctl::makeUnique<nc::SizeAffector>();
 	s.sizeAffector = sizeAffector.get();
 	particleSystems_[index]->addAffector(nctl::move(sizeAffector));
 
@@ -677,6 +697,10 @@ void MyEventHandler::cloneParticleSystem(unsigned int srcIndex, unsigned int des
 	particleSystems_[destIndex]->setInLocalSpace(dest.inLocalSpace);
 	dest.anchorPoint = src.anchorPoint;
 	particleSystems_[destIndex]->setAnchorPoint(dest.anchorPoint);
+	dest.flippedX = src.flippedX;
+	particleSystems_[destIndex]->setFlippedX(dest.flippedX);
+	dest.flippedY = src.flippedY;
+	particleSystems_[destIndex]->setFlippedY(dest.flippedY);
 
 	nctl::UniquePtr<nc::ColorAffector> colAffector = nctl::makeUnique<nc::ColorAffector>();
 	dest.colorAffector = colAffector.get();
@@ -684,10 +708,12 @@ void MyEventHandler::cloneParticleSystem(unsigned int srcIndex, unsigned int des
 	for (unsigned int i = 0; i < src.colorAffector->steps().size(); i++)
 		dest.colorAffector->steps()[i] = src.colorAffector->steps()[i];
 
-	nctl::UniquePtr<nc::SizeAffector> sizeAffector = nctl::makeUnique<nc::SizeAffector>(1.0f);
+	nctl::UniquePtr<nc::SizeAffector> sizeAffector = nctl::makeUnique<nc::SizeAffector>();
 	dest.sizeAffector = sizeAffector.get();
 	particleSystems_[destIndex]->addAffector(nctl::move(sizeAffector));
 	dest.sizeAffector->setBaseScale(src.sizeAffector->baseScale());
+	dest.baseScaleLock = src.baseScaleLock;
+	dest.sizeValueLock = src.sizeValueLock;
 	for (unsigned int i = 0; i < src.sizeAffector->steps().size(); i++)
 		dest.sizeAffector->steps()[i] = src.sizeAffector->steps()[i];
 

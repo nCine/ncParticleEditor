@@ -26,7 +26,7 @@ nctl::String &indent(nctl::String &string, int amount)
 	return string;
 }
 
-const unsigned int ProjectFileVersion = 6;
+const unsigned int ProjectFileVersion = 7;
 const unsigned int ConfigFileVersion = 11;
 
 namespace Names {
@@ -39,16 +39,20 @@ namespace Names {
 	const char *backgroundColor = "background_color"; // version 4
 	const char *backgroundImage = "background_image"; // version 4
 	const char *backgroundImageNormalizedPosition = "background_image_normalized_position"; // version 4
-	const char *backgroundImageScale = "background_image_scale"; // version 4
+	const char *backgroundImageScale = "background_image_scale"; // version 4, becomes a vector in version 7
 	const char *backgroundImageLayer = "background_image_layer"; // version 4
 	const char *backgroundImageColor = "background_image_color"; // version 5
 	const char *backgroundImageRect = "background_image_rect"; // version 5
+	const char *backgroundImageFlippedX = "background_image_flipped_x"; // version 7
+	const char *backgroundImageFlippedY = "background_image_flipped_y"; // version 7
 
 	const char *name = "name"; // version 3
 	const char *numParticles = "num_particles";
 	const char *texture = "texture";
 	const char *texRext = "texture_rect";
 	const char *anchorPoint = "anchor_point"; // version 6
+	const char *flippedX = "flipped_x"; // version 7
+	const char *flippedY = "flipped_y"; // version 7
 	const char *relativePosition = "relative_position";
 	const char *layer = "layer";
 	const char *inLocalSpace = "local_space";
@@ -56,7 +60,7 @@ namespace Names {
 
 	const char *colorSteps = "color_steps";
 	const char *sizeSteps = "size_steps";
-	const char *baseScale = "base_scale";
+	const char *baseScale = "base_scale"; // becomes a vector in version 7
 	const char *rotationSteps = "rotation_steps";
 	const char *positionSteps = "position_steps";
 	const char *velocitySteps = "velocity_steps";
@@ -420,8 +424,10 @@ bool LuaLoader::load(const char *filename, State &state, const nc::EmscriptenLoc
 
 	state.background.color = nc::Colorf::Black; // black background as default
 	state.background.imageNormalizedPosition = nc::Vector2f(0.5f, 0.5f); // center of the screen as default
-	state.background.imageScale = 1.0f;
+	state.background.imageScale =  nc::Vector2f(1.0f, 1.0f);
 	state.background.imageLayer = 0;
+	state.background.imageFlippedX = false;
+	state.background.imageFlippedY = false;
 	if (version >= 4)
 	{
 		nc::LuaUtils::retrieveGlobalTable(L, Names::backgroundProperties);
@@ -429,13 +435,25 @@ bool LuaLoader::load(const char *filename, State &state, const nc::EmscriptenLoc
 		state.background.color = nc::LuaColorUtils::retrieveTableField(L, -1, Names::backgroundColor);
 		state.background.imageName = nc::LuaUtils::retrieveField<const char *>(L, -1, Names::backgroundImage);
 		state.background.imageNormalizedPosition = nc::LuaVector2fUtils::retrieveTableField(L, -1, Names::backgroundImageNormalizedPosition);
-		state.background.imageScale = nc::LuaUtils::retrieveField<float>(L, -1, Names::backgroundImageScale);
+		if (version >= 7)
+			state.background.imageScale = nc::LuaVector2fUtils::retrieveTableField(L, -1, Names::backgroundImageScale);
+		else
+		{
+			state.background.imageScale.x = nc::LuaUtils::retrieveField<float>(L, -1, Names::backgroundImageScale);
+			state.background.imageScale.y = state.background.imageScale.x;
+		}
 		state.background.imageLayer = nc::LuaUtils::retrieveField<int32_t>(L, -1, Names::backgroundImageLayer);
 
 		if (version >= 5)
 		{
 			state.background.imageColor = nc::LuaColorUtils::retrieveTableField(L, -1, Names::backgroundImageColor);
 			state.background.imageRect = nc::LuaRectiUtils::retrieveTableField(L, -1, Names::backgroundImageRect);
+		}
+
+		if (version >= 7)
+		{
+			state.background.imageFlippedX = nc::LuaUtils::retrieveField<bool>(L, -1, Names::backgroundImageFlippedX);
+			state.background.imageFlippedY = nc::LuaUtils::retrieveField<bool>(L, -1, Names::backgroundImageFlippedY);
 		}
 
 		nc::LuaUtils::pop(L);
@@ -459,6 +477,13 @@ bool LuaLoader::load(const char *filename, State &state, const nc::EmscriptenLoc
 		s.anchorPoint.set(0.5f, 0.5f);
 		if (version >= 6)
 			s.anchorPoint = nc::LuaVector2fUtils::retrieveTableField(L, -1, Names::anchorPoint);
+		s.flippedX = false;
+		s.flippedY = false;
+		if (version >= 7)
+		{
+			s.flippedX = nc::LuaUtils::retrieveField<bool>(L, -1, Names::flippedX);
+			s.flippedY = nc::LuaUtils::retrieveField<bool>(L, -1, Names::flippedY);
+		}
 		s.position = nc::LuaVector2fUtils::retrieveTableField(L, -1, Names::relativePosition);
 		s.inLocalSpace = nc::LuaUtils::retrieveField<bool>(L, -1, Names::inLocalSpace);
 		s.active = nc::LuaUtils::retrieveField<bool>(L, -1, Names::active);
@@ -489,10 +514,16 @@ bool LuaLoader::load(const char *filename, State &state, const nc::EmscriptenLoc
 		}
 		nc::LuaUtils::pop(L);
 
-		s.sizeStepBaseScale = 1.0f; // default if no size steps are found
+		s.sizeStepBaseScale = nc::Vector2f(1.0f, 1.0f); // default if no size steps are found
 		if (nc::LuaUtils::tryRetrieveFieldTable(L, -1, Names::sizeSteps))
 		{
-			s.sizeStepBaseScale = nc::LuaUtils::retrieveField<float>(L, -1, Names::baseScale);
+			if (version >= 7)
+				s.sizeStepBaseScale = nc::LuaVector2fUtils::retrieveTableField(L, -1, Names::baseScale);
+			else
+			{
+				s.sizeStepBaseScale.x = nc::LuaUtils::retrieveField<float>(L, -1, Names::baseScale);
+				s.sizeStepBaseScale.y = s.sizeStepBaseScale.x;
+			}
 
 			const size_t numSteps = nc::LuaUtils::rawLen(L, -1);
 			for (unsigned int i = 0; i < numSteps; i++)
@@ -505,7 +536,13 @@ bool LuaLoader::load(const char *filename, State &state, const nc::EmscriptenLoc
 				nc::LuaUtils::pop(L);
 
 				nc::LuaUtils::rawGeti(L, -1, 2);
-				step.scale = nc::LuaUtils::retrieve<float>(L, -1);
+				if (version >= 7)
+					step.scale = nc::LuaVector2fUtils::retrieveTable(L, -1);
+				else
+				{
+					step.scale.x = nc::LuaUtils::retrieve<float>(L, -1);
+					step.scale.y = step.scale.x;
+				}
 				nc::LuaUtils::pop(L);
 
 				nc::LuaUtils::pop(L);
@@ -617,12 +654,14 @@ void LuaLoader::save(const char *filename, const State &state)
 	indent(file, amount).formatAppend("%s = \"%s\",\n", Names::backgroundImage, state.background.imageName.data());
 	indent(file, amount).formatAppend("%s = {x = %f, y = %f},\n", Names::backgroundImageNormalizedPosition,
 	                                  state.background.imageNormalizedPosition.x, state.background.imageNormalizedPosition.y);
-	indent(file, amount).formatAppend("%s = %f,\n", Names::backgroundImageScale, state.background.imageScale);
+	indent(file, amount).formatAppend("%s = {x = %f, y = %f},\n", Names::backgroundImageScale, state.background.imageScale.x, state.background.imageScale.y);
 	indent(file, amount).formatAppend("%s = %d,\n", Names::backgroundImageLayer, state.background.imageLayer);
 	const nc::Colorf &imgColor = state.background.imageColor;
 	indent(file, amount).formatAppend("%s = {r = %f, g = %f, b = %f, a = %f},\n", Names::backgroundImageColor, imgColor.r(), imgColor.g(), imgColor.b(), imgColor.a());
-	indent(file, amount).formatAppend("%s = {x = %d, y = %d, w = %d, h = %d}\n", Names::backgroundImageRect,
+	indent(file, amount).formatAppend("%s = {x = %d, y = %d, w = %d, h = %d},\n", Names::backgroundImageRect,
 	                                  state.background.imageRect.x, state.background.imageRect.y, state.background.imageRect.w, state.background.imageRect.h);
+	indent(file, amount).formatAppend("%s = %s,\n", Names::backgroundImageFlippedX, state.background.imageFlippedX ? "true" : "false");
+	indent(file, amount).formatAppend("%s = %s\n", Names::backgroundImageFlippedY, state.background.imageFlippedY ? "true" : "false");
 
 	amount--;
 	indent(file, amount).append("}\n");
@@ -645,6 +684,8 @@ void LuaLoader::save(const char *filename, const State &state)
 		indent(file, amount).formatAppend("%s = {x = %d, y = %d, w = %d, h = %d},\n", Names::texRext,
 		                                  sysState.texRect.x, sysState.texRect.y, sysState.texRect.w, sysState.texRect.h);
 		indent(file, amount).formatAppend("%s = {x = %f, y = %f},\n", Names::anchorPoint, sysState.anchorPoint.x, sysState.anchorPoint.y);
+		indent(file, amount).formatAppend("%s = %s,\n", Names::flippedX, sysState.flippedX ? "true" : "false");
+		indent(file, amount).formatAppend("%s = %s,\n", Names::flippedY, sysState.flippedY ? "true" : "false");
 		indent(file, amount).formatAppend("%s = {x = %f, y = %f},\n", Names::relativePosition, sysState.position.x, sysState.position.y);
 		indent(file, amount).formatAppend("%s = %d,\n", Names::layer, sysState.layer);
 		indent(file, amount).formatAppend("%s = %s,\n", Names::inLocalSpace, sysState.inLocalSpace ? "true" : "false");
@@ -674,13 +715,13 @@ void LuaLoader::save(const char *filename, const State &state)
 			indent(file, amount).formatAppend("%s =\n", Names::sizeSteps);
 			indent(file, amount).append("{\n");
 			amount++;
-			indent(file, amount).formatAppend("%s = %f,\n", Names::baseScale, sysState.sizeStepBaseScale);
+			indent(file, amount).formatAppend("%s = {x = %f, y = %f},\n", Names::baseScale, sysState.sizeStepBaseScale.x, sysState.sizeStepBaseScale.y);
 			for (unsigned int i = 0; i < sysState.sizeSteps.size(); i++)
 			{
 				const State::SizeStep &step = sysState.sizeSteps[i];
 				const bool isLastStep = (i == sysState.sizeSteps.size() - 1);
 				indent(file, amount);
-				file.formatAppend("{%f, %f}%s\n", step.age, step.scale, isLastStep ? "" : ",");
+				file.formatAppend("{%f, {x = %f, y = %f}}%s\n", step.age, step.scale.x, step.scale.y, isLastStep ? "" : ",");
 			}
 			amount--;
 			indent(file, amount).append("},\n");

@@ -44,7 +44,7 @@ class LuaLoader
 		struct SizeStep
 		{
 			float age;
-			float scale;
+			nc::Vector2f scale;
 		};
 
 		struct RotationStep
@@ -72,12 +72,14 @@ class LuaLoader
 			nctl::String textureName = nctl::String(MaxFilenameLength);
 			nc::Recti texRect;
 			nc::Vector2f anchorPoint;
+			bool flippedX;
+			bool flippedY;
 			nc::Vector2f position;
 			int layer;
 			bool inLocalSpace;
 			bool active;
 			nctl::Array<ColorStep> colorSteps;
-			float sizeStepBaseScale;
+			nc::Vector2f sizeStepBaseScale;
 			nctl::Array<SizeStep> sizeSteps;
 			nctl::Array<RotationStep> rotationSteps;
 			nctl::Array<PositionStep> positionSteps;
@@ -91,10 +93,12 @@ class LuaLoader
 			nc::Colorf color;
 			nctl::String imageName = nctl::String(MaxFilenameLength);
 			nc::Vector2f imageNormalizedPosition;
-			float imageScale;
+			nc::Vector2f imageScale;
 			int imageLayer;
 			nc::Colorf imageColor;
 			nc::Recti imageRect;
+			bool imageFlippedX;
+			bool imageFlippedY;
 		};
 
 		nc::Vector2f normalizedAbsPosition;

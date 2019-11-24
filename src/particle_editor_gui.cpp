@@ -393,7 +393,19 @@ void MyEventHandler::createGuiBackground()
 		{
 			ImGui::SliderFloat("Image Pos X", &backgroundImagePosition_.x, 0.0f, nc::theApplication().width());
 			ImGui::SliderFloat("Image Pos Y", &backgroundImagePosition_.y, 0.0f, nc::theApplication().height());
-			ImGui::SliderFloat("Image Scale", &backgroundImageScale_, 0.0f, cfg.maxBackgroundImageScale);
+			if (backgroundImageScaleLock_)
+			{
+				ImGui::SliderFloat("Image Scale", &backgroundImageScale_.x, 0.0f, cfg.maxBackgroundImageScale);
+				backgroundImageScale_.y = backgroundImageScale_.x;
+			}
+			else
+				ImGui::SliderFloat2("Image Scale", backgroundImageScale_.data(), 0.0f, cfg.maxBackgroundImageScale);
+			ImGui::SameLine();
+			ImGui::Checkbox(Labels::Lock, &backgroundImageScaleLock_);
+			ImGui::SameLine();
+			widgetName_.format("%s##Scale", Labels::Reset);
+			if (ImGui::Button(widgetName_.data()))
+				backgroundImageScale_.set(1.0f, 1.0f);
 			ImGui::SliderInt("Image Layer", &backgroundImageLayer_, 0, cfg.maxRenderingLayer);
 			ImGui::ColorEdit4("Image Color", backgroundImageColor_.data(), ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf);
 
@@ -411,6 +423,11 @@ void MyEventHandler::createGuiBackground()
 			widgetName_.format("%s##Rect", Labels::Reset);
 			if (ImGui::Button(widgetName_.data()))
 				backgroundImageRect_ = nc::Recti(0, 0, backgroundTexture_->width(), backgroundTexture_->height());
+			ImGui::Checkbox("Flipped X", &backgroundImageFlippedX);
+			ImGui::SameLine();
+			ImGui::Checkbox("Flipped Y", &backgroundImageFlippedY);
+			backgroundSprite_->setFlippedX(backgroundImageFlippedX);
+			backgroundSprite_->setFlippedY(backgroundImageFlippedY);
 
 			applyBackgroundImageProperties();
 		}
@@ -450,6 +467,8 @@ void MyEventHandler::createGuiTextures()
 				texFilename_.clear();
 				texStates_[texIndex_].texRect = textures_[texIndex_]->rect();
 				texStates_[texIndex_].anchorPoint.set(0.5f, 0.5f);
+				texStates_[texIndex_].flippedX = false;
+				texStates_[texIndex_].flippedY = false;
 			}
 		}
 		ImGui::SameLine();
@@ -490,9 +509,13 @@ void MyEventHandler::createGuiTextures()
 				sysStates_[systemIndex_].texture = textures_[texIndex_].get();
 				sysStates_[systemIndex_].texRect = texStates_[texIndex_].texRect;
 				sysStates_[systemIndex_].anchorPoint = texStates_[texIndex_].anchorPoint;
+				sysStates_[systemIndex_].flippedX = texStates_[texIndex_].flippedX;
+				sysStates_[systemIndex_].flippedY = texStates_[texIndex_].flippedY;
 				particleSystems_[systemIndex_]->setTexture(textures_[texIndex_].get());
 				particleSystems_[systemIndex_]->setTexRect(texStates_[texIndex_].texRect);
 				particleSystems_[systemIndex_]->setAnchorPoint(texStates_[texIndex_].anchorPoint);
+				particleSystems_[systemIndex_]->setFlippedX(texStates_[texIndex_].flippedX);
+				particleSystems_[systemIndex_]->setFlippedY(texStates_[texIndex_].flippedY);
 			}
 			ImGui::SameLine();
 			showHelpMarker("Also applies current texture rectangle and anchor point");
@@ -502,6 +525,8 @@ void MyEventHandler::createGuiTextures()
 				texIndex_ = retrieveTexture(systemIndex_);
 				texStates_[texIndex_].texRect = sysStates_[systemIndex_].texRect;
 				texStates_[texIndex_].anchorPoint = sysStates_[systemIndex_].anchorPoint;
+				texStates_[texIndex_].flippedX = sysStates_[systemIndex_].flippedX;
+				texStates_[texIndex_].flippedY = sysStates_[systemIndex_].flippedY;
 			}
 			ImGui::SameLine();
 			showHelpMarker("Retrieves the texture used by current particle system");
@@ -511,14 +536,23 @@ void MyEventHandler::createGuiTextures()
 
 			const float texWidth = static_cast<float>(tex.width());
 			const float texHeight = static_cast<float>(tex.height());
+			ImVec2 size(texWidth, texHeight);
+			ImVec2 uv0(0.0f, 0.0f);
+			ImVec2 uv1(1.0, 1.0f);
 			if (t.showRect)
 			{
-				ImGui::Image(tex.imguiTexId(), ImVec2(t.texRect.w, t.texRect.h),
-				             ImVec2(t.texRect.x / texWidth, t.texRect.y / texHeight),
-				             ImVec2((t.texRect.x + t.texRect.w) / texWidth, (t.texRect.y + t.texRect.h) / texHeight));
+				size = ImVec2(t.texRect.w, t.texRect.h);
+				uv0.x = t.texRect.x / texWidth;
+				uv0.y = t.texRect.y / texHeight;
+				uv1.x = (t.texRect.x + t.texRect.w) / texWidth;
+				uv1.y = (t.texRect.y + t.texRect.h) / texHeight;
 			}
-			else
-				ImGui::Image(tex.imguiTexId(), ImVec2(texWidth, texHeight));
+			if (t.flippedX)
+				nctl::swap(uv0.x, uv1.x);
+			if (t.flippedY)
+				nctl::swap(uv0.y, uv1.y);
+
+			ImGui::Image(tex.imguiTexId(), size, uv0, uv1);
 
 			int minX = t.texRect.x;
 			int maxX = minX + t.texRect.w;
@@ -536,6 +570,10 @@ void MyEventHandler::createGuiTextures()
 			widgetName_.format("%s##Rect", Labels::Reset);
 			if (ImGui::Button(widgetName_.data()))
 				t.texRect = nc::Recti(0, 0, tex.width(), tex.height());
+
+			ImGui::Checkbox("Flipped X", &t.flippedX);
+			ImGui::SameLine();
+			ImGui::Checkbox("Flipped Y", &t.flippedY);
 
 			ImGui::SliderFloat2("Anchor Point", t.anchorPoint.data(), 0.0f, 1.0f);
 			static int currentAnchorSelection = 0;
@@ -805,10 +843,18 @@ void MyEventHandler::createGuiSizeAffector()
 	ImGui::PushID("SizeAffector");
 	if (ImGui::CollapsingHeader(widgetName_.data()))
 	{
-		ImGui::SliderFloat("Base Scale", &s.baseScale, cfg.minParticleScale, cfg.maxParticleScale);
+		if (s.baseScaleLock)
+		{
+			ImGui::SliderFloat("Base Scale", &s.baseScale.x, cfg.minParticleScale, cfg.maxParticleScale);
+			s.baseScale.y = s.baseScale.x;
+		}
+		else
+			ImGui::SliderFloat2("Base Scale", s.baseScale.data(), cfg.minParticleScale, cfg.maxParticleScale);
 		ImGui::SameLine();
-		if (ImGui::Button("Reset"))
-			s.baseScale = 1.0f;
+		ImGui::Checkbox(Labels::Lock, &s.baseScaleLock);
+		ImGui::SameLine();
+		if (ImGui::Button(Labels::Reset))
+			s.baseScale.set(1.0f, 1.0f);
 		s.sizeAffector->setBaseScale(s.baseScale);
 		ImGui::Separator();
 
@@ -828,7 +874,7 @@ void MyEventHandler::createGuiSizeAffector()
 					step.age = s.sizeAffector->steps()[stepId - 1].age;
 
 				widgetName_.format("Scale##%d", stepId);
-				ImGui::SliderFloat(widgetName_.data(), &step.scale, cfg.minParticleScale, cfg.maxParticleScale);
+				ImGui::SliderFloat2(widgetName_.data(), step.scale.data(), cfg.minParticleScale, cfg.maxParticleScale);
 				widgetName_.format("Age##%d", stepId);
 				ImGui::SliderFloat(widgetName_.data(), &step.age, 0.0f, 1.0f);
 				ImGui::TreePop();
@@ -841,11 +887,20 @@ void MyEventHandler::createGuiSizeAffector()
 		if (ImGui::TreeNodeEx("New Step", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			widgetName_.format("Scale##%d", stepId);
-			ImGui::SliderFloat(widgetName_.data(), &s.sizeValue, cfg.minParticleScale, cfg.maxParticleScale);
+			if (s.sizeValueLock)
+			{
+				ImGui::SliderFloat(widgetName_.data(), &s.sizeValue.x, cfg.minParticleScale, cfg.maxParticleScale);
+				s.sizeValue.y = s.sizeValue.x;
+			}
+			else
+				ImGui::SliderFloat2(widgetName_.data(), s.sizeValue.data(), cfg.minParticleScale, cfg.maxParticleScale);
 			ImGui::SameLine();
-			widgetName_.format("Reset##%d", stepId);
+			widgetName_.format("%s##%d", Labels::Lock, stepId);
+			ImGui::Checkbox(widgetName_.data(), &s.sizeValueLock);
+			ImGui::SameLine();
+			widgetName_.format("%s##%d", Labels::Reset, stepId);
 			if (ImGui::Button(widgetName_.data()))
-				s.sizeValue = 1.0f;
+				s.sizeValue.set(1.0f, 1.0f);
 			widgetName_.format("Age##%d", stepId);
 			ImGui::SliderFloat(widgetName_.data(), &s.sizeAge, 0.0f, 1.0f);
 
@@ -879,7 +934,8 @@ void MyEventHandler::createGuiSizeAffector()
 void MyEventHandler::createGuiSizePlot(const ParticleSystemGuiState &s)
 {
 	const LuaLoader::Config &cfg = loader_->config();
-	static float values[NumPlotValues];
+	static float xValues[NumPlotValues];
+	static float yValues[NumPlotValues];
 
 	if (ImGui::TreeNodeEx("Plot", ImGuiTreeNodeFlags_DefaultOpen))
 	{
@@ -891,15 +947,20 @@ void MyEventHandler::createGuiSizePlot(const ParticleSystemGuiState &s)
 			for (unsigned int i = prevIndex; i < index; i++)
 			{
 				const float factor = (i - prevIndex) / static_cast<float>(index - prevIndex);
-				values[i] = prevStep->scale + factor * (step.scale - prevStep->scale);
+				xValues[i] = prevStep->scale.x + factor * (step.scale.x - prevStep->scale.x);
+				yValues[i] = prevStep->scale.y + factor * (step.scale.y - prevStep->scale.y);
 			}
 			prevIndex = index;
 			prevStep = &step;
 		}
 		for (unsigned int i = prevIndex; i < NumPlotValues; i++)
-			values[i] = prevStep->scale;
+		{
+			xValues[i] = prevStep->scale.x;
+			yValues[i] = prevStep->scale.y;
+		}
 
-		ImGui::PlotLines("Size Steps", values, NumPlotValues, 0, nullptr, cfg.minParticleScale, cfg.maxParticleScale, ImVec2(0.0f, PlotHeight));
+		ImGui::PlotLines("X Size Steps", xValues, NumPlotValues, 0, nullptr, cfg.minParticleScale, cfg.maxParticleScale, ImVec2(0.0f, PlotHeight));
+		ImGui::PlotLines("Y Size Steps", yValues, NumPlotValues, 0, nullptr, cfg.minParticleScale, cfg.maxParticleScale, ImVec2(0.0f, PlotHeight));
 		ImGui::TreePop();
 	}
 }
@@ -948,7 +1009,7 @@ void MyEventHandler::createGuiRotationAffector()
 			widgetName_.format("Angle##%d", stepId);
 			ImGui::SliderFloat(widgetName_.data(), &s.rotValue, cfg.minParticleAngle, cfg.maxParticleAngle);
 			ImGui::SameLine();
-			widgetName_.format("Reset##%d", stepId);
+			widgetName_.format("%s##%d", Labels::Reset, stepId);
 			if (ImGui::Button(widgetName_.data()))
 				s.rotValue = 0.0f;
 			widgetName_.format("Age##%d", stepId);
@@ -1054,7 +1115,7 @@ void MyEventHandler::createGuiPositionAffector()
 			widgetName_.format("Position X##%d", stepId);
 			ImGui::SliderFloat(widgetName_.data(), &s.positionValue.x, -cfg.positionRange, cfg.positionRange);
 			ImGui::SameLine();
-			widgetName_.format("Reset##%d", stepId);
+			widgetName_.format("%s##%d", Labels::Reset, stepId);
 			if (ImGui::Button(widgetName_.data()))
 				s.positionValue.set(0.0f, 0.0f);
 			widgetName_.format("Position Y##%d", stepId);
@@ -1169,7 +1230,7 @@ void MyEventHandler::createGuiVelocityAffector()
 			widgetName_.format("Velocity X##%d", stepId);
 			ImGui::SliderFloat(widgetName_.data(), &s.velocityValue.x, -cfg.velocityRange, cfg.velocityRange);
 			ImGui::SameLine();
-			widgetName_.format("Reset##%d", stepId);
+			widgetName_.format("%s##%d", Labels::Reset, stepId);
 			if (ImGui::Button(widgetName_.data()))
 				s.velocityValue.set(0.0f, 0.0f);
 			widgetName_.format("Velocity Y##%d", stepId);

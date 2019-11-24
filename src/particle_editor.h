@@ -50,10 +50,13 @@ class MyEventHandler :
 	nc::Colorf background_ = nc::Colorf::Black;
 	nctl::String backgroundImageName_ = nctl::String(MaxStringLength);
 	nc::Vector2f backgroundImagePosition_ = nc::Vector2f::Zero;
-	float backgroundImageScale_ = 1.0f;
+	nc::Vector2f backgroundImageScale_ = nc::Vector2f(1.0f, 1.0f);
+	bool backgroundImageScaleLock_ = true;
 	int backgroundImageLayer_ = 0;
 	nc::Colorf backgroundImageColor_ = nc::Colorf::White;
 	nc::Recti backgroundImageRect_;
+	bool backgroundImageFlippedX = false;
+	bool backgroundImageFlippedY = false;
 
 	nc::Vector2f parentPosition_ = nc::Vector2f::Zero;
 	int systemIndex_ = 0;
@@ -70,14 +73,18 @@ class MyEventHandler :
 		nc::Texture *texture = nullptr;
 		nc::Recti texRect;
 		nc::Vector2f anchorPoint = nc::Vector2f(0.5f, 0.5f);
+		bool flippedX = false;
+		bool flippedY = false;
 
 		nc::ColorAffector *colorAffector = nullptr;
 		nc::Colorf colorValue = nc::Colorf(1.0f, 1.0f, 1.0f, 1.0f);
 		float colorAge = 0.0f;
 
 		nc::SizeAffector *sizeAffector = nullptr;
-		float baseScale = 1.0f;
-		float sizeValue = 1.0f;
+		nc::Vector2f baseScale = nc::Vector2f(1.0f, 1.0f);
+		bool baseScaleLock = true;
+		nc::Vector2f sizeValue = nc::Vector2f(1.0f, 1.0f);
+		bool sizeValueLock = true;
 		float sizeAge = 0.0f;
 
 		nc::RotationAffector *rotationAffector = nullptr;
@@ -117,6 +124,8 @@ class MyEventHandler :
 		nc::Recti texRect;
 		bool showRect = false;
 		nc::Vector2f anchorPoint = nc::Vector2f(0.5f, 0.5f);
+		bool flippedX = false;
+		bool flippedY = false;
 	};
 
 	nctl::String logString_ = nctl::String(4096);
