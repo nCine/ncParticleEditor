@@ -9,6 +9,7 @@
 #include <ncine/Vector2.h>
 #include <ncine/Vector4.h>
 #include <ncine/Rect.h>
+#include <ncine/DrawableNode.h>
 #include <ncine/ParticleAffectors.h>
 #include <ncine/ParticleInitializer.h>
 #include <ncine/LuaStateManager.h>
@@ -74,6 +75,7 @@ class LuaLoader
 			nc::Vector2f anchorPoint;
 			bool flippedX;
 			bool flippedY;
+			nc::DrawableNode::BlendingPreset blendingPreset;
 			nc::Vector2f position;
 			int layer;
 			bool inLocalSpace;

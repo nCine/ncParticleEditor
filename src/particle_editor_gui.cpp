@@ -19,6 +19,7 @@ namespace {
 
 const float PlotHeight = 50.0f;
 const char *anchorPointItems[] = { "Center", "Bottom Left", "Top Left", "Bottom Right", "Top Right" };
+const char *blendingPresetItems[] = { "Disabled", "Alpha", "Pre-multiplied Alpha", "Additive", "Multiply" };
 const char *amountItems[] = { "Constant", "Min/Max" };
 const char *lifeItems[] = { "Constant", "Min/Max" };
 const char *positionItems[] = { "Constant", "Min/Max", "Radius" };
@@ -469,6 +470,7 @@ void MyEventHandler::createGuiTextures()
 				texStates_[texIndex_].anchorPoint.set(0.5f, 0.5f);
 				texStates_[texIndex_].flippedX = false;
 				texStates_[texIndex_].flippedY = false;
+				texStates_[texIndex_].blendingPreset = nc::DrawableNode::BlendingPreset::ALPHA;
 			}
 		}
 		ImGui::SameLine();
@@ -511,11 +513,13 @@ void MyEventHandler::createGuiTextures()
 				sysStates_[systemIndex_].anchorPoint = texStates_[texIndex_].anchorPoint;
 				sysStates_[systemIndex_].flippedX = texStates_[texIndex_].flippedX;
 				sysStates_[systemIndex_].flippedY = texStates_[texIndex_].flippedY;
+				sysStates_[systemIndex_].blendingPreset = texStates_[texIndex_].blendingPreset;
 				particleSystems_[systemIndex_]->setTexture(textures_[texIndex_].get());
 				particleSystems_[systemIndex_]->setTexRect(texStates_[texIndex_].texRect);
 				particleSystems_[systemIndex_]->setAnchorPoint(texStates_[texIndex_].anchorPoint);
 				particleSystems_[systemIndex_]->setFlippedX(texStates_[texIndex_].flippedX);
 				particleSystems_[systemIndex_]->setFlippedY(texStates_[texIndex_].flippedY);
+				particleSystems_[systemIndex_]->setBlendingPreset(texStates_[texIndex_].blendingPreset);
 			}
 			ImGui::SameLine();
 			showHelpMarker("Also applies current texture rectangle and anchor point");
@@ -527,6 +531,7 @@ void MyEventHandler::createGuiTextures()
 				texStates_[texIndex_].anchorPoint = sysStates_[systemIndex_].anchorPoint;
 				texStates_[texIndex_].flippedX = sysStates_[systemIndex_].flippedX;
 				texStates_[texIndex_].flippedY = sysStates_[systemIndex_].flippedY;
+				texStates_[texIndex_].blendingPreset = sysStates_[systemIndex_].blendingPreset;
 			}
 			ImGui::SameLine();
 			showHelpMarker("Retrieves the texture used by current particle system");
@@ -598,6 +603,10 @@ void MyEventHandler::createGuiTextures()
 						break;
 				}
 			}
+
+			static int currentBlendingSelection = 1;
+			if (ImGui::Combo("Blending", &currentBlendingSelection, blendingPresetItems, IM_ARRAYSIZE(blendingPresetItems)))
+				t.blendingPreset = static_cast<nc::DrawableNode::BlendingPreset>(currentBlendingSelection);
 
 			ImGui::Text("Name: %s", texStates_[texIndex_].name.data());
 			ImGui::Text("Width: %d", tex.width());

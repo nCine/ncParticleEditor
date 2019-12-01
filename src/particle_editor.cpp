@@ -289,6 +289,7 @@ bool MyEventHandler::load(const char *filename, const nc::EmscriptenLocalFile *l
 		dest.anchorPoint = src.anchorPoint;
 		dest.flippedX = src.flippedX;
 		dest.flippedY = src.flippedY;
+		dest.blendingPreset = src.blendingPreset;
 
 		for (unsigned int texIndex = 0; texIndex < texStates_.size(); texIndex++)
 		{
@@ -301,6 +302,7 @@ bool MyEventHandler::load(const char *filename, const nc::EmscriptenLocalFile *l
 				texState.anchorPoint = dest.anchorPoint;
 				texState.flippedX = dest.flippedX;
 				texState.flippedY = dest.flippedY;
+				texState.blendingPreset = dest.blendingPreset;
 				break;
 			}
 		}
@@ -317,6 +319,7 @@ bool MyEventHandler::load(const char *filename, const nc::EmscriptenLocalFile *l
 			texState.anchorPoint = dest.anchorPoint;
 			texState.flippedX = dest.flippedX;
 			texState.flippedY = dest.flippedY;
+			texState.blendingPreset = dest.blendingPreset;
 			dest.texture = textures_[texIndex_].get();
 		}
 
@@ -413,6 +416,7 @@ void MyEventHandler::save(const char *filename)
 		dest.anchorPoint = src.anchorPoint;
 		dest.flippedX = src.flippedX;
 		dest.flippedY = src.flippedY;
+		dest.blendingPreset = src.blendingPreset;
 		dest.position = src.position;
 		dest.layer = src.layer;
 		dest.inLocalSpace = src.inLocalSpace;
@@ -646,6 +650,7 @@ void MyEventHandler::createParticleSystem(unsigned int index)
 	s.anchorPoint = texStates_[texIndex_].anchorPoint;
 	s.flippedX = texStates_[texIndex_].flippedX;
 	s.flippedY = texStates_[texIndex_].flippedY;
+	s.blendingPreset = texStates_[texIndex_].blendingPreset;
 	particleSystems_[index] = nctl::makeUnique<nc::ParticleSystem>(dummy_.get(), unsigned(s.numParticles), s.texture, s.texRect);
 	particleSystems_[index]->setPosition(s.position);
 	particleSystems_[index]->setLayer(static_cast<unsigned short>(s.layer));
@@ -653,6 +658,7 @@ void MyEventHandler::createParticleSystem(unsigned int index)
 	particleSystems_[index]->setAnchorPoint(texStates_[texIndex_].anchorPoint);
 	particleSystems_[index]->setFlippedX(texStates_[texIndex_].flippedX);
 	particleSystems_[index]->setFlippedY(texStates_[texIndex_].flippedY);
+	particleSystems_[index]->setBlendingPreset(texStates_[texIndex_].blendingPreset);
 
 	nctl::UniquePtr<nc::ColorAffector> colAffector = nctl::makeUnique<nc::ColorAffector>();
 	s.colorAffector = colAffector.get();
@@ -701,6 +707,8 @@ void MyEventHandler::cloneParticleSystem(unsigned int srcIndex, unsigned int des
 	particleSystems_[destIndex]->setFlippedX(dest.flippedX);
 	dest.flippedY = src.flippedY;
 	particleSystems_[destIndex]->setFlippedY(dest.flippedY);
+	dest.blendingPreset = src.blendingPreset;
+	particleSystems_[destIndex]->setBlendingPreset(dest.blendingPreset);
 
 	nctl::UniquePtr<nc::ColorAffector> colAffector = nctl::makeUnique<nc::ColorAffector>();
 	dest.colorAffector = colAffector.get();

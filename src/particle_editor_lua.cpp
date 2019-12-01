@@ -26,7 +26,7 @@ nctl::String &indent(nctl::String &string, int amount)
 	return string;
 }
 
-const unsigned int ProjectFileVersion = 7;
+const unsigned int ProjectFileVersion = 8;
 const unsigned int ConfigFileVersion = 11;
 
 namespace Names {
@@ -53,6 +53,12 @@ namespace Names {
 	const char *anchorPoint = "anchor_point"; // version 6
 	const char *flippedX = "flipped_x"; // version 7
 	const char *flippedY = "flipped_y"; // version 7
+	const char *blendingPreset = "blending_preset"; // version 8
+	const char *disabledBlending = "disabled"; // version 8
+	const char *alphaBlending = "alpha"; // version 8
+	const char *premultipliedAlphaBlending = "premultiplied_alpha"; // version 8
+	const char *additiveBlending = "additive"; // version 8
+	const char *multiplyBlending = "multiply"; // version 8
 	const char *relativePosition = "relative_position";
 	const char *layer = "layer";
 	const char *inLocalSpace = "local_space";
@@ -484,6 +490,21 @@ bool LuaLoader::load(const char *filename, State &state, const nc::EmscriptenLoc
 			s.flippedX = nc::LuaUtils::retrieveField<bool>(L, -1, Names::flippedX);
 			s.flippedY = nc::LuaUtils::retrieveField<bool>(L, -1, Names::flippedY);
 		}
+		s.blendingPreset = nc::DrawableNode::BlendingPreset::ALPHA;
+		if (version >= 8)
+		{
+			nctl::String blendingPresetName = nc::LuaUtils::retrieveField<const char *>(L, -1, Names::blendingPreset);
+			if (blendingPresetName == Names::disabledBlending)
+				s.blendingPreset = nc::DrawableNode::BlendingPreset::DISABLED;
+			else if (blendingPresetName == Names::alphaBlending)
+				s.blendingPreset = nc::DrawableNode::BlendingPreset::ALPHA;
+			if (blendingPresetName == Names::premultipliedAlphaBlending)
+				s.blendingPreset = nc::DrawableNode::BlendingPreset::PREMULTIPLIED_ALPHA;
+			if (blendingPresetName == Names::additiveBlending)
+				s.blendingPreset = nc::DrawableNode::BlendingPreset::ADDITIVE;
+			if (blendingPresetName == Names::multiplyBlending)
+				s.blendingPreset = nc::DrawableNode::BlendingPreset::MULTIPLY;
+		}
 		s.position = nc::LuaVector2fUtils::retrieveTableField(L, -1, Names::relativePosition);
 		s.inLocalSpace = nc::LuaUtils::retrieveField<bool>(L, -1, Names::inLocalSpace);
 		s.active = nc::LuaUtils::retrieveField<bool>(L, -1, Names::active);
@@ -686,6 +707,29 @@ void LuaLoader::save(const char *filename, const State &state)
 		indent(file, amount).formatAppend("%s = {x = %f, y = %f},\n", Names::anchorPoint, sysState.anchorPoint.x, sysState.anchorPoint.y);
 		indent(file, amount).formatAppend("%s = %s,\n", Names::flippedX, sysState.flippedX ? "true" : "false");
 		indent(file, amount).formatAppend("%s = %s,\n", Names::flippedY, sysState.flippedY ? "true" : "false");
+
+		nctl::String blendingPresetName(32);
+		blendingPresetName = "alpha";
+		switch (sysState.blendingPreset)
+		{
+			case nc::DrawableNode::BlendingPreset::DISABLED:
+				blendingPresetName = Names::disabledBlending;
+				break;
+			case nc::DrawableNode::BlendingPreset::ALPHA:
+				blendingPresetName = Names::alphaBlending;
+				break;
+			case nc::DrawableNode::BlendingPreset::PREMULTIPLIED_ALPHA:
+				blendingPresetName = Names::premultipliedAlphaBlending;
+				break;
+			case nc::DrawableNode::BlendingPreset::ADDITIVE:
+				blendingPresetName = Names::additiveBlending;
+				break;
+			case nc::DrawableNode::BlendingPreset::MULTIPLY:
+				blendingPresetName = Names::multiplyBlending;
+				break;
+		}
+		indent(file, amount).formatAppend("%s = \"%s\",\n", Names::blendingPreset, blendingPresetName.data());
+
 		indent(file, amount).formatAppend("%s = {x = %f, y = %f},\n", Names::relativePosition, sysState.position.x, sysState.position.y);
 		indent(file, amount).formatAppend("%s = %d,\n", Names::layer, sysState.layer);
 		indent(file, amount).formatAppend("%s = %s,\n", Names::inLocalSpace, sysState.inLocalSpace ? "true" : "false");

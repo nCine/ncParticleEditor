@@ -9,6 +9,7 @@
 #include <ncine/Vector2.h>
 #include <ncine/Colorf.h>
 #include <ncine/Rect.h>
+#include <ncine/DrawableNode.h>
 #include <ncine/ParticleAffectors.h>
 #include <ncine/ParticleInitializer.h>
 #include <ncine/TimeStamp.h>
@@ -75,6 +76,7 @@ class MyEventHandler :
 		nc::Vector2f anchorPoint = nc::Vector2f(0.5f, 0.5f);
 		bool flippedX = false;
 		bool flippedY = false;
+		nc::DrawableNode::BlendingPreset blendingPreset = nc::DrawableNode::BlendingPreset::ALPHA;
 
 		nc::ColorAffector *colorAffector = nullptr;
 		nc::Colorf colorValue = nc::Colorf(1.0f, 1.0f, 1.0f, 1.0f);
@@ -126,6 +128,7 @@ class MyEventHandler :
 		nc::Vector2f anchorPoint = nc::Vector2f(0.5f, 0.5f);
 		bool flippedX = false;
 		bool flippedY = false;
+		nc::DrawableNode::BlendingPreset blendingPreset = nc::DrawableNode::BlendingPreset::ALPHA;
 	};
 
 	nctl::String logString_ = nctl::String(4096);
