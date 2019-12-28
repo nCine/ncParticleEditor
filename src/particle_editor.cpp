@@ -33,7 +33,7 @@ nc::IAppEventHandler *createAppEventHandler()
 
 MyEventHandler::MyEventHandler()
     : loader_(nctl::makeUnique<LuaLoader>()),
-      sysStates_(4), texStates_(4),
+      sysStates_(4), texNames_(4),
       textures_(4), texturesToDelete_(4),
       particleSystems_(4)
 {
@@ -291,35 +291,23 @@ bool MyEventHandler::load(const char *filename, const nc::EmscriptenLocalFile *l
 		dest.flippedY = src.flippedY;
 		dest.blendingPreset = src.blendingPreset;
 
-		for (unsigned int texIndex = 0; texIndex < texStates_.size(); texIndex++)
+		for (unsigned int texIndex = 0; texIndex < texNames_.size(); texIndex++)
 		{
-			if (texStates_[texIndex].name == src.textureName)
+			if (texNames_[texIndex] == src.textureName)
 			{
 				dest.texture = textures_[texIndex].get();
-				TextureGuiState &texState = texStates_[texIndex];
-				texState.name = src.textureName;
-				texState.texRect = dest.texRect;
-				texState.anchorPoint = dest.anchorPoint;
-				texState.flippedX = dest.flippedX;
-				texState.flippedY = dest.flippedY;
-				texState.blendingPreset = dest.blendingPreset;
+				nctl::String texName = src.textureName;
 				break;
 			}
 		}
 		if (dest.texture == nullptr)
 		{
 			texIndex_ = textures_.size();
-			texStates_[texIndex_] = {};
-			TextureGuiState &texState = texStates_[texIndex_];
-			texState.name = src.textureName;
+			texNames_[texIndex_] = nctl::String(MaxStringLength);
+			texNames_[texIndex_] = src.textureName;
 			const bool result = createTexture(texIndex_);
 			if (result == false)
 				return false;
-			texState.texRect = dest.texRect;
-			texState.anchorPoint = dest.anchorPoint;
-			texState.flippedX = dest.flippedX;
-			texState.flippedY = dest.flippedY;
-			texState.blendingPreset = dest.blendingPreset;
 			dest.texture = textures_[texIndex_].get();
 		}
 
@@ -369,6 +357,16 @@ bool MyEventHandler::load(const char *filename, const nc::EmscriptenLocalFile *l
 
 		if (dest.init.emitterRotation)
 			dest.rotationCurrentItem = 0;
+
+		if (systemIndex == 0)
+		{
+			spriteState_.texture = dest.texture;
+			spriteState_.texRect = dest.texRect;
+			spriteState_.anchorPoint = dest.anchorPoint;
+			spriteState_.flippedX = dest.flippedX;
+			spriteState_.flippedY = dest.flippedY;
+			spriteState_.blendingPreset = dest.blendingPreset;
+		}
 	}
 
 	logString_.formatAppend("Loaded project file \"%s\"\n", filename);
@@ -403,7 +401,7 @@ void MyEventHandler::save(const char *filename)
 		{
 			if (textures_[i].get() == src.texture)
 			{
-				textureName = &texStates_[i].name;
+				textureName = &texNames_[i];
 				break;
 			}
 		}
@@ -507,7 +505,7 @@ void MyEventHandler::clearData()
 	for (unsigned int i = 0; i < textures_.size(); i++)
 		texturesToDelete_.pushBack(nctl::move(textures_[i]));
 	textures_.clear();
-	texStates_.clear();
+	texNames_.clear();
 
 	for (unsigned int i = 0; i < particleSystems_.size(); i++)
 		particleSystems_[i].reset(nullptr);
@@ -599,19 +597,16 @@ unsigned int MyEventHandler::retrieveTexture(unsigned int particleSystemIndex)
 
 bool MyEventHandler::createTexture(unsigned int index)
 {
-	TextureGuiState &s = texStates_[index];
-
 	const LuaLoader::Config &luaConfig = loader_->config();
 
 	nctl::String filepath(MaxStringLength);
-	filepath = s.name;
+	filepath = texNames_[index];
 	if (nc::IFile::access(filepath.data(), nc::IFile::AccessMode::READABLE) == false)
-		filepath = joinPath(luaConfig.texturesPath, s.name);
+		filepath = joinPath(luaConfig.texturesPath, texNames_[index]);
 
 	if (nc::IFile::access(filepath.data(), nc::IFile::AccessMode::READABLE))
 	{
 		textures_[index] = nctl::makeUnique<nc::Texture>(filepath.data());
-		s.texRect = textures_[index]->rect();
 		logString_.formatAppend("Loaded texture \"%s\" at index #%u\n", filepath.data(), index);
 		return true;
 	}
@@ -627,9 +622,9 @@ void MyEventHandler::destroyTexture(unsigned int index)
 		textures_[i] = nctl::move(textures_[i + 1]);
 	textures_.setSize(textures_.size() - 1);
 
-	for (unsigned int i = index; i < texStates_.size() - 1; i++)
-		texStates_[i] = texStates_[i + 1];
-	texStates_.setSize(texStates_.size() - 1);
+	for (unsigned int i = index; i < texNames_.size() - 1; i++)
+		texNames_[i] = texNames_[i + 1];
+	texNames_.setSize(texNames_.size() - 1);
 
 	logString_.formatAppend("Destroyed texture at index #%u\n", index);
 }
@@ -645,20 +640,12 @@ void MyEventHandler::createParticleSystem(unsigned int index)
 {
 	ParticleSystemGuiState &s = sysStates_[index];
 
-	s.texture = textures_[texIndex_].get();
-	s.texRect = texStates_[texIndex_].texRect;
-	s.anchorPoint = texStates_[texIndex_].anchorPoint;
-	s.flippedX = texStates_[texIndex_].flippedX;
-	s.flippedY = texStates_[texIndex_].flippedY;
-	s.blendingPreset = texStates_[texIndex_].blendingPreset;
-	particleSystems_[index] = nctl::makeUnique<nc::ParticleSystem>(dummy_.get(), unsigned(s.numParticles), s.texture, s.texRect);
+	nc::Texture *texture = textures_[texIndex_].get();
+	const nc::Recti texRect(0, 0, texture->width(), texture->height());
+	particleSystems_[index] = nctl::makeUnique<nc::ParticleSystem>(dummy_.get(), unsigned(s.numParticles), texture, texRect);
 	particleSystems_[index]->setPosition(s.position);
 	particleSystems_[index]->setLayer(static_cast<unsigned short>(s.layer));
 	particleSystems_[index]->setInLocalSpace(s.inLocalSpace);
-	particleSystems_[index]->setAnchorPoint(texStates_[texIndex_].anchorPoint);
-	particleSystems_[index]->setFlippedX(texStates_[texIndex_].flippedX);
-	particleSystems_[index]->setFlippedY(texStates_[texIndex_].flippedY);
-	particleSystems_[index]->setBlendingPreset(texStates_[texIndex_].blendingPreset);
 
 	nctl::UniquePtr<nc::ColorAffector> colAffector = nctl::makeUnique<nc::ColorAffector>();
 	s.colorAffector = colAffector.get();

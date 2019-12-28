@@ -119,10 +119,9 @@ class MyEventHandler :
 	int recentFileIndexStart_ = 0;
 	int recentFileIndexEnd_ = 0;
 
-	int texIndex_ = 0;
-	struct TextureGuiState
+	struct SpriteGuiState
 	{
-		nctl::String name = nctl::String(MaxStringLength);
+		nc::Texture *texture;
 		nc::Recti texRect;
 		bool showRect = false;
 		nc::Vector2f anchorPoint = nc::Vector2f(0.5f, 0.5f);
@@ -136,7 +135,9 @@ class MyEventHandler :
 	nctl::UniquePtr<LuaLoader> loader_;
 
 	nctl::Array<ParticleSystemGuiState> sysStates_;
-	nctl::Array<TextureGuiState> texStates_;
+	int texIndex_ = 0;
+	nctl::Array<nctl::String> texNames_;
+	SpriteGuiState spriteState_;
 
 	nctl::UniquePtr<nc::SceneNode> dummy_;
 	nctl::Array<nctl::UniquePtr<nc::Texture>> textures_;
@@ -146,7 +147,7 @@ class MyEventHandler :
 	nctl::UniquePtr<nc::Sprite> backgroundSprite_;
 	nctl::Array<nctl::UniquePtr<nc::ParticleSystem>> particleSystems_;
 	nctl::String widgetName_ = nctl::String(MaxStringLength);
-	nctl::String comboVideoModes_ = nctl::String(4096);
+	nctl::String comboString_ = nctl::String(4096);
 
 	static const unsigned int NumPlotValues = 64;
 
@@ -168,8 +169,8 @@ class MyEventHandler :
 	void createGuiPopups();
 	void createGuiBackground();
 	void createGuiTextures();
-	void createGuiManageSystems();
-	void createGuiParticleSystem();
+	void createGuiParticleSystems();
+	void createGuiSprite();
 	void createGuiColorAffector();
 	void createGuiColorPlot(const ParticleSystemGuiState &s);
 	void createGuiSizeAffector();

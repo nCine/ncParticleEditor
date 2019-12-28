@@ -25,8 +25,8 @@
 
 #define TEXT_HEADER_BACKGROUND "Background"
 #define TEXT_HEADER_TEXTURES "Textures"
-#define TEXT_HEADER_MANAGE_SYSTEMS "Manage Systems"
-#define TEXT_HEADER_PARTICLE_SYSTEM "Particle System"
+#define TEXT_HEADER_PARTICLE_SYSTEMS "Particle Systems"
+#define TEXT_HEADER_SPRITE "Sprite"
 #define TEXT_HEADER_COLOR_AFFECTOR "Color Affector"
 #define TEXT_HEADER_SIZE_AFFECTOR "Size Affector"
 #define TEXT_HEADER_ROTATION_AFFECTOR "Rotation Affector"
@@ -76,8 +76,8 @@ namespace Labels {
 
 	static const char *Background = TEXT_HEADER_BACKGROUND;
 	static const char *Textures = TEXT_HEADER_TEXTURES;
-	static const char *ManageSystems = TEXT_HEADER_MANAGE_SYSTEMS;
-	static const char *ParticleSystem = TEXT_HEADER_PARTICLE_SYSTEM;
+	static const char *ParticleSystems = TEXT_HEADER_PARTICLE_SYSTEMS;
+	static const char *Sprite = TEXT_HEADER_SPRITE;
 	static const char *ColorAffector = TEXT_HEADER_COLOR_AFFECTOR;
 	static const char *SizeAffector = TEXT_HEADER_SIZE_AFFECTOR;
 	static const char *RotationAffector = TEXT_HEADER_ROTATION_AFFECTOR;
@@ -129,14 +129,14 @@ namespace Labels {
 
 	static const char *Background = ICON_FA_PALETTE FA5_SPACING TEXT_HEADER_BACKGROUND;
 	static const char *Textures = ICON_FA_IMAGES FA5_SPACING TEXT_HEADER_TEXTURES;
-	static const char *ManageSystems = ICON_FA_SLIDERS_H FA5_SPACING TEXT_HEADER_MANAGE_SYSTEMS;
-	static const char *ParticleSystem = ICON_FA_SLIDERS_H FA5_SPACING TEXT_HEADER_PARTICLE_SYSTEM;
+	static const char *ParticleSystems = ICON_FA_SLIDERS_H FA5_SPACING TEXT_HEADER_PARTICLE_SYSTEMS;
+	static const char *Sprite = ICON_FA_GHOST FA5_SPACING TEXT_HEADER_SPRITE;
 	static const char *ColorAffector = ICON_FA_TINT FA5_SPACING TEXT_HEADER_COLOR_AFFECTOR;
 	static const char *SizeAffector = ICON_FA_WEIGHT_HANGING FA5_SPACING TEXT_HEADER_SIZE_AFFECTOR;
 	static const char *RotationAffector = ICON_FA_UNDO FA5_SPACING TEXT_HEADER_ROTATION_AFFECTOR;
 	static const char *PositionAffector = ICON_FA_MAP_MARKER_ALT FA5_SPACING TEXT_HEADER_POSITION_AFFECTOR;
 	static const char *VelocityAffector = ICON_FA_TACHOMETER_ALT FA5_SPACING TEXT_HEADER_VELOCITY_AFFECTOR;
-	static const char *Emission = ICON_FA_SLIDERS_H FA5_SPACING TEXT_HEADER_EMISSION;
+	static const char *Emission = ICON_FA_FIRE_ALT FA5_SPACING TEXT_HEADER_EMISSION;
 
 	static const char *Load = ICON_FA_FILE_UPLOAD FA5_SPACING TEXT_LOAD;
 	static const char *Delete = ICON_FA_TRASH FA5_SPACING TEXT_DELETE;

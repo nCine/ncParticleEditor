@@ -139,11 +139,11 @@ void MyEventHandler::createGuiMainWindow()
 
 		createGuiBackground();
 		createGuiTextures();
-		createGuiManageSystems();
+		createGuiParticleSystems();
 
 		if (particleSystems_.size() > 0)
 		{
-			createGuiParticleSystem();
+			createGuiSprite();
 			createGuiColorAffector();
 			createGuiSizeAffector();
 			createGuiRotationAffector();
@@ -440,7 +440,7 @@ void MyEventHandler::createGuiTextures()
 {
 	widgetName_.format(Labels::Textures);
 	if (textures_.isEmpty() == false)
-		widgetName_.formatAppend(" (%s: #%u of %u)", texStates_[texIndex_].name.data(), texIndex_, textures_.size());
+		widgetName_.formatAppend(" (#%u of %u)", texIndex_, textures_.size());
 	widgetName_.append("###Textures");
 	ImGui::PushID("Textures");
 	if (ImGui::CollapsingHeader(widgetName_.data()))
@@ -448,15 +448,16 @@ void MyEventHandler::createGuiTextures()
 		if (TextureStrings::Count > 0)
 		{
 			static int currentComboTexture = 0;
-			if (ImGui::Combo("Bundled textures", &currentComboTexture, TextureStrings::Names, TextureStrings::Count))
+			if (ImGui::Combo("Bundled Textures", &currentComboTexture, TextureStrings::Names, TextureStrings::Count))
 				texFilename_ = TextureStrings::Names[currentComboTexture];
 		}
-		ImGui::InputText("Image to load", texFilename_.data(), MaxStringLength,
+		ImGui::InputText("Image to Load", texFilename_.data(), MaxStringLength,
 		                 ImGuiInputTextFlags_CallbackResize, inputTextCallback, &texFilename_);
+		ImGui::SameLine();
 		if (ImGui::Button(Labels::Load) && texFilename_.isEmpty() == false)
 		{
 			texIndex_ = textures_.size();
-			texStates_[texIndex_].name = texFilename_;
+			texNames_[texIndex_] = texFilename_;
 
 			if (createTexture(texIndex_) == false)
 			{
@@ -464,179 +465,93 @@ void MyEventHandler::createGuiTextures()
 				texFilename_ = Labels::LoadingError;
 			}
 			else
-			{
 				texFilename_.clear();
-				texStates_[texIndex_].texRect = textures_[texIndex_]->rect();
-				texStates_[texIndex_].anchorPoint.set(0.5f, 0.5f);
-				texStates_[texIndex_].flippedX = false;
-				texStates_[texIndex_].flippedY = false;
-				texStates_[texIndex_].blendingPreset = nc::DrawableNode::BlendingPreset::ALPHA;
-			}
 		}
-		ImGui::SameLine();
-		if (ImGui::Button(Labels::Delete) && textures_.size() > 0 && texIndex_ < textures_.size())
+
+		if (textures_.isEmpty() == false)
 		{
-			// Check if the texture is in use by some system
-			bool canDelete = true;
-			for (const ParticleSystemGuiState &state : sysStates_)
+			comboString_.clear();
+			for (unsigned int i = 0; i < textures_.size(); i++)
 			{
-				if (state.texture == textures_[texIndex_].get())
+				comboString_.formatAppend("#%u: %s (%d x %d)", i, texNames_[i].data(), textures_[i]->width(), textures_[i]->height());
+				comboString_.setLength(comboString_.length() + 1);
+			}
+			comboString_.setLength(comboString_.length() + 1);
+			// Append a second '\0' to signal the end of the combo item list
+			comboString_[comboString_.length() - 1] = '\0';
+
+			ImGui::Combo("Loaded Textures", &texIndex_, comboString_.data());
+
+			ImGui::SameLine();
+			if (ImGui::Button(Labels::Delete) && texIndex_ < textures_.size())
+			{
+				// Check if the texture is in use by some system
+				bool canDelete = true;
+				for (const ParticleSystemGuiState &state : sysStates_)
 				{
-					canDelete = false;
-					break;
+					if (state.texture == textures_[texIndex_].get())
+					{
+						canDelete = false;
+						break;
+					}
+				}
+
+				if (canDelete)
+				{
+					destroyTexture(texIndex_);
+					texIndex_--;
 				}
 			}
-
-			if (canDelete)
-			{
-				destroyTexture(texIndex_);
-				texIndex_--;
-			}
 		}
-		ImGui::SameLine();
-		ImGui::SetNextItemWidth(80);
-		ImGui::InputInt("Index", &texIndex_, 1, 10, textures_.isEmpty() ? ImGuiInputTextFlags_ReadOnly : 0);
-		if (textures_.isEmpty())
-			texIndex_ = 0;
-		else if (texIndex_ < 0)
-			texIndex_ = 0;
-		else if (texIndex_ > textures_.size() - 1)
-			texIndex_ = textures_.size() - 1;
 
-		if (textures_.size() > 0)
+		// Needs to check again as the last texture might have just been deleted
+		if (textures_.isEmpty() == false)
 		{
-			ImGui::SameLine();
-			if (ImGui::Button(Labels::Assign) && particleSystems_.isEmpty() == false)
-			{
-				sysStates_[systemIndex_].texture = textures_[texIndex_].get();
-				sysStates_[systemIndex_].texRect = texStates_[texIndex_].texRect;
-				sysStates_[systemIndex_].anchorPoint = texStates_[texIndex_].anchorPoint;
-				sysStates_[systemIndex_].flippedX = texStates_[texIndex_].flippedX;
-				sysStates_[systemIndex_].flippedY = texStates_[texIndex_].flippedY;
-				sysStates_[systemIndex_].blendingPreset = texStates_[texIndex_].blendingPreset;
-				particleSystems_[systemIndex_]->setTexture(textures_[texIndex_].get());
-				particleSystems_[systemIndex_]->setTexRect(texStates_[texIndex_].texRect);
-				particleSystems_[systemIndex_]->setAnchorPoint(texStates_[texIndex_].anchorPoint);
-				particleSystems_[systemIndex_]->setFlippedX(texStates_[texIndex_].flippedX);
-				particleSystems_[systemIndex_]->setFlippedY(texStates_[texIndex_].flippedY);
-				particleSystems_[systemIndex_]->setBlendingPreset(texStates_[texIndex_].blendingPreset);
-			}
-			ImGui::SameLine();
-			showHelpMarker("Also applies current texture rectangle and anchor point");
-			ImGui::SameLine();
-			if (ImGui::Button(Labels::Retrieve) && particleSystems_.isEmpty() == false)
-			{
-				texIndex_ = retrieveTexture(systemIndex_);
-				texStates_[texIndex_].texRect = sysStates_[systemIndex_].texRect;
-				texStates_[texIndex_].anchorPoint = sysStates_[systemIndex_].anchorPoint;
-				texStates_[texIndex_].flippedX = sysStates_[systemIndex_].flippedX;
-				texStates_[texIndex_].flippedY = sysStates_[systemIndex_].flippedY;
-				texStates_[texIndex_].blendingPreset = sysStates_[systemIndex_].blendingPreset;
-			}
-			ImGui::SameLine();
-			showHelpMarker("Retrieves the texture used by current particle system");
-
 			nc::Texture &tex = *textures_[texIndex_];
-			TextureGuiState &t = texStates_[texIndex_];
-
-			const float texWidth = static_cast<float>(tex.width());
-			const float texHeight = static_cast<float>(tex.height());
-			ImVec2 size(texWidth, texHeight);
-			ImVec2 uv0(0.0f, 0.0f);
-			ImVec2 uv1(1.0, 1.0f);
-			if (t.showRect)
-			{
-				size = ImVec2(t.texRect.w, t.texRect.h);
-				uv0.x = t.texRect.x / texWidth;
-				uv0.y = t.texRect.y / texHeight;
-				uv1.x = (t.texRect.x + t.texRect.w) / texWidth;
-				uv1.y = (t.texRect.y + t.texRect.h) / texHeight;
-			}
-			if (t.flippedX)
-				nctl::swap(uv0.x, uv1.x);
-			if (t.flippedY)
-				nctl::swap(uv0.y, uv1.y);
-
-			ImGui::Image(tex.imguiTexId(), size, uv0, uv1);
-
-			int minX = t.texRect.x;
-			int maxX = minX + t.texRect.w;
-			ImGui::DragIntRange2("Rect X", &minX, &maxX, 1.0f, 0, tex.width());
-			ImGui::SameLine();
-			ImGui::Checkbox("Show##Rect", &t.showRect);
-			int minY = t.texRect.y;
-			int maxY = minY + t.texRect.h;
-			ImGui::DragIntRange2("Rect Y", &minY, &maxY, 1.0f, 0, tex.height());
-			t.texRect.x = minX;
-			t.texRect.w = maxX - minX;
-			t.texRect.y = minY;
-			t.texRect.h = maxY - minY;
-			ImGui::SameLine();
-			widgetName_.format("%s##Rect", Labels::Reset);
-			if (ImGui::Button(widgetName_.data()))
-				t.texRect = nc::Recti(0, 0, tex.width(), tex.height());
-
-			ImGui::Checkbox("Flipped X", &t.flippedX);
-			ImGui::SameLine();
-			ImGui::Checkbox("Flipped Y", &t.flippedY);
-
-			ImGui::SliderFloat2("Anchor Point", t.anchorPoint.data(), 0.0f, 1.0f);
-			static int currentAnchorSelection = 0;
-			if (ImGui::Combo("Presets", &currentAnchorSelection, anchorPointItems, IM_ARRAYSIZE(anchorPointItems)))
-			{
-				switch (currentAnchorSelection)
-				{
-					case 0:
-						t.anchorPoint = nc::BaseSprite::AnchorCenter;
-						break;
-					case 1:
-						t.anchorPoint = nc::BaseSprite::AnchorBottomLeft;
-						break;
-					case 2:
-						t.anchorPoint = nc::BaseSprite::AnchorTopLeft;
-						break;
-					case 3:
-						t.anchorPoint = nc::BaseSprite::AnchorBottomRight;
-						break;
-					case 4:
-						t.anchorPoint = nc::BaseSprite::AnchorTopRight;
-						break;
-				}
-			}
-
-			static int currentBlendingSelection = 1;
-			if (ImGui::Combo("Blending", &currentBlendingSelection, blendingPresetItems, IM_ARRAYSIZE(blendingPresetItems)))
-				t.blendingPreset = static_cast<nc::DrawableNode::BlendingPreset>(currentBlendingSelection);
-
-			ImGui::Text("Name: %s", texStates_[texIndex_].name.data());
-			ImGui::Text("Width: %d", tex.width());
-			ImGui::SameLine();
-			ImGui::Text("Height: %d", tex.height());
+			const ImVec2 size(tex.width(), tex.height());
+			ImGui::Image(tex.imguiTexId(), size);
 		}
 	}
 	ImGui::PopID();
 }
 
-void MyEventHandler::createGuiManageSystems()
+void MyEventHandler::createGuiParticleSystems()
 {
-	widgetName_.format(Labels::ManageSystems);
+	widgetName_.format(Labels::ParticleSystems);
 	if (particleSystems_.isEmpty() == false)
 	{
-		if (sysStates_[systemIndex_].name.isEmpty() == false)
-			widgetName_.formatAppend(" (%s: #%u of %u)", sysStates_[systemIndex_].name.data(), systemIndex_, particleSystems_.size());
+		const unsigned int numParticles = particleSystems_[systemIndex_]->numParticles();
+		const nctl::String &sysName = sysStates_[systemIndex_].name;
+		if (sysName.isEmpty() == false)
+			widgetName_.formatAppend(" (%s: #%u of %u, %u particles)", sysName.data(), systemIndex_, particleSystems_.size(), numParticles);
 		else
-			widgetName_.formatAppend(" (#%u of %u)", systemIndex_, particleSystems_.size());
+			widgetName_.formatAppend(" (#%u of %u, %u particles)", systemIndex_, particleSystems_.size(), numParticles);
 	}
-	widgetName_.append("###ManageSystems");
-	ImGui::PushID("ManageSystems");
+	widgetName_.append("###ParticleSystems");
+	ImGui::PushID("ParticleSystems");
 	if (ImGui::CollapsingHeader(widgetName_.data()))
 	{
+		if (textures_.isEmpty())
+			ImGui::Text("Load at least one texture before creating a particle system");
+
+		ImGui::SliderFloat("Pos X", &parentPosition_.x, 0.0f, nc::theApplication().width());
+		ImGui::SameLine();
+		widgetName_.format("%s###Absolute", Labels::Reset);
+		if (ImGui::Button(widgetName_.data()))
+			parentPosition_.set(nc::theApplication().width() * 0.5f, nc::theApplication().height() * 0.5f);
+		ImGui::SliderFloat("Pos Y", &parentPosition_.y, 0.0f, nc::theApplication().height());
+		dummy_->setPosition(parentPosition_);
+
+		ImGui::Separator();
 		if (ImGui::Button(Labels::New))
 		{
 			if (textures_.isEmpty() == false)
 			{
 				systemIndex_ = particleSystems_.size();
 				sysStates_[systemIndex_] = {};
+				nc::Texture *tex = textures_[texIndex_].get();
+				sysStates_[systemIndex_].texture = tex;
+				sysStates_[systemIndex_].texRect.set(0, 0, tex->width(), tex->height());
 				createParticleSystem(systemIndex_);
 			}
 		}
@@ -665,55 +580,225 @@ void MyEventHandler::createGuiManageSystems()
 			systemIndex_ = 0;
 		else if (systemIndex_ > particleSystems_.size() - 1)
 			systemIndex_ = particleSystems_.size() - 1;
-
 		if (particleSystems_.isEmpty() == false)
 		{
 			ImGui::SameLine();
 			ImGui::Checkbox("Active", &sysStates_[systemIndex_].active);
+		}
+
+		static int lastSystemIndex = -1;
+		if (particleSystems_.isEmpty() == false)
+		{
+			const LuaLoader::Config &cfg = loader_->config();
+			nc::ParticleSystem *particleSystem = particleSystems_[systemIndex_].get();
+			ParticleSystemGuiState &s = sysStates_[systemIndex_];
+
+			comboString_.clear();
+			for (unsigned int i = 0; i < sysStates_.size(); i++)
+			{
+				const unsigned int numParticles = particleSystems_[i]->numParticles();
+				const nctl::String &sysName = sysStates_[i].name;
+				if (sysName.isEmpty() == false)
+					comboString_.formatAppend("#%u: %s (%u particles)", i, sysName.data(), numParticles);
+				else
+					comboString_.formatAppend("#%u (%u particles)", i, numParticles);
+				comboString_.setLength(comboString_.length() + 1);
+			}
+			comboString_.setLength(comboString_.length() + 1);
+			// Append a second '\0' to signal the end of the combo item list
+			comboString_[comboString_.length() - 1] = '\0';
+
+			ImGui::Combo("Selected System", &systemIndex_, comboString_.data());
 
 			ImGui::InputText("Name", sysStates_[systemIndex_].name.data(), MaxStringLength,
 			                 ImGuiInputTextFlags_CallbackResize, inputTextCallback, &sysStates_[systemIndex_].name);
-			ImGui::SliderFloat("Pos X", &parentPosition_.x, 0.0f, nc::theApplication().width());
-			ImGui::SliderFloat("Pos Y", &parentPosition_.y, 0.0f, nc::theApplication().height());
-			dummy_->setPosition(parentPosition_);
+			ImGui::SliderInt("Particles", &s.numParticles, 1, cfg.maxNumParticles);
+			if (ImGui::Button(Labels::Apply) && s.numParticles != particleSystem->numParticles())
+			{
+				unsigned int tempSystemIndex = particleSystems_.size();
+				cloneParticleSystem(systemIndex_, tempSystemIndex, 1);
+				cloneParticleSystem(tempSystemIndex, systemIndex_, s.numParticles);
+				destroyParticleSystem(tempSystemIndex);
+				particleSystem = particleSystems_[systemIndex_].get();
+			}
+			ImGui::SameLine();
+			if (ImGui::Button(Labels::Reset))
+				s.numParticles = particleSystem->numParticles();
+			ImGui::SameLine();
+			showHelpMarker("Applies the new number by creating a temporary clone and thus preserving the system state");
+
+			ImGui::SliderFloat("Rel Pos X", &s.position.x, -cfg.systemPositionRange, cfg.systemPositionRange);
+			ImGui::SameLine();
+			widgetName_.format("%s###Relative", Labels::Reset);
+			if (ImGui::Button(widgetName_.data()))
+				s.position.set(0.0f, 0.0f);
+			ImGui::SliderFloat("Rel Pos Y", &s.position.y, -cfg.systemPositionRange, cfg.systemPositionRange);
+			particleSystem->setPosition(s.position);
+			ImGui::SliderInt("Layer", &s.layer, 0, cfg.maxRenderingLayer);
+			particleSystem->setLayer(static_cast<unsigned int>(s.layer));
+			ImGui::Checkbox("Local Space Transformations", &s.inLocalSpace);
+			particleSystem->setInLocalSpace(s.inLocalSpace);
+		}
+		else
+			lastSystemIndex = -1;
+
+		// Retrieve sprite settings
+		if (particleSystems_.isEmpty() == false && lastSystemIndex != systemIndex_)
+		{
+			const ParticleSystemGuiState &s = sysStates_[systemIndex_];
+			spriteState_.texture = s.texture;
+			spriteState_.texRect = s.texRect;
+			spriteState_.anchorPoint = s.anchorPoint;
+			spriteState_.flippedX = s.flippedX;
+			spriteState_.flippedY = s.flippedY;
+			spriteState_.blendingPreset = s.blendingPreset;
+			lastSystemIndex = systemIndex_;
 		}
 	}
 	ImGui::PopID();
 }
 
-void MyEventHandler::createGuiParticleSystem()
+void MyEventHandler::createGuiSprite()
 {
-	const LuaLoader::Config &cfg = loader_->config();
-	nc::ParticleSystem *particleSystem = particleSystems_[systemIndex_].get();
-	ParticleSystemGuiState &s = sysStates_[systemIndex_];
-
-	widgetName_.format("%s (%d particles)###ParticleSystem", Labels::ParticleSystem, s.numParticles);
-	ImGui::PushID("ParticleSystem");
+	widgetName_.format("%s###Sprite", Labels::Sprite);
+	ImGui::PushID("Sprite");
 	if (ImGui::CollapsingHeader(widgetName_.data()))
 	{
-		ImGui::SliderInt("Particles", &s.numParticles, 1, cfg.maxNumParticles);
-		ImGui::SameLine();
-		if (ImGui::Button(Labels::Apply) && s.numParticles != particleSystem->numParticles())
-		{
-			unsigned int tempSystemIndex = particleSystems_.size();
-			cloneParticleSystem(systemIndex_, tempSystemIndex, 1);
-			cloneParticleSystem(tempSystemIndex, systemIndex_, s.numParticles);
-			destroyParticleSystem(tempSystemIndex);
-			particleSystem = particleSystems_[systemIndex_].get();
-		}
-		ImGui::SameLine();
-		showHelpMarker("Applies the new number by creating a temporary clone and thus preserving the system state");
+		nc::ParticleSystem *particleSystem = particleSystems_[systemIndex_].get();
+		ParticleSystemGuiState &s = sysStates_[systemIndex_];
 
-		ImGui::SliderFloat("Rel Pos X", &s.position.x, -cfg.systemPositionRange, cfg.systemPositionRange);
+		static int selectedTextureIndex = -1;
+		unsigned int currentTextureIndex = 0;
+		comboString_.clear();
+		for (unsigned int i = 0; i < textures_.size(); i++)
+		{
+			comboString_.formatAppend("#%u: %s (%d x %d)", i, texNames_[i].data(), textures_[i]->width(), textures_[i]->height());
+			comboString_.setLength(comboString_.length() + 1);
+
+			if (textures_[i].get() == spriteState_.texture)
+				currentTextureIndex = i;
+		}
+		comboString_.setLength(comboString_.length() + 1);
+		// Append a second '\0' to signal the end of the combo item list
+		comboString_[comboString_.length() - 1] = '\0';
+
+		selectedTextureIndex = currentTextureIndex;
+		ImGui::Combo("Texture", &selectedTextureIndex, comboString_.data());
+		spriteState_.texture = textures_[selectedTextureIndex].get();
+		if (s.texture != spriteState_.texture)
+		{
+			if (s.texture != nullptr &&
+			    (s.texture->width() != spriteState_.texture->width() ||
+			    s.texture->height() != spriteState_.texture->height()))
+			{
+				spriteState_.texRect.set(0, 0, spriteState_.texture->width(), spriteState_.texture->height());
+				particleSystem->setTexRect(spriteState_.texRect);
+			}
+			particleSystem->setTexture(spriteState_.texture);
+			s.texture = spriteState_.texture;
+		}
+
+		nc::Texture &tex = *spriteState_.texture;
+		const float texWidth = static_cast<float>(tex.width());
+		const float texHeight = static_cast<float>(tex.height());
+		ImVec2 size(texWidth, texHeight);
+		ImVec2 uv0(0.0f, 0.0f);
+		ImVec2 uv1(1.0, 1.0f);
+		if (spriteState_.showRect)
+		{
+			size = ImVec2(spriteState_.texRect.w, spriteState_.texRect.h);
+			uv0.x = spriteState_.texRect.x / texWidth;
+			uv0.y = spriteState_.texRect.y / texHeight;
+			uv1.x = (spriteState_.texRect.x + spriteState_.texRect.w) / texWidth;
+			uv1.y = (spriteState_.texRect.y + spriteState_.texRect.h) / texHeight;
+		}
+		if (spriteState_.flippedX)
+			nctl::swap(uv0.x, uv1.x);
+		if (spriteState_.flippedY)
+			nctl::swap(uv0.y, uv1.y);
+
+		ImGui::Image(tex.imguiTexId(), size, uv0, uv1);
+
+		int minX = spriteState_.texRect.x;
+		int maxX = minX + spriteState_.texRect.w;
+		ImGui::DragIntRange2("Rect X", &minX, &maxX, 1.0f, 0, tex.width());
 		ImGui::SameLine();
-		if (ImGui::Button(Labels::Reset))
-			s.position.set(0.0f, 0.0f);
-		ImGui::SliderFloat("Rel Pos Y", &s.position.y, -cfg.systemPositionRange, cfg.systemPositionRange);
-		particleSystem->setPosition(s.position);
-		ImGui::SliderInt("Layer", &s.layer, 0, cfg.maxRenderingLayer);
-		particleSystem->setLayer(static_cast<unsigned int>(s.layer));
-		ImGui::Checkbox("Local Space", &s.inLocalSpace);
-		particleSystem->setInLocalSpace(s.inLocalSpace);
+		ImGui::Checkbox("Show##Rect", &spriteState_.showRect);
+		int minY = spriteState_.texRect.y;
+		int maxY = minY + spriteState_.texRect.h;
+		ImGui::DragIntRange2("Rect Y", &minY, &maxY, 1.0f, 0, tex.height());
+		spriteState_.texRect.x = minX;
+		spriteState_.texRect.w = maxX - minX;
+		spriteState_.texRect.y = minY;
+		spriteState_.texRect.h = maxY - minY;
+		ImGui::SameLine();
+		widgetName_.format("%s##Rect", Labels::Reset);
+		if (ImGui::Button(widgetName_.data()))
+			spriteState_.texRect = nc::Recti(0, 0, tex.width(), tex.height());
+
+		if (s.texRect.x != spriteState_.texRect.x || s.texRect.y != spriteState_.texRect.y ||
+		    s.texRect.w != spriteState_.texRect.w || s.texRect.h != spriteState_.texRect.h)
+		{
+			particleSystem->setTexRect(spriteState_.texRect);
+			s.texRect = spriteState_.texRect;
+		}
+
+		ImGui::Checkbox("Flipped X", &spriteState_.flippedX);
+		ImGui::SameLine();
+		ImGui::Checkbox("Flipped Y", &spriteState_.flippedY);
+
+		if (s.flippedX != spriteState_.flippedX)
+		{
+			particleSystem->setFlippedX(spriteState_.flippedX);
+			s.flippedX = spriteState_.flippedX;
+		}
+		if (s.flippedY != spriteState_.flippedY)
+		{
+			particleSystem->setFlippedY(spriteState_.flippedY);
+			s.flippedY = spriteState_.flippedY;
+		}
+
+		ImGui::SliderFloat2("Anchor Point", spriteState_.anchorPoint.data(), 0.0f, 1.0f);
+		static int currentAnchorSelection = 0;
+		if (ImGui::Combo("Anchor Presets", &currentAnchorSelection, anchorPointItems, IM_ARRAYSIZE(anchorPointItems)))
+		{
+			switch (currentAnchorSelection)
+			{
+				case 0:
+					spriteState_.anchorPoint = nc::DrawableNode::AnchorCenter;
+					break;
+				case 1:
+					spriteState_.anchorPoint = nc::DrawableNode::AnchorBottomLeft;
+					break;
+				case 2:
+					spriteState_.anchorPoint = nc::DrawableNode::AnchorTopLeft;
+					break;
+				case 3:
+					spriteState_.anchorPoint = nc::DrawableNode::AnchorBottomRight;
+					break;
+				case 4:
+					spriteState_.anchorPoint = nc::DrawableNode::AnchorTopRight;
+					break;
+			}
+		}
+		if (s.anchorPoint.x != spriteState_.anchorPoint.x ||
+		    s.anchorPoint.y != spriteState_.anchorPoint.y)
+		{
+			particleSystem->setAnchorPoint(spriteState_.anchorPoint);
+			s.anchorPoint = spriteState_.anchorPoint;
+		}
+
+		static int currentBlendingSelection = 1;
+		currentBlendingSelection = static_cast<int>(spriteState_.blendingPreset);
+		if (ImGui::Combo("Blending", &currentBlendingSelection, blendingPresetItems, IM_ARRAYSIZE(blendingPresetItems)))
+			spriteState_.blendingPreset = static_cast<nc::DrawableNode::BlendingPreset>(currentBlendingSelection);
+
+		if (s.blendingPreset != spriteState_.blendingPreset)
+		{
+			particleSystem->setBlendingPreset(spriteState_.blendingPreset);
+			s.blendingPreset = spriteState_.blendingPreset;
+		}
+
 	}
 	ImGui::PopID();
 }
@@ -1627,7 +1712,7 @@ void MyEventHandler::createGuiEmissionPlot()
 	}
 
 	ImGui::SameLine();
-	ImGui::Text("FPS: %.0f (%.2fs)", 1.0f / interval, interval);
+	ImGui::Text("FPS: %.0f (%.3fs)", 1.0f / interval, interval);
 	ImGui::PlotLines("", values, NumPlotValues, 0, nullptr, 0, totalParticles, ImVec2(0.0f, 25.0f));
 	ImGui::SameLine();
 	ImGui::Text("Alive: %u/%u", aliveParticles, totalParticles);
@@ -1664,24 +1749,24 @@ void MyEventHandler::createGuiConfigWindow()
 		{
 			unsigned int currentVideoModeIndex = 0;
 			const unsigned int numVideoModes = nc::theApplication().gfxDevice().numVideoModes();
-			comboVideoModes_.clear();
+			comboString_.clear();
 			for (unsigned int i = 0; i < numVideoModes; i++)
 			{
 				const nc::IGfxDevice::VideoMode &mode = nc::theApplication().gfxDevice().videoMode(i);
-				comboVideoModes_.formatAppend("%ux%u, %uHz", mode.width, mode.height, mode.refreshRate);
-				comboVideoModes_.setLength(comboVideoModes_.length() + 1);
+				comboString_.formatAppend("%ux%u, %uHz", mode.width, mode.height, mode.refreshRate);
+				comboString_.setLength(comboString_.length() + 1);
 
 				if (mode == currentVideoMode)
 					currentVideoModeIndex = i;
 			}
-			comboVideoModes_.setLength(comboVideoModes_.length() + 1);
+			comboString_.setLength(comboString_.length() + 1);
 			// Append a second '\0' to signal the end of the combo item list
-			comboVideoModes_[comboVideoModes_.length() - 1] = '\0';
+			comboString_[comboString_.length() - 1] = '\0';
 
 			if (selectedVideoMode < 0)
 				selectedVideoMode = currentVideoModeIndex;
 
-			ImGui::Combo("Video Mode", &selectedVideoMode, comboVideoModes_.data());
+			ImGui::Combo("Video Mode", &selectedVideoMode, comboString_.data());
 			cfg.width = nc::theApplication().gfxDevice().videoMode(selectedVideoMode).width;
 			cfg.height = nc::theApplication().gfxDevice().videoMode(selectedVideoMode).height;
 		}
