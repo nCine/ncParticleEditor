@@ -47,7 +47,7 @@ void MyEventHandler::onPreInit(nc::AppConfiguration &config)
 #endif
 
 #if defined(__ANDROID__)
-	config.dataPath() = "/sdcard/ncparticleeditor/";
+	config.dataPath() = "asset::";
 #elif defined(__EMSCRIPTEN__)
 	config.dataPath() = "/";
 #else
