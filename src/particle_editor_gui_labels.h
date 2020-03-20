@@ -39,7 +39,6 @@
 #define TEXT_CLONE "Clone"
 #define TEXT_RESET "Reset"
 #define TEXT_ASSIGN "Assign"
-#define TEXT_RETRIEVE "Retrieve"
 #define TEXT_CLEAR "Clear"
 #define TEXT_APPLY "Apply"
 #define TEXT_CURRENT "Current"
@@ -90,7 +89,6 @@ namespace Labels {
 	static const char *Clone = TEXT_CLONE;
 	static const char *Reset = TEXT_RESET;
 	static const char *Assign = TEXT_ASSIGN;
-	static const char *Retrieve = TEXT_RETRIEVE;
 	static const char *Clear = TEXT_CLEAR;
 	static const char *Apply = TEXT_APPLY;
 	static const char *Current = TEXT_CURRENT;
@@ -143,7 +141,6 @@ namespace Labels {
 	static const char *Clone = ICON_FA_CLONE FA5_SPACING TEXT_CLONE;
 	static const char *Reset = ICON_FA_BACKSPACE FA5_SPACING TEXT_RESET;
 	static const char *Assign = ICON_FA_CHECK_CIRCLE FA5_SPACING TEXT_ASSIGN;
-	static const char *Retrieve = ICON_FA_SYNC FA5_SPACING TEXT_RETRIEVE;
 	static const char *Clear = ICON_FA_BACKSPACE FA5_SPACING TEXT_CLEAR;
 	static const char *Apply = ICON_FA_CHECK_CIRCLE FA5_SPACING TEXT_APPLY;
 	static const char *Current = ICON_FA_SYNC FA5_SPACING TEXT_CURRENT;

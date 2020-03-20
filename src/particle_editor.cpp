@@ -14,7 +14,7 @@
 #include <ncine/Sprite.h>
 #include <ncine/ParticleSystem.h>
 #include <ncine/IInputManager.h>
-#include <ncine/IFile.h>
+#include <ncine/FileSystem.h>
 
 #ifdef WITH_CRASHRPT
 	#include "CrashRptWrapper.h"
@@ -59,14 +59,14 @@ void MyEventHandler::onPreInit(nc::AppConfiguration &config)
 #endif
 
 	configFile_ = ConfigFile;
-	if (nc::IFile::access(configFile_.data(), nc::IFile::AccessMode::READABLE) == false)
+	if (nc::fs::isReadableFile(configFile_.data()) == false)
 	{
 		logString_.formatAppend("Config file \"%s\" is not accessible or does not exist\n", configFile_.data());
-		configFile_ = nc::IFile::dataPath() + ConfigFile;
+		configFile_ = nc::fs::joinPath(nc::fs::dataPath(), ConfigFile);
 	}
 
 	LuaLoader::Config &luaConfig = loader_->config();
-	if (nc::IFile::access(configFile_.data(), nc::IFile::AccessMode::READABLE))
+	if (nc::fs::isReadableFile(configFile_.data()))
 	{
 		if (loader_->loadConfig(configFile_.data()))
 			logString_.formatAppend("Loaded config file \"%s\"\n", configFile_.data());
@@ -86,12 +86,12 @@ void MyEventHandler::onPreInit(nc::AppConfiguration &config)
 		logString_ = nctl::move(temp);
 	}
 
-	if (nc::IFile::access(luaConfig.scriptsPath.data(), nc::IFile::AccessMode::READABLE) == false)
-		luaConfig.scriptsPath = nc::IFile::dataPath() + "scripts/";
-	if (nc::IFile::access(luaConfig.texturesPath.data(), nc::IFile::AccessMode::READABLE) == false)
-		luaConfig.texturesPath = nc::IFile::dataPath() + "textures/";
-	if (nc::IFile::access(luaConfig.backgroundsPath.data(), nc::IFile::AccessMode::READABLE) == false)
-		luaConfig.backgroundsPath = nc::IFile::dataPath() + "backgrounds/";
+	if (nc::fs::isDirectory(luaConfig.scriptsPath.data()) == false)
+		luaConfig.scriptsPath = nc::fs::joinPath(nc::fs::dataPath(), "scripts");
+	if (nc::fs::isDirectory(luaConfig.texturesPath.data()) == false)
+		luaConfig.texturesPath = nc::fs::joinPath(nc::fs::dataPath(), "textures");
+	if (nc::fs::isDirectory(luaConfig.backgroundsPath.data()) == false)
+		luaConfig.backgroundsPath = nc::fs::joinPath(nc::fs::dataPath(), "backgrounds");
 
 	config.resolution.set(luaConfig.width, luaConfig.height);
 	config.inFullscreen = luaConfig.fullscreen;
@@ -121,7 +121,7 @@ void MyEventHandler::onInit()
 	if (luaConfig.startupScriptName.isEmpty() == false)
 	{
 		const nctl::String startupScript = luaConfig.scriptsPath + luaConfig.startupScriptName;
-		if (nc::IFile::access(startupScript.data(), nc::IFile::AccessMode::READABLE))
+		if (nc::fs::isReadableFile(startupScript.data()))
 		{
 			load(startupScript.data());
 			filename_ = luaConfig.startupScriptName;
@@ -537,10 +537,10 @@ bool MyEventHandler::loadBackgroundImage(const nctl::String &filename)
 
 	nctl::String filepath(MaxStringLength);
 	filepath = filename;
-	if (nc::IFile::access(filepath.data(), nc::IFile::AccessMode::READABLE) == false)
-		filepath = joinPath(luaConfig.backgroundsPath, filename);
+	if (nc::fs::isReadableFile(filepath.data()) == false)
+		filepath = nc::fs::joinPath(luaConfig.backgroundsPath, filename);
 
-	if (nc::IFile::access(filepath.data(), nc::IFile::AccessMode::READABLE))
+	if (nc::fs::isReadableFile(filepath.data()))
 	{
 		backgroundTexture_ = nctl::makeUnique<nc::Texture>(filepath.data());
 		if (backgroundSprite_ == nullptr)
@@ -601,10 +601,10 @@ bool MyEventHandler::createTexture(unsigned int index)
 
 	nctl::String filepath(MaxStringLength);
 	filepath = texNames_[index];
-	if (nc::IFile::access(filepath.data(), nc::IFile::AccessMode::READABLE) == false)
-		filepath = joinPath(luaConfig.texturesPath, texNames_[index]);
+	if (nc::fs::isReadableFile(filepath.data()) == false)
+		filepath = nc::fs::joinPath(luaConfig.texturesPath, texNames_[index]);
 
-	if (nc::IFile::access(filepath.data(), nc::IFile::AccessMode::READABLE))
+	if (nc::fs::isReadableFile(filepath.data()))
 	{
 		textures_[index] = nctl::makeUnique<nc::Texture>(filepath.data());
 		logString_.formatAppend("Loaded texture \"%s\" at index #%u\n", filepath.data(), index);
@@ -748,10 +748,4 @@ void MyEventHandler::destroyParticleSystem(unsigned int index)
 	sysStates_.setSize(sysStates_.size() - 1);
 
 	logString_.formatAppend("Destroyed particle system at index #%u\n", index);
-}
-
-nctl::String MyEventHandler::joinPath(const nctl::String &first, const nctl::String &second)
-{
-	const char *pathSeparator = (first[first.length() - 1] != '/') ? "/" : "";
-	return nctl::String(first + pathSeparator + second);
 }

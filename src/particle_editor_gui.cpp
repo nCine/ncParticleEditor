@@ -8,7 +8,7 @@
 #include <ncine/Texture.h>
 #include <ncine/Sprite.h>
 #include <ncine/ParticleSystem.h>
-#include <ncine/IFile.h>
+#include <ncine/FileSystem.h>
 
 #include "version.h"
 #include <ncine/version.h>
@@ -91,7 +91,7 @@ void MyEventHandler::menuSave()
 {
 #ifndef __EMSCRIPTEN__
 	const LuaLoader::Config &luaConfig = loader_->config();
-	nctl::String filePath = joinPath(luaConfig.scriptsPath, filename_);
+	nctl::String filePath = nc::fs::joinPath(luaConfig.scriptsPath, filename_);
 	save(filePath.data());
 #else
 	save(filename_.data());
@@ -120,7 +120,7 @@ void MyEventHandler::configureGui()
 	ImFontConfig icons_config;
 	icons_config.MergeMode = true;
 	icons_config.PixelSnapH = true;
-	io.Fonts->AddFontFromFileTTF((nc::IFile::dataPath() + "fonts/" FONT_ICON_FILE_NAME_FAS).data(), 12.0f, &icons_config, icons_ranges);
+	io.Fonts->AddFontFromFileTTF(nc::fs::joinPath(nc::fs::dataPath(), "fonts/" FONT_ICON_FILE_NAME_FAS).data(), 12.0f, &icons_config, icons_ranges);
 #endif
 }
 
@@ -179,7 +179,7 @@ void MyEventHandler::createGuiMenus()
 					if (ImGui::MenuItem(recentFilenames_[i].data()))
 					{
 						const LuaLoader::Config &luaConfig = loader_->config();
-						nctl::String filePath = joinPath(luaConfig.scriptsPath, recentFilenames_[i]);
+						nctl::String filePath = nc::fs::joinPath(luaConfig.scriptsPath, recentFilenames_[i]);
 						if (load(filePath.data()))
 							filename_ = recentFilenames_[i];
 						break;
@@ -206,7 +206,7 @@ void MyEventHandler::createGuiMenus()
 					if (ImGui::MenuItem(ScriptStrings::Names[i]))
 					{
 						const LuaLoader::Config &luaConfig = loader_->config();
-						nctl::String filePath = joinPath(luaConfig.scriptsPath, ScriptStrings::Names[i]);
+						nctl::String filePath = nc::fs::joinPath(luaConfig.scriptsPath, ScriptStrings::Names[i]);
 						if (load(filePath.data()))
 						{
 							filename_ = ScriptStrings::Names[i];
@@ -279,12 +279,13 @@ void MyEventHandler::createGuiPopups()
 
 		if (!ImGui::IsAnyItemActive())
 			ImGui::SetKeyboardFocusHere();
-		if (ImGui::InputText("", filename_.data(), MaxStringLength, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackResize,
+		if (ImGui::InputText("", filename_.data(), MaxStringLength,
+		                     ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackResize | ImGuiInputTextFlags_AutoSelectAll,
 		                     inputTextCallback, &filename_) || ImGui::Button(Labels::Ok))
 		{
 			const LuaLoader::Config &luaConfig = loader_->config();
-			nctl::String filePath = joinPath(luaConfig.scriptsPath, filename_);
-			if (nc::IFile::access(filePath.data(), nc::IFile::AccessMode::READABLE) && load(filePath.data()))
+			nctl::String filePath = nc::fs::joinPath(luaConfig.scriptsPath, filename_);
+			if (nc::fs::isReadableFile(filePath.data()) && load(filePath.data()))
 			{
 				pushRecentFile(filename_);
 				requestCloseModal = true;
@@ -318,13 +319,14 @@ void MyEventHandler::createGuiPopups()
 
 		if (!ImGui::IsAnyItemActive())
 			ImGui::SetKeyboardFocusHere();
-		if (ImGui::InputText("", filename_.data(), MaxStringLength, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackResize,
+		if (ImGui::InputText("", filename_.data(), MaxStringLength,
+		                     ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_CallbackResize | ImGuiInputTextFlags_AutoSelectAll,
 		                     inputTextCallback, &filename_) || ImGui::Button(Labels::Ok))
 		{
 #ifndef __EMSCRIPTEN__
 			const LuaLoader::Config &luaConfig = loader_->config();
-			nctl::String filePath = joinPath(luaConfig.scriptsPath, filename_);
-			if (nc::IFile::access(filePath.data(), nc::IFile::AccessMode::READABLE) && allowOverwrite == false)
+			nctl::String filePath = nc::fs::joinPath(luaConfig.scriptsPath, filename_);
+			if (nc::fs::isReadableFile(filePath.data()) && allowOverwrite == false)
 			{
 				filename_ = Labels::FileExists;
 				logString_.formatAppend("Could not overwrite existing file \"%s\"\n", filePath.data());

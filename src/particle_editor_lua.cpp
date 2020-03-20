@@ -7,10 +7,6 @@
 #include <ncine/LuaColorUtils.h>
 #include <ncine/IFile.h>
 
-#ifdef __EMSCRIPTEN__
-	#include <ncine/EmscriptenLocalFile.h>
-#endif
-
 ///////////////////////////////////////////////////////////
 // PUBLIC FUNCTIONS
 ///////////////////////////////////////////////////////////
