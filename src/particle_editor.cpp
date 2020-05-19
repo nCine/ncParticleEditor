@@ -26,13 +26,14 @@ const char *ConfigFile = "config.lua";
 
 }
 
-nc::IAppEventHandler *createAppEventHandler()
+nctl::UniquePtr<nc::IAppEventHandler> createAppEventHandler()
 {
-	return new MyEventHandler;
+	return nctl::makeUnique<MyEventHandler>();
 }
 
 MyEventHandler::MyEventHandler()
-    : loader_(nctl::makeUnique<LuaLoader>()),
+    : recentFilenames_(nctl::StaticArrayMode::EXTEND_SIZE),
+      loader_(nctl::makeUnique<LuaLoader>()),
       sysStates_(4), texNames_(4),
       textures_(4), texturesToDelete_(4),
       particleSystems_(4)
@@ -280,8 +281,8 @@ bool MyEventHandler::load(const char *filename, const nc::EmscriptenLocalFile *l
 	for (int systemIndex = 0; systemIndex < loaderState.systems.size(); systemIndex++)
 	{
 		LuaLoader::State::ParticleSystem &src = loaderState.systems[systemIndex];
-		sysStates_[systemIndex] = {};
-		ParticleSystemGuiState &dest = sysStates_[systemIndex];
+		sysStates_.emplaceBack();
+		ParticleSystemGuiState &dest = sysStates_.back();
 
 		dest.name = src.name;
 		dest.numParticles = src.numParticles;
@@ -303,8 +304,8 @@ bool MyEventHandler::load(const char *filename, const nc::EmscriptenLocalFile *l
 		if (dest.texture == nullptr)
 		{
 			texIndex_ = textures_.size();
-			texNames_[texIndex_] = nctl::String(MaxStringLength);
-			texNames_[texIndex_] = src.textureName;
+			texNames_.emplaceBack(nctl::String(MaxStringLength));
+			texNames_.back() = src.textureName;
 			const bool result = createTexture(texIndex_);
 			if (result == false)
 				return false;
@@ -606,7 +607,8 @@ bool MyEventHandler::createTexture(unsigned int index)
 
 	if (nc::fs::isReadableFile(filepath.data()))
 	{
-		textures_[index] = nctl::makeUnique<nc::Texture>(filepath.data());
+		FATAL_ASSERT(index == textures_.size());
+		textures_.pushBack(nctl::makeUnique<nc::Texture>(filepath.data()));
 		logString_.formatAppend("Loaded texture \"%s\" at index #%u\n", filepath.data(), index);
 		return true;
 	}
@@ -642,30 +644,31 @@ void MyEventHandler::createParticleSystem(unsigned int index)
 
 	nc::Texture *texture = textures_[texIndex_].get();
 	const nc::Recti texRect(0, 0, texture->width(), texture->height());
-	particleSystems_[index] = nctl::makeUnique<nc::ParticleSystem>(dummy_.get(), unsigned(s.numParticles), texture, texRect);
-	particleSystems_[index]->setPosition(s.position);
-	particleSystems_[index]->setLayer(static_cast<unsigned short>(s.layer));
-	particleSystems_[index]->setInLocalSpace(s.inLocalSpace);
+	FATAL_ASSERT(index == particleSystems_.size());
+	particleSystems_.pushBack(nctl::makeUnique<nc::ParticleSystem>(dummy_.get(), unsigned(s.numParticles), texture, texRect));
+	particleSystems_.back()->setPosition(s.position);
+	particleSystems_.back()->setLayer(static_cast<unsigned short>(s.layer));
+	particleSystems_.back()->setInLocalSpace(s.inLocalSpace);
 
 	nctl::UniquePtr<nc::ColorAffector> colAffector = nctl::makeUnique<nc::ColorAffector>();
 	s.colorAffector = colAffector.get();
-	particleSystems_[index]->addAffector(nctl::move(colAffector));
+	particleSystems_.back()->addAffector(nctl::move(colAffector));
 
 	nctl::UniquePtr<nc::SizeAffector> sizeAffector = nctl::makeUnique<nc::SizeAffector>();
 	s.sizeAffector = sizeAffector.get();
-	particleSystems_[index]->addAffector(nctl::move(sizeAffector));
+	particleSystems_.back()->addAffector(nctl::move(sizeAffector));
 
 	nctl::UniquePtr<nc::RotationAffector> rotAffector = nctl::makeUnique<nc::RotationAffector>();
 	s.rotationAffector = rotAffector.get();
-	particleSystems_[index]->addAffector(nctl::move(rotAffector));
+	particleSystems_.back()->addAffector(nctl::move(rotAffector));
 
 	nctl::UniquePtr<nc::PositionAffector> posAffector = nctl::makeUnique<nc::PositionAffector>();
 	s.positionAffector = posAffector.get();
-	particleSystems_[index]->addAffector(nctl::move(posAffector));
+	particleSystems_.back()->addAffector(nctl::move(posAffector));
 
 	nctl::UniquePtr<nc::VelocityAffector> velAffector = nctl::makeUnique<nc::VelocityAffector>();
 	s.velocityAffector = velAffector.get();
-	particleSystems_[index]->addAffector(nctl::move(velAffector));
+	particleSystems_.back()->addAffector(nctl::move(velAffector));
 
 	logString_.formatAppend("Created a new particle system at index #%u\n", index);
 }
