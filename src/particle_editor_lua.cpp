@@ -213,7 +213,7 @@ bool LuaLoader::loadConfig(const char *filename, const nc::EmscriptenLocalFile *
 	if (luaState_->run(filename) == false)
 #else
 	const bool loaded = (localFile != nullptr)
-	                        ? luaState_->runFromMemory(localFile->data(), localFile->size(), localFile->filename())
+	                        ? luaState_->runFromMemory(localFile->filename(), localFile->data(), localFile->size())
 	                        : luaState_->run(filename);
 
 	if (loaded == false)
@@ -408,7 +408,7 @@ bool LuaLoader::load(const char *filename, State &state, const nc::EmscriptenLoc
 	if (luaState_->run(filename) == false)
 #else
 	const bool loaded = (localFile != nullptr)
-	                        ? luaState_->runFromMemory(localFile->data(), localFile->size(), localFile->filename())
+	                        ? luaState_->runFromMemory(localFile->filename(), localFile->data(), localFile->size())
 	                        : luaState_->run(filename);
 
 	if (loaded == false)
