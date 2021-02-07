@@ -1,7 +1,7 @@
 set(PACKAGE_NAME "ncParticleEditor")
 set(PACKAGE_EXE_NAME "ncparticleeditor")
 set(PACKAGE_VENDOR "Angelo Theodorou")
-set(PACKAGE_COPYRIGHT "Copyright ©2018-2020 ${PACKAGE_VENDOR}")
+set(PACKAGE_COPYRIGHT "Copyright ©2018-2021 ${PACKAGE_VENDOR}")
 set(PACKAGE_DESCRIPTION "A particle editor made with the nCine")
 set(PACKAGE_HOMEPAGE "https://ncine.github.io")
 set(PACKAGE_REVERSE_DNS "io.github.ncine.ncparticleeditor")
