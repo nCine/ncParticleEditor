@@ -8,7 +8,6 @@ env:
     "Push artifact from GitHub Actions build ${{ github.run_number }} with id ${{ github.run_id }}
 
      - PACKAGE_NAME artifact from branch 'BRANCH_NAME' with commit id ${{ github.sha }}"
-  NDK_VERSION: r21d
 
 on: [push, workflow_dispatch]
 
@@ -66,18 +65,9 @@ jobs:
 
         git clone https://github.com/$GITHUB_REPOSITORY-data.git
 
-    - name: 'Download Android NDK'
-      run: |
-        export NDK_URL=https://dl.google.com/android/repository/android-ndk-$NDK_VERSION-linux-x86_64.zip
-
-        cd ..
-        curl -fsSL $NDK_URL -o ndk.zip
-        unzip -q ndk.zip && rm -f ndk.zip
-
     - name: 'CMake Configuration'
       run: |
         export PACKAGE_NAME=${GITHUB_REPOSITORY##*/}
-        export ANDROID_NDK_HOME=$(pwd)/../android-ndk-$NDK_VERSION
 
         cmake -B ../$PACKAGE_NAME-build-${{ matrix.BuildType }} -D CMAKE_BUILD_TYPE=${{ matrix.BuildType }} -D PACKAGE_NDK_ARCHITECTURES=${{ matrix.ARCH }} -D PACKAGE_BUILD_ANDROID=ON -D PACKAGE_ASSEMBLE_APK=ON -D nCine_DIR=$(pwd)/../nCine/lib/cmake/nCine
 
