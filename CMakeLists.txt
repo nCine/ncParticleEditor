@@ -1,112 +1,143 @@
+set(NCPROJECT_NAME "ncParticleEditor")
+set(NCPROJECT_EXE_NAME "ncparticleeditor")
+set(NCPROJECT_VENDOR "Angelo Theodorou")
+set(NCPROJECT_COPYRIGHT "Copyright ©2018-2021 ${NCPROJECT_VENDOR}")
+set(NCPROJECT_DESCRIPTION "A particle editor made with the nCine")
+set(NCPROJECT_HOMEPAGE "https://ncine.github.io")
+set(NCPROJECT_REVERSE_DNS "io.github.ncine.ncparticleeditor")
+
+set(NCPROJECT_SOURCES
+	src/particle_editor.h
+	src/particle_editor.cpp
+	src/particle_editor_gui_labels.h
+	src/particle_editor_gui.cpp
+	src/particle_editor_lua.h
+	src/particle_editor_lua.cpp
+)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
+
+function(callback_before_target)
+	option(CUSTOM_WITH_FONTAWESOME "Download FontAwesome and include it in ImGui atlas" OFF)
+	if(NCPROJECT_OPTIONS_PRESETS STREQUAL BinDist)
+		set(CUSTOM_WITH_FONTAWESOME ON CACHE BOOL "Download FontAwesome and include it in ImGui atlas" FORCE)
+	endif()
+endfunction()
+
+function(callback_after_target)
+	if(MSVC)
+		set(CMAKE_INSTALL_UCRT_LIBRARIES TRUE)
+		include(package_crashrpt)
+	endif()
+
+	include(custom_iconfontcppheaders)
+	if(NOT CMAKE_SYSTEM_NAME STREQUAL "Android" AND IS_DIRECTORY ${NCPROJECT_DATA_DIR})
+		generate_textures_list()
+		generate_scripts_list()
+
+		include(custom_fontawesome)
+		if(CUSTOM_WITH_FONTAWESOME)
+			file(GLOB FONT_FILES "${NCPROJECT_DATA_DIR}/data/fonts/*.ttf")
+		endif()
+		if(EXISTS ${NCPROJECT_DATA_DIR}/data/config.lua)
+			set(CONFIG_FILE ${NCPROJECT_DATA_DIR}/data/config.lua)
+		endif()
+		set(PROJECT_ANDROID_ASSETS ${CONFIG_FILE} ${FONT_FILES} ${SCRIPT_FILES} ${TEXTURE_FILES} CACHE STRING "" FORCE)
+	endif()
+
+	if(CMAKE_SYSTEM_NAME STREQUAL "Android" AND CUSTOM_WITH_FONTAWESOME)
+		target_compile_definitions(${NCPROJECT_EXE_NAME} PRIVATE "WITH_FONTAWESOME")
+		target_include_directories(${NCPROJECT_EXE_NAME} PRIVATE ${NCPROJECT_BINARY_DIR}/${ICONFONTCPPHEADERS_SOURCE_DIR_NAME})
+	endif()
+
+	# Needed to compile on Android
+	set(GENERATED_SOURCES ${GENERATED_SOURCES} PARENT_SCOPE)
+endfunction()
+
+function(generate_textures_list)
+	set(TEXTURES_DIR ${NCPROJECT_DATA_DIR}/data/textures)
+	set(NUM_TEXTURES 0)
+	if(IS_DIRECTORY ${TEXTURES_DIR})
+		file(GLOB TEXTURE_FILES "${TEXTURES_DIR}/*.png" "${TEXTURES_DIR}/*.webp")
+		list(LENGTH TEXTURE_FILES NUM_TEXTURES)
+		set(TEXTURE_FILES ${TEXTURE_FILES} PARENT_SCOPE)
+	endif()
+
+	set(TEXTURES_H_FILE "${GENERATED_INCLUDE_DIR}/texture_strings.h")
+	set(TEXTURES_CPP_FILE "${GENERATED_SOURCE_DIR}/texture_strings.cpp")
+
+	get_filename_component(TEXTURES_H_FILENAME ${TEXTURES_H_FILE} NAME)
+	file(WRITE ${TEXTURES_H_FILE} "#ifndef PROJECT_TEXTURE_STRINGS\n")
+	file(APPEND ${TEXTURES_H_FILE} "#define PROJECT_TEXTURE_STRINGS\n\n")
+	file(APPEND ${TEXTURES_H_FILE} "struct TextureStrings\n{\n")
+	file(APPEND ${TEXTURES_H_FILE} "\tstatic const int Count = ${NUM_TEXTURES};\n")
+	file(APPEND ${TEXTURES_H_FILE} "\tstatic char const * const Names[Count];\n};\n\n")
+	file(APPEND ${TEXTURES_H_FILE} "#endif\n")
+
+	file(WRITE ${TEXTURES_CPP_FILE} "#include \"${TEXTURES_H_FILENAME}\"\n\n")
+	file(APPEND ${TEXTURES_CPP_FILE} "char const * const TextureStrings::Names[TextureStrings::Count] =\n")
+	file(APPEND ${TEXTURES_CPP_FILE} "{\n")
+	foreach(TEXTURE_FILE ${TEXTURE_FILES})
+		get_filename_component(TEXTURE_FILENAME ${TEXTURE_FILE} NAME)
+		file(APPEND ${TEXTURES_CPP_FILE} "\t\"${TEXTURE_FILENAME}\",\n")
+	endforeach()
+	file(APPEND ${TEXTURES_CPP_FILE} "};\n")
+
+	target_sources(${NCPROJECT_EXE_NAME} PRIVATE ${TEXTURES_H_FILE} ${TEXTURES_CPP_FILE})
+	list(APPEND GENERATED_SOURCES ${TEXTURES_CPP_FILE})
+	set(GENERATED_SOURCES ${GENERATED_SOURCES} PARENT_SCOPE)
+endfunction()
+
+function(generate_scripts_list)
+	set(SCRIPTS_DIR ${NCPROJECT_DATA_DIR}/data/scripts)
+	set(NUM_SCRIPTS 0)
+	if(IS_DIRECTORY ${SCRIPTS_DIR})
+		file(GLOB SCRIPT_FILES "${SCRIPTS_DIR}/*.lua")
+		list(LENGTH SCRIPT_FILES NUM_SCRIPTS)
+		set(SCRIPT_FILES ${SCRIPT_FILES} PARENT_SCOPE)
+	endif()
+
+	set(SCRIPTS_H_FILE "${GENERATED_INCLUDE_DIR}/script_strings.h")
+	set(SCRIPTS_CPP_FILE "${GENERATED_SOURCE_DIR}/script_strings.cpp")
+
+	get_filename_component(SCRIPTS_H_FILENAME ${SCRIPTS_H_FILE} NAME)
+	file(WRITE ${SCRIPTS_H_FILE} "#ifndef PROJECT_SCRIPT_STRINGS\n")
+	file(APPEND ${SCRIPTS_H_FILE} "#define PROJECT_SCRIPT_STRINGS\n\n")
+	file(APPEND ${SCRIPTS_H_FILE} "struct ScriptStrings\n{\n")
+	file(APPEND ${SCRIPTS_H_FILE} "\tstatic const int Count = ${NUM_SCRIPTS};\n")
+	file(APPEND ${SCRIPTS_H_FILE} "\tstatic char const * const Names[Count];\n};\n\n")
+	file(APPEND ${SCRIPTS_H_FILE} "#endif\n")
+
+	file(WRITE ${SCRIPTS_CPP_FILE} "#include \"${SCRIPTS_H_FILENAME}\"\n\n")
+	file(APPEND ${SCRIPTS_CPP_FILE} "char const * const ScriptStrings::Names[ScriptStrings::Count] =\n")
+	file(APPEND ${SCRIPTS_CPP_FILE} "{\n")
+	foreach(SCRIPT_FILE ${SCRIPT_FILES})
+		get_filename_component(SCRIPT_FILENAME ${SCRIPT_FILE} NAME)
+		file(APPEND ${SCRIPTS_CPP_FILE} "\t\"${SCRIPT_FILENAME}\",\n")
+	endforeach()
+	file(APPEND ${SCRIPTS_CPP_FILE} "};\n")
+
+	target_sources(${NCPROJECT_EXE_NAME} PRIVATE ${SCRIPTS_H_FILE} ${SCRIPTS_CPP_FILE})
+	list(APPEND GENERATED_SOURCES ${SCRIPTS_CPP_FILE})
+	set(GENERATED_SOURCES ${GENERATED_SOURCES} PARENT_SCOPE)
+endfunction()
+
+# Don't edit beyond this line
+if(CMAKE_SYSTEM_NAME STREQUAL "Android")
+	return()
+endif()
+
 cmake_minimum_required(VERSION 3.13)
+project(${NCPROJECT_NAME})
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
-get_filename_component(PARENT_SOURCE_DIR ${CMAKE_SOURCE_DIR} DIRECTORY)
-get_filename_component(PARENT_BINARY_DIR ${CMAKE_BINARY_DIR} DIRECTORY)
+find_path(NCPROJECT_DIR cmake/project_main.cmake
+	PATHS ${nCine_DIR} $ENV{NCINE_DIR}
+	PATH_SUFFIXES project ../project ../../../project ../../../share/ncine/project
+	NO_CMAKE_FIND_ROOT_PATH # For Emscripten
+	DOC "Path to the nCine template project scripts")
 
-include(package_info)
-include(package_check_info)
-if(COMMAND callback_start)
-	callback_start()
-endif()
-
-project(${PACKAGE_NAME})
-
-include(package_options)
-
-include(find_ncine)
-include(package_imported_targets)
-if(NOT ANDROID AND NOT EMSCRIPTEN AND NCINE_WITH_QT5)
-	find_package(Qt5 COMPONENTS Widgets)
-endif()
-
-if(NOT IS_DIRECTORY ${PACKAGE_DATA_DIR})
-	if(IS_DIRECTORY ${CMAKE_SOURCE_DIR}/data AND IS_DIRECTORY ${CMAKE_SOURCE_DIR}/icons)
-		set(PACKAGE_DATA_DIR ${CMAKE_SOURCE_DIR})
-		message(STATUS "${PACKAGE_NAME} data directory not found at ${PACKAGE_DATA_DIR}: using source directory for data")
-	else()
-		message(WARNING "${PACKAGE_NAME} data directory not found at: ${PACKAGE_DATA_DIR}")
-	endif()
+if(IS_DIRECTORY ${NCPROJECT_DIR})
+	include(${NCPROJECT_DIR}/cmake/project_main.cmake)
 else()
-	message(STATUS "${PACKAGE_NAME} data directory: ${PACKAGE_DATA_DIR}")
-endif()
-
-include(package_get_version)
-
-if(COMMAND callback_before_target)
-	callback_before_target()
-endif()
-
-add_executable(${PACKAGE_EXE_NAME} WIN32 ${PACKAGE_SOURCES})
-include(package_generated_sources)
-target_sources(${PACKAGE_EXE_NAME} PRIVATE ${GENERATED_SOURCES})
-
-if(NOT DEFAULT_DATA_DIR_DIST) # Don't set the startup project if it wouldn't find the data directory
-	set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PACKAGE_EXE_NAME})
-endif()
-
-target_include_directories(${PACKAGE_EXE_NAME} PRIVATE ${PACKAGE_INCLUDE_DIRS})
-if(IS_DIRECTORY ${GENERATED_INCLUDE_DIR})
-	target_include_directories(${PACKAGE_EXE_NAME} PRIVATE ${GENERATED_INCLUDE_DIR})
-endif()
-
-if(WIN32 AND NCINE_WTH_QT5)
-	target_link_libraries(${PACKAGE_EXE_NAME} PRIVATE Qt5::WinMain)
-elseif(MINGW)
-	# Should be linked before `ncine_main`
-	target_link_libraries(${PACKAGE_EXE_NAME} PRIVATE mingw32)
-endif()
-target_link_libraries(${PACKAGE_EXE_NAME} PRIVATE ncine::ncine_main ncine::ncine)
-
-target_compile_definitions(${PACKAGE_EXE_NAME} PRIVATE "$<$<CONFIG:Debug>:${PACKAGE_UPPER_NAME}_DEBUG>")
-target_compile_definitions(${PACKAGE_EXE_NAME} PRIVATE "$<$<CONFIG:Debug>:NCINE_ASSERT_BREAK>")
-
-if(MSVC)
-	set_property(TARGET ${PACKAGE_EXE_NAME} PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:${PACKAGE_EXE_NAME}>")
-	target_compile_options(${PACKAGE_EXE_NAME} PRIVATE /MP)
-endif()
-
-if(EMSCRIPTEN)
-	target_compile_options(${PACKAGE_EXE_NAME} PRIVATE "SHELL:--preload-file ${PACKAGE_DATA_DIR}/data@ --no-heap-copy")
-	target_link_options(${PACKAGE_EXE_NAME} PRIVATE "SHELL:--preload-file ${PACKAGE_DATA_DIR}/data@ --no-heap-copy")
-	configure_file(${CMAKE_SOURCE_DIR}/emscripten_shell.html.in ${CMAKE_BINARY_DIR}/${PACKAGE_EXE_NAME}.html @ONLY)
-	if(EXISTS ${PACKAGE_DATA_DIR}/icons/icon.ico)
-		file(COPY ${PACKAGE_DATA_DIR}/icons/icon.ico DESTINATION ${CMAKE_BINARY_DIR})
-		file(RENAME ${CMAKE_BINARY_DIR}/icon.ico ${CMAKE_BINARY_DIR}/favicon.ico)
-	endif()
-endif()
-
-if(COMMAND callback_after_target)
-	callback_after_target()
-endif()
-
-include(package_installation)
-
-if(DEFAULT_DATA_DIR_DIST)
-	if(MSVC OR APPLE)
-		# Relative path from tests to data on Windows and OS X, where the user can choose the installation directory
-		file(RELATIVE_PATH PACKAGE_DEFAULT_DATA_DIR
-			${CMAKE_INSTALL_PREFIX}/${RUNTIME_INSTALL_DESTINATION}
-			${CMAKE_INSTALL_PREFIX}/${DATA_INSTALL_DESTINATION}) # Always strips trailing slash
-		set(PACKAGE_DEFAULT_DATA_DIR "${PACKAGE_DEFAULT_DATA_DIR}/")
-	else()
-		set(PACKAGE_DEFAULT_DATA_DIR "${CMAKE_INSTALL_PREFIX}/${DATA_INSTALL_DESTINATION}/")
-	endif()
-elseif(NOT PACKAGE_DEFAULT_DATA_DIR)
-	set(PACKAGE_DEFAULT_DATA_DIR "${PACKAGE_DATA_DIR}/data/")
-endif()
-
-if(PACKAGE_DEFAULT_DATA_DIR)
-	file(TO_CMAKE_PATH "${PACKAGE_DEFAULT_DATA_DIR}" PACKAGE_DEFAULT_DATA_DIR) # Always strips trailing slash
-	set(PACKAGE_DEFAULT_DATA_DIR "${PACKAGE_DEFAULT_DATA_DIR}/")
-
-	message(STATUS "Default data directory: ${PACKAGE_DEFAULT_DATA_DIR}")
-	target_compile_definitions(${PACKAGE_EXE_NAME} PRIVATE "PACKAGE_DEFAULT_DATA_DIR=\"${PACKAGE_DEFAULT_DATA_DIR}\"")
-endif()
-
-include(package_copy_targets)
-include(package_build_android)
-include(package_strip_binaries)
-if(COMMAND callback_end)
-	callback_end()
+	message(FATAL_ERROR "Directory \"${NCPROJECT_DIR}\" does not exist")
 endif()
