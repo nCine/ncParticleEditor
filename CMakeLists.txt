@@ -27,7 +27,7 @@ endfunction()
 function(callback_after_target)
 	if(MSVC)
 		set(CMAKE_INSTALL_UCRT_LIBRARIES TRUE)
-		include(package_crashrpt)
+		include(custom_crashrpt)
 	endif()
 
 	include(custom_iconfontcppheaders)

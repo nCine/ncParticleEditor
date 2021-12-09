@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2016, windows-2019]
+        os: [windows-2019, windows-2022]
         BuildType: [Debug, Release, BinDist]
 
     runs-on: ${{ matrix.os }}
@@ -42,8 +42,8 @@ jobs:
 
         $env:generator = switch ("${{ matrix.os }}")
         {
+          "windows-2022" {"Visual Studio 17 2022"}
           "windows-2019" {"Visual Studio 16 2019"}
-          "windows-2016" {"Visual Studio 15 2017"}
         }
 
         cd CrashRpt
@@ -57,8 +57,8 @@ jobs:
 
         $env:vsversion = switch ("${{ matrix.os }}")
         {
+          "windows-2022" {"vs2022"}
           "windows-2019" {"vs2019"}
-          "windows-2016" {"vs2017"}
         }
 
         cd ..
@@ -98,8 +98,8 @@ jobs:
 
         $env:generator = switch ("${{ matrix.os }}")
         {
+          "windows-2022" {"Visual Studio 17 2022"}
           "windows-2019" {"Visual Studio 16 2019"}
-          "windows-2016" {"Visual Studio 15 2017"}
         }
 
         if ("${{ matrix.BuildType }}" -eq "BinDist")
@@ -121,7 +121,7 @@ jobs:
       run: |
         $env:project_name = Split-Path -Path "$env:GITHUB_REPOSITORY" -leaf
 
-        if ($env:BuildType -eq "BinDist")
+        if ("${{ matrix.BuildType }}" -eq "BinDist")
           { cmake --build ../$env:project_name-build-${{ matrix.BuildType }} --config Release --target package }
         else
           { cmake --build ../$env:project_name-build-${{ matrix.BuildType }} --config ${{ matrix.BuildType }} --target package }
@@ -142,16 +142,16 @@ jobs:
 
         $env:vsversion = switch ("${{ matrix.os }}")
         {
+          "windows-2022" {"vs2022"}
           "windows-2019" {"vs2019"}
-          "windows-2016" {"vs2017"}
         }
 
         $env:DEPLOY_BRANCH = $env:DEPLOY_BRANCH -creplace "PROJECT_NAME",$env:project_name
         $env:DEPLOY_BRANCH = $env:DEPLOY_BRANCH -creplace "BRANCH_NAME",$env:branch_name
         $env:DEPLOY_BRANCH = $env:DEPLOY_BRANCH -creplace "OS","windows" -creplace "COMPILER",$env:vsversion
 
-        if ($env:BuildType -ne "BinDist")
-          { $env:DEPLOY_BRANCH = -join($env:DEPLOY_BRANCH, "-", $env:BuildType, "-CrashRpt") }
+        if ("${{ matrix.BuildType }}" -ne "BinDist")
+          { $env:DEPLOY_BRANCH = -join($env:DEPLOY_BRANCH, "-", "${{ matrix.BuildType }}", "-CrashRpt") }
 
         cd ..
         git clone https://$env:PUBLIC_REPO_TOKEN@github.com/$env:GITHUB_REPOSITORY-artifacts.git 2>&1>$null
