@@ -1,7 +1,7 @@
 set(NCPROJECT_NAME "ncParticleEditor")
 set(NCPROJECT_EXE_NAME "ncparticleeditor")
 set(NCPROJECT_VENDOR "Angelo Theodorou")
-set(NCPROJECT_COPYRIGHT "Copyright ©2018-2021 ${NCPROJECT_VENDOR}")
+set(NCPROJECT_COPYRIGHT "Copyright ©2018-2022 ${NCPROJECT_VENDOR}")
 set(NCPROJECT_DESCRIPTION "A particle editor made with the nCine")
 set(NCPROJECT_HOMEPAGE "https://ncine.github.io")
 set(NCPROJECT_REVERSE_DNS "io.github.ncine.ncparticleeditor")

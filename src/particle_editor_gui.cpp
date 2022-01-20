@@ -5,6 +5,7 @@
 #include "particle_editor_gui_labels.h"
 #include "particle_editor_lua.h"
 #include <ncine/Application.h>
+#include <ncine/Viewport.h>
 #include <ncine/Texture.h>
 #include <ncine/Sprite.h>
 #include <ncine/ParticleSystem.h>
@@ -375,7 +376,7 @@ void MyEventHandler::createGuiBackground()
 	if (ImGui::CollapsingHeader(widgetName_.data()))
 	{
 		ImGui::ColorEdit4("Color", background_.data(), ImGuiColorEditFlags_NoAlpha);
-		nc::theApplication().gfxDevice().setClearColor(background_);
+		nc::theApplication().rootViewport().setClearColor(background_);
 
 		ImGui::Separator();
 		ImGui::InputText("Image to load", backgroundImageName_.data(), MaxStringLength,

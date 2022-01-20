@@ -10,6 +10,7 @@
 #include "particle_editor_lua.h"
 
 #include <ncine/Application.h>
+#include <ncine/Viewport.h>
 #include <ncine/Texture.h>
 #include <ncine/Sprite.h>
 #include <ncine/ParticleSystem.h>
@@ -256,7 +257,7 @@ bool MyEventHandler::load(const char *filename, const nc::EmscriptenLocalFile *l
 		clearData();
 
 	background_ = loaderState.background.color;
-	nc::theApplication().gfxDevice().setClearColor(background_);
+	nc::theApplication().rootViewport().setClearColor(background_);
 
 	backgroundImageName_ = loaderState.background.imageName;
 	backgroundImagePosition_ = loaderState.background.imageNormalizedPosition * nc::Vector2f(nc::theApplication().width(), nc::theApplication().height());
