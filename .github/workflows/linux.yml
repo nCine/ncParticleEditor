@@ -98,7 +98,7 @@ jobs:
         export NCINE_DIRECTORY=$(pwd)/../nCine/lib/cmake/nCine
 
         if [[ "${{ matrix.BuildType }}" == "BinDist" ]]; then
-          cmake -B ../$PROJECT_NAME-build-${{ matrix.BuildType }} -D NCPROJECT_OPTIONS_PRESETS=${{ matrix.BuildType }} -D nCine_DIR=$NCINE_DIRECTORY
+          cmake -B ../$PROJECT_NAME-build-${{ matrix.BuildType }} -D NCPROJECT_OPTIONS_PRESETS=${{ matrix.BuildType }} -D CMAKE_INSTALL_PREFIX="" -D nCine_DIR=$NCINE_DIRECTORY
         else
           cmake -B ../$PROJECT_NAME-build-${{ matrix.BuildType }} -D CMAKE_BUILD_TYPE=${{ matrix.BuildType }} -D nCine_DIR=$NCINE_DIRECTORY
         fi
