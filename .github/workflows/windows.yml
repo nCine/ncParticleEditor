@@ -33,7 +33,8 @@ jobs:
         git fetch --unshallow; if (-not $?) { return }
 
     - name: 'Download and Build CrashRpt'
-      if: matrix.BuildType == 'Debug'
+      #if: matrix.BuildType == 'Debug'
+      if: false
       run: |
         cd ..
         curl -fsSL https://sourceforge.net/projects/crashrpt/files/CrashRpt_v.1.4.3_r1645.7z/download -o CrashRpt.7z
@@ -150,8 +151,8 @@ jobs:
         $env:DEPLOY_BRANCH = $env:DEPLOY_BRANCH -creplace "BRANCH_NAME",$env:branch_name
         $env:DEPLOY_BRANCH = $env:DEPLOY_BRANCH -creplace "OS","windows" -creplace "COMPILER",$env:vsversion
 
-        if ("${{ matrix.BuildType }}" -ne "BinDist")
-          { $env:DEPLOY_BRANCH = -join($env:DEPLOY_BRANCH, "-", "${{ matrix.BuildType }}", "-CrashRpt") }
+        #if ("${{ matrix.BuildType }}" -ne "BinDist")
+        #  { $env:DEPLOY_BRANCH = -join($env:DEPLOY_BRANCH, "-", "${{ matrix.BuildType }}", "-CrashRpt") }
 
         cd ..
         git clone https://$env:PUBLIC_REPO_TOKEN@github.com/$env:GITHUB_REPOSITORY-artifacts.git 2>&1>$null

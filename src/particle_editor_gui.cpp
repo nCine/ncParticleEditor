@@ -376,7 +376,7 @@ void MyEventHandler::createGuiBackground()
 	if (ImGui::CollapsingHeader(widgetName_.data()))
 	{
 		ImGui::ColorEdit4("Color", background_.data(), ImGuiColorEditFlags_NoAlpha);
-		nc::theApplication().rootViewport().setClearColor(background_);
+		nc::theApplication().screenViewport().setClearColor(background_);
 
 		ImGui::Separator();
 		ImGui::InputText("Image to load", backgroundImageName_.data(), MaxStringLength,

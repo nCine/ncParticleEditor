@@ -257,7 +257,7 @@ bool MyEventHandler::load(const char *filename, const nc::EmscriptenLocalFile *l
 		clearData();
 
 	background_ = loaderState.background.color;
-	nc::theApplication().rootViewport().setClearColor(background_);
+	nc::theApplication().screenViewport().setClearColor(background_);
 
 	backgroundImageName_ = loaderState.background.imageName;
 	backgroundImagePosition_ = loaderState.background.imageNormalizedPosition * nc::Vector2f(nc::theApplication().width(), nc::theApplication().height());
