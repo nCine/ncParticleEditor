@@ -85,7 +85,7 @@ namespace CfgNames {
 	const char *version = "config_version"; // version 2
 	const char *width = "width";
 	const char *height = "height";
-	const char *fullscreen = "fullscreen";
+	const char *fullScreen = "fullscreen";
 	const char *resizable = "resizable"; // version 8
 	const char *frameLimit = "frame_limit"; // version 10
 	const char *useBufferMapping = "buffer_mapping"; // version 9
@@ -226,7 +226,7 @@ bool LuaLoader::loadConfig(const char *filename, const nc::EmscriptenLocalFile *
 
 	nc::LuaUtils::tryRetrieveGlobal<int32_t>(L, CfgNames::width, config_.width);
 	nc::LuaUtils::tryRetrieveGlobal<int32_t>(L, CfgNames::height, config_.height);
-	nc::LuaUtils::tryRetrieveGlobal<bool>(L, CfgNames::fullscreen, config_.fullscreen);
+	nc::LuaUtils::tryRetrieveGlobal<bool>(L, CfgNames::fullScreen, config_.fullScreen);
 	nc::LuaUtils::tryRetrieveGlobal<unsigned long>(L, CfgNames::vboSize, config_.vboSize);
 	nc::LuaUtils::tryRetrieveGlobal<unsigned long>(L, CfgNames::iboSize, config_.iboSize);
 	nc::LuaUtils::tryRetrieveGlobal<bool>(L, CfgNames::batching, config_.batching);
@@ -324,7 +324,7 @@ bool LuaLoader::saveConfig(const char *filename)
 	indent(file, amount).formatAppend("%s = %u\n", CfgNames::version, ConfigFileVersion);
 	indent(file, amount).formatAppend("%s = %d\n", CfgNames::width, config_.width);
 	indent(file, amount).formatAppend("%s = %d\n", CfgNames::height, config_.height);
-	indent(file, amount).formatAppend("%s = %s\n", CfgNames::fullscreen, config_.fullscreen ? "true" : "false");
+	indent(file, amount).formatAppend("%s = %s\n", CfgNames::fullScreen, config_.fullScreen ? "true" : "false");
 	indent(file, amount).formatAppend("%s = %s\n", CfgNames::resizable, config_.resizable ? "true" : "false");
 	indent(file, amount).formatAppend("%s = %u\n", CfgNames::frameLimit, config_.frameLimit);
 	indent(file, amount).formatAppend("%s = %s\n", CfgNames::useBufferMapping, config_.useBufferMapping ? "true" : "false");

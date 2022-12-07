@@ -112,7 +112,7 @@ class LuaLoader
 	{
 		int width = 1280;
 		int height = 720;
-		bool fullscreen = false;
+		bool fullScreen = false;
 		bool resizable = false;
 		unsigned int frameLimit = 0;
 		bool useBufferMapping = false;

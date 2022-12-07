@@ -96,8 +96,8 @@ void MyEventHandler::onPreInit(nc::AppConfiguration &config)
 		luaConfig.backgroundsPath = nc::fs::joinPath(nc::fs::dataPath(), "backgrounds");
 
 	config.resolution.set(luaConfig.width, luaConfig.height);
-	config.inFullscreen = luaConfig.fullscreen;
-	config.isResizable = luaConfig.resizable;
+	config.fullScreen = luaConfig.fullScreen;
+	config.resizable = luaConfig.resizable;
 	config.frameLimit = luaConfig.frameLimit;
 	config.useBufferMapping = luaConfig.useBufferMapping;
 	config.vboSize = luaConfig.vboSize;
