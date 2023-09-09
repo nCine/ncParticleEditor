@@ -46,7 +46,7 @@ jobs:
 
     steps:
     - name: 'Checkout Code'
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: 'Update MSYS2'
       run: |
@@ -91,7 +91,7 @@ jobs:
         $env:NCINE_SOURCE_BRANCH = $env:NCINE_SOURCE_BRANCH -creplace "BRANCH_NAME","$env:branch_name"
         $env:NCINE_BRANCH = $env:NCINE_BRANCH -creplace "BRANCH_NAME","$env:ncine_source_branch" -creplace "OS","mingw64" -creplace "COMPILER",$env:CC
         git checkout $env:NCINE_BRANCH
-        $env:NCINE_FILE = Get-ChildItem -Path $(pwd) -Name -File | Select-Object -First 1
+        $env:NCINE_FILE = Get-ChildItem -Path $(pwd) -Filter nCine-*.tar.gz -Name -File | Select-Object -First 1
         7z x $env:NCINE_FILE
         $env:NCINE_FILE = $env:NCINE_FILE -creplace ".gz",""
         7z x $env:NCINE_FILE -aos

@@ -23,7 +23,7 @@ jobs:
 
     steps:
     - name: 'Checkout Code'
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: 'Install Emscripten SDK'
       run: |
@@ -67,7 +67,7 @@ jobs:
         cd nCine-artifacts
         git checkout $NCINE_BRANCH
 
-        NCINE_FILE=$(ls -t | head -n 1)
+        NCINE_FILE=$(ls -t nCine-* | head -n 1)
         tar xpzf $NCINE_FILE
         mv nCine-*-Emscripten ../nCine
 

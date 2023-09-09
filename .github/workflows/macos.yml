@@ -23,7 +23,7 @@ jobs:
 
     steps:
     - name: 'Checkout Code'
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: 'Unshallow Git Repository for Versioning'
       if: matrix.BuildType == 'BinDist'
@@ -57,8 +57,8 @@ jobs:
         cd nCine-artifacts
         git checkout $NCINE_BRANCH
 
-        NCINE_FILE=$(ls -t | head -n 1)
-        hdiutil convert *.dmg -format UDTO -o nCine
+        NCINE_FILE=$(ls -t nCine-*.dmg | head -n 1)
+        hdiutil convert $NCINE_FILE -format UDTO -o nCine
         hdiutil attach -readonly nCine.cdr
         cp -Rp /Volumes/nCine-*-Darwin/nCine.app ..
         hdiutil detach /Volumes/nCine-*-Darwin;
