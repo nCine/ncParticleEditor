@@ -512,7 +512,7 @@ void MyEventHandler::createGuiTextures()
 		{
 			nc::Texture &tex = *textures_[texIndex_];
 			const ImVec2 size(tex.width(), tex.height());
-			ImGui::Image(tex.guiTexId(), size);
+			ImGui::Image(static_cast<ImTextureID>(reinterpret_cast<intptr_t>(tex.guiTexId())), size);
 		}
 	}
 	ImGui::PopID();
@@ -720,7 +720,7 @@ void MyEventHandler::createGuiSprite()
 		if (spriteState_.flippedY)
 			nctl::swap(uv0.y, uv1.y);
 
-		ImGui::Image(tex.guiTexId(), size, uv0, uv1);
+		ImGui::Image(static_cast<ImTextureID>(reinterpret_cast<intptr_t>(tex.guiTexId())), size, uv0, uv1);
 
 		int minX = spriteState_.texRect.x;
 		int maxX = minX + spriteState_.texRect.w;
