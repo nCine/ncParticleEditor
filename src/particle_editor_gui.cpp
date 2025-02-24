@@ -1695,13 +1695,13 @@ void MyEventHandler::createGuiEmissionPlot()
 
 	static unsigned int index = 0;
 	static float values[NumPlotValues];
-	static float interval = nc::theApplication().interval();
+	static float frameTime = nc::theApplication().frameTime();
 	static unsigned int aliveParticles = 0;
 	static unsigned int totalParticles = 0;
 
 	if (lastUpdateTime.secondsSince() > 0.1f)
 	{
-		interval = nc::theApplication().interval();
+		frameTime = nc::theApplication().frameTime();
 		aliveParticles = 0;
 		totalParticles = 0;
 		for (nctl::UniquePtr<nc::ParticleSystem> &particleSystem : particleSystems_)
@@ -1715,7 +1715,7 @@ void MyEventHandler::createGuiEmissionPlot()
 	}
 
 	ImGui::SameLine();
-	ImGui::Text("FPS: %.0f (%.3fs)", 1.0f / interval, interval);
+	ImGui::Text("FPS: %.0f (%.3fs)", 1.0f / frameTime, frameTime);
 	ImGui::PlotLines("", values, NumPlotValues, 0, nullptr, 0, totalParticles, ImVec2(0.0f, 25.0f));
 	ImGui::SameLine();
 	ImGui::Text("Alive: %u/%u", aliveParticles, totalParticles);
