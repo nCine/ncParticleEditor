@@ -17,10 +17,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2019, windows-2022]
         BuildType: [Debug, Release, BinDist]
 
-    runs-on: ${{ matrix.os }}
+    runs-on: 'windows-2022'
 
     steps:
     - name: 'Checkout Code'
@@ -41,32 +40,20 @@ jobs:
         7z x CrashRpt.7z -oCrashRpt
         Remove-Item CrashRpt.7z
 
-        $env:generator = switch ("${{ matrix.os }}")
-        {
-          "windows-2022" {"Visual Studio 17 2022"}
-          "windows-2019" {"Visual Studio 16 2019"}
-        }
-
         cd CrashRpt
-        cmake -G "$env:generator" -A x64 -B ../CrashRpt-build -Wno-dev
-        cmake --build ../CrashRpt-build --config Release
+        cmake -G "Visual Studio 17 2022" -A x64 -B ../CrashRpt-build -Wno-dev
+        cmake --build ../CrashRpt-build --config Release -j $env:NUMBER_OF_PROCESSORS
 
     - name: 'Download nCine-libraries, nCine Artifacts, and project data'
       run: |
         $env:GIT_REDIRECT_STDERR = '2>&1'
         $env:branch_name = git describe --tags --exact-match; if (-not $?) { $env:branch_name = git symbolic-ref -q --short HEAD }; if (-not $?) { $env:branch_name = git rev-parse --short HEAD }
 
-        $env:vsversion = switch ("${{ matrix.os }}")
-        {
-          "windows-2022" {"vs2022"}
-          "windows-2019" {"vs2019"}
-        }
-
         cd ..
         git clone https://github.com/nCine/nCine-libraries-artifacts.git
         cd nCine-libraries-artifacts
 
-        $env:LIBRARIES_BRANCH = $env:LIBRARIES_BRANCH -creplace "OS","windows" -creplace "COMPILER",$env:vsversion
+        $env:LIBRARIES_BRANCH = $env:LIBRARIES_BRANCH -creplace "OS","windows" -creplace "COMPILER","vs2022"
         git checkout $env:LIBRARIES_BRANCH
         $env:LIBRARIES_FILE = Get-ChildItem -Path $(pwd) -Name -File | Select-Object -First 1
         7z x $env:LIBRARIES_FILE
@@ -80,7 +67,7 @@ jobs:
         cd nCine-artifacts
 
         $env:NCINE_SOURCE_BRANCH = $env:NCINE_SOURCE_BRANCH -creplace "BRANCH_NAME","$env:branch_name"
-        $env:NCINE_BRANCH = $env:NCINE_BRANCH -creplace "BRANCH_NAME","$env:ncine_source_branch" -creplace "OS","windows" -creplace "COMPILER",$env:vsversion
+        $env:NCINE_BRANCH = $env:NCINE_BRANCH -creplace "BRANCH_NAME","$env:ncine_source_branch" -creplace "OS","windows" -creplace "COMPILER","vs2022"
         git checkout $env:NCINE_BRANCH
         $env:NCINE_FILE = Get-ChildItem -Path $(pwd) -Filter nCine-*.zip -Name -File | Select-Object -First 1
         7z x $env:NCINE_FILE
@@ -97,25 +84,19 @@ jobs:
       run: |
         $env:project_name = Split-Path -Path "$env:GITHUB_REPOSITORY" -leaf
 
-        $env:generator = switch ("${{ matrix.os }}")
-        {
-          "windows-2022" {"Visual Studio 17 2022"}
-          "windows-2019" {"Visual Studio 16 2019"}
-        }
-
         if ("${{ matrix.BuildType }}" -eq "BinDist")
-          { cmake -G "$env:generator" -A x64 -B ../$env:project_name-build-${{ matrix.BuildType }} -D NCPROJECT_OPTIONS_PRESETS=${{ matrix.BuildType }} -D nCine_DIR=$(pwd)/../nCine/cmake }
+          { cmake -G "Visual Studio 17 2022" -A x64 -B ../$env:project_name-build-${{ matrix.BuildType }} -D NCPROJECT_OPTIONS_PRESETS=${{ matrix.BuildType }} -D nCine_DIR=$(pwd)/../nCine/cmake }
         else
-          { cmake -G "$env:generator" -A x64 -B ../$env:project_name-build-${{ matrix.BuildType }} -D nCine_DIR=$(pwd)/../nCine/cmake }
+          { cmake -G "Visual Studio 17 2022" -A x64 -B ../$env:project_name-build-${{ matrix.BuildType }} -D nCine_DIR=$(pwd)/../nCine/cmake }
 
     - name: 'CMake Build'
       run: |
         $env:project_name = Split-Path -Path "$env:GITHUB_REPOSITORY" -leaf
 
         if ("${{ matrix.BuildType }}" -eq "BinDist")
-          { cmake --build ../$env:project_name-build-${{ matrix.BuildType }} --config Release }
+          { cmake --build ../$env:project_name-build-${{ matrix.BuildType }} --config Release -j $env:NUMBER_OF_PROCESSORS }
         else
-          { cmake --build ../$env:project_name-build-${{ matrix.BuildType }} --config ${{ matrix.BuildType }} }
+          { cmake --build ../$env:project_name-build-${{ matrix.BuildType }} --config ${{ matrix.BuildType }} -j $env:NUMBER_OF_PROCESSORS }
 
     - name: 'Package'
       if: matrix.BuildType != 'Release'
@@ -141,15 +122,9 @@ jobs:
         $env:DEPLOY_MESSAGE = $env:DEPLOY_MESSAGE -creplace "PROJECT_NAME",$env:project_name
         $env:DEPLOY_MESSAGE = $env:DEPLOY_MESSAGE -creplace "BRANCH_NAME",$env:branch_name
 
-        $env:vsversion = switch ("${{ matrix.os }}")
-        {
-          "windows-2022" {"vs2022"}
-          "windows-2019" {"vs2019"}
-        }
-
         $env:DEPLOY_BRANCH = $env:DEPLOY_BRANCH -creplace "PROJECT_NAME",$env:project_name
         $env:DEPLOY_BRANCH = $env:DEPLOY_BRANCH -creplace "BRANCH_NAME",$env:branch_name
-        $env:DEPLOY_BRANCH = $env:DEPLOY_BRANCH -creplace "OS","windows" -creplace "COMPILER",$env:vsversion
+        $env:DEPLOY_BRANCH = $env:DEPLOY_BRANCH -creplace "OS","windows" -creplace "COMPILER","vs2022"
 
         #if ("${{ matrix.BuildType }}" -ne "BinDist")
         #  { $env:DEPLOY_BRANCH = -join($env:DEPLOY_BRANCH, "-", "${{ matrix.BuildType }}", "-CrashRpt") }

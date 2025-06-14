@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         BuildType: [Debug, Release, BinDist]
-        os: [macOS-13, macOS-14]
+        os: [macOS-13, macOS-15]
 
     runs-on: ${{ matrix.os }}
 
@@ -33,8 +33,8 @@ jobs:
 
     - name: 'Download nCine-libraries, nCine Artifacts, and project data'
       run: |
-        if [[ "${{ matrix.os }}" == "macOS-14" ]]; then
-          export OS=macos14
+        if [[ "${{ matrix.os }}" == "macOS-15" ]]; then
+          export OS=macos15
         else
           export OS=macos13
         fi
@@ -88,7 +88,7 @@ jobs:
     - name: 'Make'
       run: |
         export PROJECT_NAME=${GITHUB_REPOSITORY##*/}
-        make -j2 -C ../$PROJECT_NAME-build-${{ matrix.BuildType }}
+        make -j $(getconf _NPROCESSORS_ONLN) -C ../$PROJECT_NAME-build-${{ matrix.BuildType }}
 
     - name: 'Package'
       if: matrix.BuildType == 'BinDist'
@@ -109,8 +109,8 @@ jobs:
         export DEPLOY_MESSAGE=`sed 's/PROJECT_NAME/'"$PROJECT_NAME"'/' <<< "$DEPLOY_MESSAGE"`
         export DEPLOY_MESSAGE=`sed 's/BRANCH_NAME/'"$BRANCH_NAME"'/' <<< "$DEPLOY_MESSAGE"`
 
-        if [[ "${{ matrix.os }}" == "macOS-14" ]]; then
-          export OS=macos14
+        if [[ "${{ matrix.os }}" == "macOS-15" ]]; then
+          export OS=macos15
         else
           export OS=macos13
         fi

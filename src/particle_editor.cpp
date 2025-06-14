@@ -574,7 +574,7 @@ bool MyEventHandler::applyBackgroundImageProperties()
 		backgroundSprite_->setPosition(backgroundImagePosition_);
 		backgroundSprite_->setScale(backgroundImageScale_);
 		backgroundSprite_->setLayer(static_cast<unsigned short>(backgroundImageLayer_));
-		backgroundSprite_->setColor(backgroundImageColor_);
+		backgroundSprite_->setColorF(backgroundImageColor_);
 		backgroundSprite_->setTexRect(backgroundImageRect_);
 		backgroundSprite_->setFlippedX(backgroundImageFlippedX);
 		backgroundSprite_->setFlippedY(backgroundImageFlippedY);

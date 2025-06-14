@@ -42,7 +42,7 @@ jobs:
           CC: clang
           CXX: clang++
 
-    runs-on: 'windows-2019'
+    runs-on: 'windows-2022'
 
     steps:
     - name: 'Checkout Code'
@@ -59,7 +59,7 @@ jobs:
       run: |
         $env:MSYSTEM = "MINGW64"
 
-        C:\msys64\usr\bin\bash -lc 'pacman --needed --noconfirm -S mingw-w64-x86_64-glew mingw-w64-x86_64-glfw mingw-w64-x86_64-SDL2 mingw-w64-x86_64-openal mingw-w64-x86_64-libvorbis mingw-w64-x86_64-libwebp mingw-w64-x86_64-lua mingw-w64-x86_64-cmake'
+        C:\msys64\usr\bin\bash -lc 'pacman --needed --noconfirm -S mingw-w64-x86_64-glew mingw-w64-x86_64-glfw mingw-w64-x86_64-SDL2 mingw-w64-x86_64-openal mingw-w64-x86_64-libvorbis mingw-w64-x86_64-libwebp mingw-w64-x86_64-lua mingw-w64-x86_64-cmake make patch'
 
         if ("${{ matrix.CC }}" -eq "gcc") { C:\msys64\usr\bin\bash -lc 'pacman --needed --noconfirm -S mingw-w64-x86_64-gcc' }
         else { C:\msys64\usr\bin\bash -lc 'pacman --needed --noconfirm -S mingw-w64-x86_64-clang' }
@@ -126,7 +126,7 @@ jobs:
         $env:PROJECT_NAME = Split-Path -Path "$env:GITHUB_REPOSITORY" -leaf
         $env:MSYSTEM = "MINGW64"
 
-        C:\msys64\usr\bin\bash.exe -lc 'make -j2 -C ../$PROJECT_NAME-build-${{ matrix.BuildType }}'
+        C:\msys64\usr\bin\bash.exe -lc 'make -j $NUMBER_OF_PROCESSORS -C ../$PROJECT_NAME-build-${{ matrix.BuildType }}'
 
     - name: 'Package'
       if: matrix.BuildType == 'BinDist'
