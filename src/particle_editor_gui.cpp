@@ -1965,5 +1965,6 @@ void MyEventHandler::applyGuiStyleConfig()
 	style.WindowBorderSize = cfg.windowBorder ? 1.0f : 0.0f;
 	style.FrameBorderSize = cfg.frameBorder ? 1.0f : 0.0f;
 	style.PopupBorderSize = cfg.popupBorder ? 1.0f : 0.0f;
-	ImGui::GetIO().FontGlobalScale = cfg.scaling;
+	style.FontScaleMain = cfg.scaling;
+	style.ScaleAllSizes(cfg.scaling);
 }

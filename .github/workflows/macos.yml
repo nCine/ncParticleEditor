@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         BuildType: [Debug, Release, BinDist]
-        os: [macOS-13, macOS-15]
+        os: [macOS-15, macOS-15-intel]
 
     runs-on: ${{ matrix.os }}
 
@@ -36,7 +36,7 @@ jobs:
         if [[ "${{ matrix.os }}" == "macOS-15" ]]; then
           export OS=macos15
         else
-          export OS=macos13
+          export OS=macos15-intel
         fi
         export CC=appleclang
         export BRANCH_NAME=$(git describe --tags --exact-match 2> /dev/null || git symbolic-ref -q --short HEAD || git rev-parse --short HEAD)
@@ -112,7 +112,7 @@ jobs:
         if [[ "${{ matrix.os }}" == "macOS-15" ]]; then
           export OS=macos15
         else
-          export OS=macos13
+          export OS=macos15-intel
         fi
         export CC=appleclang
         export PROJECT_EXT=dmg
