@@ -8,15 +8,14 @@ env:
 on: [push, workflow_dispatch]
 
 jobs:
-  analyze:
-    name: 'Analyze'
-    runs-on: 'ubuntu-24.04'
-
+  Analyze:
     strategy:
       fail-fast: false
 
+    runs-on: 'ubuntu-24.04'
+
     steps:
-    - name: 'Checkout Repository'
+    - name: 'Checkout Code'
       uses: actions/checkout@v4
 
     - name: 'Initialize CodeQL'
@@ -25,13 +24,17 @@ jobs:
         languages: 'cpp'
 
     - run: |
-        # Download nCine-libraries, nCine Artifacts, and project data
-        export OS=linux
-        export CC=gcc
-        export BRANCH_NAME=$(git describe --tags --exact-match 2> /dev/null || git symbolic-ref -q --short HEAD || git rev-parse --short HEAD)
+        # Install Build Dependencies on Linux
+        sudo apt-get update
+        sudo apt-get install -y libgl1-mesa-dev libopengl-dev libegl1-mesa-dev libglvnd-dev libxext-dev libxrandr-dev libwayland-dev
 
-        export LIBRARIES_BRANCH=`echo $LIBRARIES_BRANCH | sed 's/OS/'"$OS"'/'`
-        export LIBRARIES_BRANCH=`echo $LIBRARIES_BRANCH | sed 's/COMPILER/'"$CC"'/'`
+        # Download nCine-libraries, nCine Artifacts, and project data
+        OS=linux
+        CC=gcc
+        BRANCH_NAME=$(git describe --tags --exact-match 2> /dev/null || git symbolic-ref -q --short HEAD || git rev-parse --short HEAD)
+
+        LIBRARIES_BRANCH=`echo $LIBRARIES_BRANCH | sed 's/OS/'"$OS"'/'`
+        LIBRARIES_BRANCH=`echo $LIBRARIES_BRANCH | sed 's/COMPILER/'"$CC"'/'`
 
         cd ..
         git clone https://github.com/nCine/nCine-libraries-artifacts.git
@@ -43,10 +46,10 @@ jobs:
         cd ..
         rm -rf nCine-libraries-artifacts
 
-        export NCINE_SOURCE_BRANCH=`echo $NCINE_SOURCE_BRANCH | sed 's/BRANCH_NAME/'"$BRANCH_NAME"'/'`
-        export NCINE_BRANCH=`echo $NCINE_BRANCH | sed 's/BRANCH_NAME/'"$NCINE_SOURCE_BRANCH"'/'`
-        export NCINE_BRANCH=`echo $NCINE_BRANCH | sed 's/OS/'"$OS"'/'`
-        export NCINE_BRANCH=`echo $NCINE_BRANCH | sed 's/COMPILER/'"$CC"'/'`
+        NCINE_SOURCE_BRANCH=`echo $NCINE_SOURCE_BRANCH | sed 's/BRANCH_NAME/'"$BRANCH_NAME"'/'`
+        NCINE_BRANCH=`echo $NCINE_BRANCH | sed 's/BRANCH_NAME/'"$NCINE_SOURCE_BRANCH"'/'`
+        NCINE_BRANCH=`echo $NCINE_BRANCH | sed 's/OS/'"$OS"'/'`
+        NCINE_BRANCH=`echo $NCINE_BRANCH | sed 's/COMPILER/'"$CC"'/'`
         git clone https://github.com/nCine/nCine-artifacts.git
         cd nCine-artifacts
         git checkout $NCINE_BRANCH
@@ -61,14 +64,12 @@ jobs:
         git clone https://github.com/$GITHUB_REPOSITORY-data.git
 
         # CMake Configuration and Make
-        export PROJECT_NAME=${GITHUB_REPOSITORY##*/}
-        export NCINE_DIRECTORY=$(pwd)/nCine/lib/cmake/nCine
-        export BuildType=Debug
+        PROJECT_NAME=${GITHUB_REPOSITORY##*/}
+        NCINE_DIRECTORY=$(pwd)/nCine/lib/cmake/nCine
+        BuildType=Debug
 
         cd $PROJECT_NAME
-        cmake -B ../$PROJECT_NAME-build-$BuildType -D CMAKE_BUILD_TYPE=$BuildType -D nCine_DIR=$NCINE_DIRECTORY
-
-        export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/../nCine-external/lib
+        cmake -B ../$PROJECT_NAME-build-$BuildType -D CMAKE_BUILD_TYPE=$BuildType -D nCine_DIR=$NCINE_DIRECTORY -D CMAKE_PREFIX_PATH=$(pwd)/../nCine-external
         make -j $(getconf _NPROCESSORS_ONLN) -C ../$PROJECT_NAME-build-$BuildType
 
     - name: 'Perform CodeQL Analysis'
