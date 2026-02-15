@@ -4,7 +4,7 @@
 #include <ncine/LuaUtils.h>
 #include <ncine/LuaRectUtils.h>
 #include <ncine/LuaVector2Utils.h>
-#include <ncine/LuaColorUtils.h>
+#include <ncine/LuaColorfUtils.h>
 #include <ncine/IFile.h>
 
 ///////////////////////////////////////////////////////////
@@ -434,7 +434,7 @@ bool LuaLoader::load(const char *filename, State &state, const nc::EmscriptenLoc
 	{
 		nc::LuaUtils::retrieveGlobalTable(L, Names::backgroundProperties);
 
-		state.background.color = nc::LuaColorUtils::retrieveTableField(L, -1, Names::backgroundColor);
+		state.background.color = nc::LuaColorfUtils::retrieveTableField(L, -1, Names::backgroundColor);
 		state.background.imageName = nc::LuaUtils::retrieveField<const char *>(L, -1, Names::backgroundImage);
 		state.background.imageNormalizedPosition = nc::LuaVector2fUtils::retrieveTableField(L, -1, Names::backgroundImageNormalizedPosition);
 		if (version >= 7)
@@ -448,7 +448,7 @@ bool LuaLoader::load(const char *filename, State &state, const nc::EmscriptenLoc
 
 		if (version >= 5)
 		{
-			state.background.imageColor = nc::LuaColorUtils::retrieveTableField(L, -1, Names::backgroundImageColor);
+			state.background.imageColor = nc::LuaColorfUtils::retrieveTableField(L, -1, Names::backgroundImageColor);
 			state.background.imageRect = nc::LuaRectiUtils::retrieveTableField(L, -1, Names::backgroundImageRect);
 		}
 
@@ -522,7 +522,7 @@ bool LuaLoader::load(const char *filename, State &state, const nc::EmscriptenLoc
 				nc::LuaUtils::pop(L);
 
 				nc::LuaUtils::rawGeti(L, -1, 2);
-				step.color = nc::LuaColorUtils::retrieveTable(L, -1);
+				step.color = nc::LuaColorfUtils::retrieveTable(L, -1);
 				nc::LuaUtils::pop(L);
 
 				nc::LuaUtils::pop(L);
