@@ -10,7 +10,12 @@ env:
     - PROJECT_NAME artifact from branch 'BRANCH_NAME' with commit id ${{ github.sha }}
   DEPLOY_BRANCH: PROJECT_NAME-BRANCH_NAME-OS-COMPILER
 
-on: [push, workflow_dispatch]
+on:
+  push:
+    branches:
+      - master
+      - main
+  workflow_dispatch:
 
 jobs:
   Build:
@@ -23,7 +28,7 @@ jobs:
 
     steps:
     - name: 'Checkout Code'
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: 'Download and Build CrashRpt'
       #if: matrix.BuildType == 'Debug'
@@ -161,7 +166,7 @@ jobs:
 
     - name: 'Upload GitHub Actions Artifact'
       if: matrix.BuildType != 'Release'
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ github.event.repository.name }}-job-artifacts-${{ matrix.BuildType }}
         path: ${{ github.event.repository.name }}-job-artifacts/*
@@ -181,7 +186,7 @@ jobs:
 
     steps:
     - name: 'Checkout Code'
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: 'Unshallow Git Repository for Versioning'
       run: |
@@ -189,7 +194,7 @@ jobs:
         git fetch --unshallow; if (-not $?) { return }
 
     - name: 'Download GitHub Actions Artifact'
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: ${{ github.event.repository.name }}-job-artifacts-${{ matrix.BuildType }}
         path: ${{ github.event.repository.name }}-job-artifacts
