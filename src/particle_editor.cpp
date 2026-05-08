@@ -95,17 +95,17 @@ void MyEventHandler::onPreInit(nc::AppConfiguration &config)
 	if (nc::fs::isDirectory(luaConfig.backgroundsPath.data()) == false)
 		luaConfig.backgroundsPath = nc::fs::joinPath(nc::fs::dataPath(), "backgrounds");
 
-	config.resolution.set(luaConfig.width, luaConfig.height);
-	config.fullScreen = luaConfig.fullScreen;
-	config.resizable = luaConfig.resizable;
-	config.frameLimit = luaConfig.frameLimit;
-	config.useBufferMapping = luaConfig.useBufferMapping;
-	config.vboSize = luaConfig.vboSize;
-	config.iboSize = luaConfig.iboSize;
-	config.withVSync = luaConfig.withVSync;
+	config.window.resolution.set(luaConfig.width, luaConfig.height);
+	config.window.fullscreen = luaConfig.fullscreen;
+	config.window.resizable = luaConfig.resizable;
+	config.window.title = "ncParticleEditor";
+	config.window.iconFilename = "icon48.png";
 
-	config.windowTitle = "ncParticleEditor";
-	config.windowIconFilename = "icon48.png";
+	config.graphics.vsync = luaConfig.vsync;
+	config.graphics.frameLimit = luaConfig.frameLimit;
+	config.graphics.opengl.useBufferMapping = luaConfig.useBufferMapping;
+	config.graphics.opengl.vboSize = luaConfig.vboSize;
+	config.graphics.opengl.iboSize = luaConfig.iboSize;
 }
 
 void MyEventHandler::onInit()

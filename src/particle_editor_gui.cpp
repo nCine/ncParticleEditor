@@ -1746,7 +1746,7 @@ void MyEventHandler::createGuiConfigWindow()
 		}
 		const nc::IGfxDevice::VideoMode &currentVideoMode = gfxDevice.currentVideoMode(monitorIndex);
 		const nc::IGfxDevice::Monitor &monitor = gfxDevice.monitor(monitorIndex);
-		if (cfg.fullScreen == false)
+		if (cfg.fullscreen == false)
 		{
 			ImGui::SliderInt("Window Width", &cfg.width, 0, currentVideoMode.width);
 			ImGui::SliderInt("Window Height", &cfg.height, 0, currentVideoMode.height);
@@ -1780,14 +1780,14 @@ void MyEventHandler::createGuiConfigWindow()
 			cfg.height = monitor.videoModes[selectedVideoMode].height;
 		}
 
-		ImGui::Checkbox("Fullscreen", &cfg.fullScreen);
+		ImGui::Checkbox("Fullscreen", &cfg.fullscreen);
 		ImGui::SameLine();
 		if (ImGui::Button(Labels::Apply))
 		{
-			if (cfg.fullScreen)
+			if (cfg.fullscreen)
 				gfxDevice.setVideoMode(selectedVideoMode);
-			gfxDevice.setFullScreen(cfg.fullScreen);
-			if (cfg.fullScreen == false)
+			gfxDevice.setFullscreen(cfg.fullscreen);
+			if (cfg.fullscreen == false)
 				gfxDevice.setWindowSize(cfg.width, cfg.height);
 		}
 		ImGui::SameLine();
@@ -1795,7 +1795,7 @@ void MyEventHandler::createGuiConfigWindow()
 		{
 			cfg.width = nc::theApplication().widthInt();
 			cfg.height = nc::theApplication().heightInt();
-			cfg.fullScreen = gfxDevice.isFullScreen();
+			cfg.fullscreen = gfxDevice.isFullscreen();
 			cfg.resizable = gfxDevice.isResizable();
 			selectedVideoMode = -1;
 		}
@@ -1804,7 +1804,7 @@ void MyEventHandler::createGuiConfigWindow()
 		ImGui::NewLine();
 		ImGui::Checkbox("Buffer Mapping", &cfg.useBufferMapping);
 		ImGui::SameLine();
-		ImGui::Checkbox("Vertical Sync", &cfg.withVSync);
+		ImGui::Checkbox("Vertical Sync", &cfg.vsync);
 		int frameLimit = cfg.frameLimit;
 		ImGui::SliderInt("Frame Limit", &frameLimit, 0, 240);
 		cfg.frameLimit = frameLimit < 0 ? 0 : frameLimit;

@@ -85,13 +85,13 @@ namespace CfgNames {
 	const char *version = "config_version"; // version 2
 	const char *width = "width";
 	const char *height = "height";
-	const char *fullScreen = "fullscreen";
+	const char *fullscreen = "fullscreen";
 	const char *resizable = "resizable"; // version 8
 	const char *frameLimit = "frame_limit"; // version 10
 	const char *useBufferMapping = "buffer_mapping"; // version 9
 	const char *vboSize = "vbo_size";
 	const char *iboSize = "ibo_size";
-	const char *withVSync = "vsync"; // version 9
+	const char *vsync = "vsync"; // version 9
 	const char *batching = "batching";
 	const char *culling = "culling";
 	const char *saveFileMaxSize = "savefile_maxsize"; // version 3
@@ -226,7 +226,7 @@ bool LuaLoader::loadConfig(const char *filename, const nc::EmscriptenLocalFile *
 
 	nc::LuaUtils::tryRetrieveGlobal<int32_t>(L, CfgNames::width, config_.width);
 	nc::LuaUtils::tryRetrieveGlobal<int32_t>(L, CfgNames::height, config_.height);
-	nc::LuaUtils::tryRetrieveGlobal<bool>(L, CfgNames::fullScreen, config_.fullScreen);
+	nc::LuaUtils::tryRetrieveGlobal<bool>(L, CfgNames::fullscreen, config_.fullscreen);
 	nc::LuaUtils::tryRetrieveGlobal<unsigned long>(L, CfgNames::vboSize, config_.vboSize);
 	nc::LuaUtils::tryRetrieveGlobal<unsigned long>(L, CfgNames::iboSize, config_.iboSize);
 	nc::LuaUtils::tryRetrieveGlobal<bool>(L, CfgNames::batching, config_.batching);
@@ -238,7 +238,7 @@ bool LuaLoader::loadConfig(const char *filename, const nc::EmscriptenLocalFile *
 	if (version >= 9)
 	{
 		nc::LuaUtils::tryRetrieveGlobal<bool>(L, CfgNames::useBufferMapping, config_.useBufferMapping);
-		nc::LuaUtils::tryRetrieveGlobal<bool>(L, CfgNames::withVSync, config_.withVSync);
+		nc::LuaUtils::tryRetrieveGlobal<bool>(L, CfgNames::vsync, config_.vsync);
 	}
 
 	if (version >= 8)
@@ -324,13 +324,13 @@ bool LuaLoader::saveConfig(const char *filename)
 	indent(file, amount).formatAppend("%s = %u\n", CfgNames::version, ConfigFileVersion);
 	indent(file, amount).formatAppend("%s = %d\n", CfgNames::width, config_.width);
 	indent(file, amount).formatAppend("%s = %d\n", CfgNames::height, config_.height);
-	indent(file, amount).formatAppend("%s = %s\n", CfgNames::fullScreen, config_.fullScreen ? "true" : "false");
+	indent(file, amount).formatAppend("%s = %s\n", CfgNames::fullscreen, config_.fullscreen ? "true" : "false");
 	indent(file, amount).formatAppend("%s = %s\n", CfgNames::resizable, config_.resizable ? "true" : "false");
 	indent(file, amount).formatAppend("%s = %u\n", CfgNames::frameLimit, config_.frameLimit);
 	indent(file, amount).formatAppend("%s = %s\n", CfgNames::useBufferMapping, config_.useBufferMapping ? "true" : "false");
 	indent(file, amount).formatAppend("%s = %lu\n", CfgNames::vboSize, config_.vboSize);
 	indent(file, amount).formatAppend("%s = %lu\n", CfgNames::iboSize, config_.iboSize);
-	indent(file, amount).formatAppend("%s = %s\n", CfgNames::withVSync, config_.withVSync ? "true" : "false");
+	indent(file, amount).formatAppend("%s = %s\n", CfgNames::vsync, config_.vsync ? "true" : "false");
 	indent(file, amount).formatAppend("%s = %s\n", CfgNames::batching, config_.batching ? "true" : "false");
 	indent(file, amount).formatAppend("%s = %s\n", CfgNames::culling, config_.culling ? "true" : "false");
 	indent(file, amount).formatAppend("%s = %u\n", CfgNames::saveFileMaxSize, config_.saveFileMaxSize);
