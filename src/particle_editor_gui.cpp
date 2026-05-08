@@ -763,7 +763,7 @@ void MyEventHandler::createGuiSprite()
 
 		ImGui::SliderFloat2("Anchor Point", spriteState_.anchorPoint.data(), 0.0f, 1.0f);
 		static int currentAnchorSelection = 0;
-		if (ImGui::Combo("Anchor Presets", &currentAnchorSelection, anchorPointItems, IM_ARRAYSIZE(anchorPointItems)))
+		if (ImGui::Combo("Anchor Presets", &currentAnchorSelection, anchorPointItems, IM_COUNTOF(anchorPointItems)))
 		{
 			switch (currentAnchorSelection)
 			{
@@ -793,7 +793,7 @@ void MyEventHandler::createGuiSprite()
 
 		static int currentBlendingSelection = 1;
 		currentBlendingSelection = static_cast<int>(spriteState_.blendingPreset);
-		if (ImGui::Combo("Blending", &currentBlendingSelection, blendingPresetItems, IM_ARRAYSIZE(blendingPresetItems)))
+		if (ImGui::Combo("Blending", &currentBlendingSelection, blendingPresetItems, IM_COUNTOF(blendingPresetItems)))
 			spriteState_.blendingPreset = static_cast<nc::DrawableNode::BlendingPreset>(currentBlendingSelection);
 
 		if (s.blendingPreset != spriteState_.blendingPreset)
@@ -1419,7 +1419,7 @@ void MyEventHandler::createGuiEmission()
 			ImGui::DragIntRange2("Amount", &s.init.rndAmount.x, &s.init.rndAmount.y, 1, 1, numParticles, "Min: %d", "Max: %d");
 
 		ImGui::NextColumn();
-		ImGui::Combo("##AmountCombo", &s.amountCurrentItem, amountItems, IM_ARRAYSIZE(amountItems));
+		ImGui::Combo("##AmountCombo", &s.amountCurrentItem, amountItems, IM_COUNTOF(amountItems));
 		ImGui::Columns(1);
 		ImGui::PopID();
 
@@ -1438,7 +1438,7 @@ void MyEventHandler::createGuiEmission()
 
 		ImGui::NextColumn();
 		ImGui::SetNextItemWidth(80);
-		ImGui::Combo("##LifeCombo", &s.lifeCurrentItem, lifeItems, IM_ARRAYSIZE(lifeItems));
+		ImGui::Combo("##LifeCombo", &s.lifeCurrentItem, lifeItems, IM_COUNTOF(lifeItems));
 		ImGui::Columns(1);
 		ImGui::PopID();
 
@@ -1477,7 +1477,7 @@ void MyEventHandler::createGuiEmission()
 		}
 
 		ImGui::NextColumn();
-		ImGui::Combo("##PositionCombo", &s.positionCurrentItem, positionItems, IM_ARRAYSIZE(positionItems));
+		ImGui::Combo("##PositionCombo", &s.positionCurrentItem, positionItems, IM_COUNTOF(positionItems));
 		if (ImGui::Button(Labels::Reset))
 		{
 			s.init.rndPositionX.set(0.0f, 0.0f);
@@ -1529,7 +1529,7 @@ void MyEventHandler::createGuiEmission()
 			s.init.setVelocityAndScale(velX, velY, scale.x, scale.y);
 		}
 		ImGui::NextColumn();
-		ImGui::Combo("##VelocityCombo", &s.velocityCurrentItem, velocityItems, IM_ARRAYSIZE(velocityItems));
+		ImGui::Combo("##VelocityCombo", &s.velocityCurrentItem, velocityItems, IM_COUNTOF(velocityItems));
 		if (ImGui::Button(Labels::Reset))
 		{
 			scale.set(1.0f, 1.0f);
@@ -1554,7 +1554,7 @@ void MyEventHandler::createGuiEmission()
 		else if (s.rotationCurrentItem == 2)
 			ImGui::DragFloatRange2("Rotation", &s.init.rndRotation.x, &s.init.rndRotation.y, 1.0f, 0.0f, 180.0f, "Min: %.1f", "Max: %.1f");
 		ImGui::NextColumn();
-		ImGui::Combo("##RotationCombo", &s.rotationCurrentItem, rotationItems, IM_ARRAYSIZE(rotationItems));
+		ImGui::Combo("##RotationCombo", &s.rotationCurrentItem, rotationItems, IM_COUNTOF(rotationItems));
 		s.init.emitterRotation = (s.rotationCurrentItem == 0);
 		ImGui::Columns(1);
 		ImGui::PopID();
